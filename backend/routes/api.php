@@ -18,3 +18,5 @@ Route::apiResources([
     'incidencias'       => IncidenciaController::class,
     'historial-envios'  => HistorialEnvioController::class,
 ]);
+
+Route::get('/ping', fn() => response()->json(['ok' => true, 'time' => now()]));
