@@ -1,0 +1,5 @@
+<div class="container py-4">
+  <h2 class="mb-3">Dashboard</h2>
+  <p>Sesión iniciada como <strong>{{ user()?.nombre }} {{ user()?.apellido }}</strong> ({{ user()?.rol }})</p>
+  <button class="btn btn-outline-danger" (click)="doLogout()">Cerrar sesión</button>
+</div>
