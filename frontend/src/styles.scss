@@ -1,1 +1,80 @@
 /* You can add global styles to this file, and also import other style files */
+/* Paleta y acentos */
+:root {
+  --brand: #2563eb;        /* azul primario */
+  --brand-600: #1d4ed8;    /* hover */
+  --brand-50: #eff6ff;     /* fondo suave */
+}
+
+/* Fondo moderno */
+.auth-bg {
+  min-height: 100dvh;
+  background:
+    radial-gradient(1200px 600px at -10% -20%, rgba(37, 99, 235, .10), transparent 60%),
+    radial-gradient(800px 400px at 110% 110%, rgba(37, 99, 235, .10), transparent 60%),
+    linear-gradient(180deg, var(--brand-50) 0%, #ffffff 35%);
+  display: grid;
+}
+
+/* Marca */
+.brand-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--brand), var(--brand-600));
+  color: #fff;
+  font-size: 28px;
+  box-shadow: 0 10px 30px rgba(37, 99, 235, .3);
+}
+
+/* Botón de marca: más específico para evitar overrides */
+.card .btn-brand {
+  background-color: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+.card .btn-brand:hover,
+.card .btn-brand:focus {
+  background-color: var(--brand-600);
+  border-color: var(--brand-600);
+  color: #fff;
+}
+.card .btn-brand:disabled {
+  background-color: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+  opacity: .65;
+}
+
+/* Tarjeta */
+.card {
+  backdrop-filter: saturate(120%) blur(0px);
+}
+
+/* Accesibilidad y foco */
+.form-control:focus,
+.btn:focus,
+.btn:active:focus {
+  box-shadow: 0 0 0 .2rem rgba(37, 99, 235, .25);
+}
+
+.brand-icon {
+  width: 64px; height: 64px; border-radius: 18px;
+  display: grid; place-items: center;
+  background: linear-gradient(135deg, var(--brand), var(--brand-600));
+  box-shadow: 0 10px 30px rgba(37, 99, 235, .3);
+}
+.brand-monogram {
+  color: #fff;
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: .5px;
+}
+
+
+/* Ajustes responsivos sutiles */
+@media (max-width: 575.98px) {
+  .card-body { padding: 1.25rem !important; }
+}
