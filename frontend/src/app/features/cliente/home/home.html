@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Document</title>
+</head>
+
+<body>
+    <header class="header-green">
+        <nav class="navbar">
+            <div class="container-narrow header-grid">
+
+                <div class="h-left">
+                    <a class="navbar-brand fw-semibold" routerLink="/">Smart Lockers</a>
+                </div>
+
+                <div class="h-center">
+                    <button class="btn btn-ghost d-inline-flex align-items-center" type="button" (click)="refrescar()">
+                        <i class="bi bi-arrow-clockwise me-1"></i><span> Actualizar</span>
+                    </button>
+                </div>
+
+                <div class="h-right dropdown">
+                    <button
+                        class="nav-link dropdown-toggle d-flex align-items-center btn btn-link p-0 text-decoration-none"
+                        type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle me-2"></i> {{ usuarioNombre || 'Perfil' }}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" routerLink="/cliente">Mis pedidos</a></li>
+                        <li><a class="dropdown-item" routerLink="/perfil">Perfil</a></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><button class="dropdown-item" type="button" (click)="onLogout()">Cerrar sesión</button></li>
+                    </ul>
+                </div>
+
+            </div>
+        </nav>
+    </header>
+
+
+    <main class="container-narrow my-4">
+        <section aria-labelledby="saludo-usuario">
+            <header class="mb-4">
+                <h2 id="saludo-usuario" class="h3 mb-1">Hi Ema!</h2>
+                <p class="text-muted mb-0">Revisa tus pedidos activos.</p>
+            </header>
+        </section>
+
+        <section aria-labelledby="pedidos-activos">
+            <header class="d-flex justify-content-between align-items-center mb-3">
+                <h3 id="pedidos-activos" class="h5 m-0">Pedidos Activos</h3>
+                <small class="text-muted">{{ pedidos.length }} en curso</small>
+            </header>
+
+            <p class="text-muted" *ngIf="!pedidos.length">No hay pedidos para mostrar.</p>
+
+            <ul class="list-unstyled m-0">
+                <li *ngFor="let p of pedidos" class="mb-3">
+                    <article class="card card-soft p-3" [attr.aria-label]="'Pedido ' + p.id">
+                        <header class="mb-2 d-flex justify-content-between align-items-start flex-wrap">
+                            <h4 class="h6 fw-bold m-0">Pedido #{{ p.id }}</h4>
+                            <span class="badge" [class.bg-success]="p.estado==='Activo'"
+                                [class.bg-secondary]="p.estado!=='Activo'">
+                                {{ p.estado }}
+                            </span>
+                        </header>
+
+                        <p class="text-muted mb-3">
+                            <span class="dot" [ngClass]="p.estado==='Activo' ? 'ok' : 'warn'"></span>
+                            <span class="ms-1">Locker <strong>{{ p.locker }}</strong></span> ·
+                            <span>{{ p.sede }}</span> ·
+                            <time [attr.datetime]="p.creadoEl">{{ p.creadoEl | date:'medium' }}</time>
+                        </p>
+
+                        <footer class="d-flex flex-wrap gap-2 justify-content-end stack-sm">
+                            <button class="btn btn-outline-primary btn-block-sm" (click)="abrirConClave(p.id)">
+                                <i class="bi bi-key me-1"></i> Abrir con clave
+                            </button>
+                            <button class="btn btn-primary btn-block-sm" (click)="verQr(p.id)">
+                                <i class="bi bi-qr-code me-1"></i> Mostrar QR
+                            </button>
+                        </footer>
+                    </article>
+                </li>
+            </ul>
+
+        </section>
+    </main>
+
+    <footer class="border-top bg-white text-center py-3 mt-4">
+        <small class="text-muted">&copy; (AGREGAR MAS CARDS PARA QUE EL FOOTER SE AJUSTE) 2025 Smart Lockers</small>
+    </footer>
+
+</body>
+
+</html>

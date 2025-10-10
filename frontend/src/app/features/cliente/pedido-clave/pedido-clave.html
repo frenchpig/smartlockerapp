@@ -1,0 +1,45 @@
+<!-- <header class="border-bottom bg-white">
+    <div class="container-narrow py-3 d-flex align-items-center gap-2">
+        <a class="btn btn-ghost" routerLink="/cliente" aria-label="Volver">←</a>
+        <h1 class="h5 m-0">Abrir con clave</h1>
+    </div>
+</header>
+
+<main class="container-narrow my-4" role="main">
+    <form class="mx-auto" style="max-width:380px" (ngSubmit)="submit()" aria-describedby="ayuda-clave">
+        <h2 class="h5 mb-3">Pedido #{{ pedidoId }}</h2>
+        <p id="ayuda-clave" class="text-muted">Ingresa tu clave de {{max}} dígitos.</p>
+
+        <output class="form-control text-center fs-3 mb-3" for="teclado" aria-live="polite">
+            {{ '•'.repeat(clave.length) }}
+        </output>
+
+        <fieldset id="teclado" class="row g-2" aria-label="Teclado numérico">
+            <div class="col-4" *ngFor="let n of [1,2,3,4,5,6,7,8,9]">
+                <button type="button" class="btn btn-dark w-100 py-3 fs-4" (click)="addDigit(n)">
+                    {{ n }}
+                </button>
+            </div>
+
+            <div class="col-4">
+                <button type="button" class="btn btn-outline-secondary w-100 py-3 fs-4" (click)="backspace()">
+                    ⌫
+                </button>
+            </div>
+            <div class="col-4">
+                <button type="button" class="btn btn-dark w-100 py-3 fs-4" (click)="addDigit(0)">
+                    0
+                </button>
+            </div>
+            <div class="col-4">
+                <button type="button" class="btn btn-outline-secondary w-100 py-3 fs-4" (click)="clear()">
+                    ✕
+                </button>
+            </div>
+        </fieldset>
+
+        <button class="btn btn-primary w-100 mt-3" type="submit" [disabled]="clave.length !== max">
+            Confirmar
+        </button>
+    </form>
+</main> -->

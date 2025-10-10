@@ -7,19 +7,28 @@ import { TestBackend } from './features/test-backend/test-backend';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from './core/auth/auth-interceptor';
 
+import { Home } from './features/cliente/home/home';
+import { PedidoClave } from './features/cliente/pedido-clave/pedido-clave';
+import { PedidoQr } from './features/cliente/pedido-qr/pedido-qr';
+
 @NgModule({
-  declarations: [
-    App,
-    TestBackend
-  ],
+  declarations: [App, TestBackend,],
+
   imports: [
     BrowserModule,
-    AppRoutingModule
+    AppRoutingModule,
+    Home,
+    PedidoClave,
+    PedidoQr
   ],
+
   providers: [
+    provideHttpClient(withInterceptors([authInterceptor])),
     provideBrowserGlobalErrorListeners(),
     provideHttpClient(),
   ],
+
   bootstrap: [App]
 })
+
 export class AppModule { }

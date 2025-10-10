@@ -1,0 +1,30 @@
+<!-- <header class="border-bottom bg-white">
+    <div class="container-narrow py-3 d-flex align-items-center gap-2">
+        <a class="btn btn-ghost" routerLink="/cliente" aria-label="Volver">←</a>
+        <h1 class="h5 m-0">Código QR</h1>
+    </div>
+</header>
+
+<main class="container-narrow my-4 text-center">
+    <section aria-labelledby="titulo-qr">
+        <h2 id="titulo-qr" class="h5 mb-3">Pedido #{{ pedidoId }}</h2>
+
+        <figure class="mb-3">
+            <img [src]="qrUrl" alt="Código QR del pedido {{ pedidoId }}" width="220" height="220" />
+            <figcaption class="text-muted mt-2">
+                Muestra este código en el locker para abrirlo.
+            </figcaption>
+        </figure>
+
+        <div class="mx-auto" style="max-width:320px">
+            <label for="ttl" class="form-label">Tiempo restante</label>
+            <progress id="ttl" class="w-100" [value]="progress" max="100">{{ progress }}%</progress>
+            <div class="small text-muted mt-1">
+                Te quedan {{ minutes }}:{{ seconds < 10 ? '0' + seconds : seconds }} min </div>
+            </div>
+
+            <p class="mt-3">
+                <a class="btn btn-outline-primary" routerLink="/cliente">Volver a pedidos</a>
+            </p>
+    </section>
+</main> -->
