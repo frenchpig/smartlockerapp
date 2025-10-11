@@ -76,15 +76,13 @@
                             <span>{{ p.sede }}</span> ·
                             <time [attr.datetime]="p.creadoEl">{{ p.creadoEl | date:'medium' }}</time>
                         </p>
-
-                        <footer class="d-flex flex-wrap gap-2 justify-content-end stack-sm">
-                            <button class="btn btn-outline-primary btn-block-sm" (click)="abrirConClave(p.id)">
-                                <i class="bi bi-key me-1"></i> Abrir con clave
-                            </button>
-                            <button class="btn btn-primary btn-block-sm" (click)="verQr(p.id)">
-                                <i class="bi bi-qr-code me-1"></i> Mostrar QR
+                        <footer class="d-flex flex-wrap gap-2 justify-content-end">
+                            <button class="btn btn-primary" (click)="abrirConClave(p.id)">
+                                Ingresar Clave
+                            <!-- Esta clave es antes de abrir el qrrr -->
                             </button>
                         </footer>
+
                     </article>
                 </li>
             </ul>

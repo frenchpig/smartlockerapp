@@ -31,9 +31,10 @@ private readonly router = inject(Router);
     this.router.navigate(['/cliente/pedido', id, 'clave']);
   }
 
-  verQr(id: number) {
-    this.router.navigate(['/cliente/pedido', id, 'qr']);
-  }
+  // verQr(id: number) {
+  //   this.router.navigate(['/cliente/pedido', id, 'qr']);
+  // }
+
 
   refrescar() {
     //llamar api

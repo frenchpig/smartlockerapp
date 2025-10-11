@@ -1,45 +1,73 @@
-<!-- <header class="border-bottom bg-white">
-    <div class="container-narrow py-3 d-flex align-items-center gap-2">
-        <a class="btn btn-ghost" routerLink="/cliente" aria-label="Volver">←</a>
-        <h1 class="h5 m-0">Abrir con clave</h1>
+<main class="container my-4" role="main">
+
+    <div class="mx-auto text-center" style="max-width: 560px">
+
+        <header class="mb-3">
+            <h2 class="h5 fw-semibold mb-1">Pedido #{{ pedido?.id }}</h2>
+            <p class="text-muted mb-0">
+                <span class="dot ok" aria-hidden="true"></span>
+                <span class="ms-1">Locker <strong>{{ pedido?.locker }}</strong></span> ·
+                <span>{{ pedido?.sede }}</span> ·
+                <time [attr.datetime]="pedido?.creadoEl">{{ pedido?.creadoEl | date:'medium' }}</time>
+            </p>
+        </header>
+
+        <div class="pin-dots" role="group" aria-label="Dígitos ingresados">
+            <span class="span_dot" *ngFor="let i of [0,1,2,3,4,5]" [class.filled]="(clave.value?.length ?? 0) > i">
+            </span>
+        </div>
+
+        <div class="mx-auto" style="max-width: 420px">
+            <div class="row g-3">
+                <div class="col-4"><button class="btn btn-outline-secondary w-100 py-3 fs-4"
+                        (click)="press('1')">1</button></div>
+                <div class="col-4"><button class="btn btn-outline-secondary w-100 py-3 fs-4"
+                        (click)="press('2')">2</button></div>
+                <div class="col-4"><button class="btn btn-outline-secondary w-100 py-3 fs-4"
+                        (click)="press('3')">3</button></div>
+
+                <div class="col-4"><button class="btn btn-outline-secondary w-100 py-3 fs-4"
+                        (click)="press('4')">4</button></div>
+                <div class="col-4"><button class="btn btn-outline-secondary w-100 py-3 fs-4"
+                        (click)="press('5')">5</button></div>
+                <div class="col-4"><button class="btn btn-outline-secondary w-100 py-3 fs-4"
+                        (click)="press('6')">6</button></div>
+
+                <div class="col-4"><button class="btn btn-outline-secondary w-100 py-3 fs-4"
+                        (click)="press('7')">7</button></div>
+                <div class="col-4"><button class="btn btn-outline-secondary w-100 py-3 fs-4"
+                        (click)="press('8')">8</button></div>
+                <div class="col-4"><button class="btn btn-outline-secondary w-100 py-3 fs-4"
+                        (click)="press('9')">9</button></div>
+
+                <div class="col-4"><button class="btn btn-outline-secondary w-100 py-3 fs-4" (click)="limpiar()"
+                        aria-label="Limpiar"><i class="bi bi-x-circle"></i></button></div>
+                <div class="col-4"><button class="btn btn-outline-secondary w-100 py-3 fs-4"
+                        (click)="press('0')">0</button></div>
+                <div class="col-4"><button class="btn btn-outline-secondary w-100 py-3 fs-4" (click)="borrar()"
+                        aria-label="Borrar"><i class="bi bi-backspace"></i></button></div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-center gap-2 flex-wrap mt-4">
+            <button type="button" class="btn btn-success btn-lg px-4" [disabled]="!lleno || enviando"
+                (click)="enviar()">
+                <i class="bi bi-unlock me-1"></i> Abrir locker
+            </button>
+            <a class="btn btn-outline-secondary btn-lg px-4" [routerLink]="['/cliente']">Cancelar</a>
+        </div>
+        <!-- QR (solo se muestra si qrData tiene contenido) -->
+        <section *ngIf="qrData" class="qr-wrap text-center mt-4" aria-labelledby="qr-title">
+            <h3 id="qr-title" class="h6 mb-2">Tu código QR</h3>
+            <qrcode [qrdata]="qrData" [width]="220" [errorCorrectionLevel]="'M'"></qrcode>
+            <p class="text-muted mt-2" *ngIf="expiresAt">
+                Válido hasta <time [attr.datetime]="expiresAt">{{ expiresAt | date:'mediumTime' }}</time>
+            </p>
+        </section>
+
+
     </div>
-</header>
-
-<main class="container-narrow my-4" role="main">
-    <form class="mx-auto" style="max-width:380px" (ngSubmit)="submit()" aria-describedby="ayuda-clave">
-        <h2 class="h5 mb-3">Pedido #{{ pedidoId }}</h2>
-        <p id="ayuda-clave" class="text-muted">Ingresa tu clave de {{max}} dígitos.</p>
-
-        <output class="form-control text-center fs-3 mb-3" for="teclado" aria-live="polite">
-            {{ '•'.repeat(clave.length) }}
-        </output>
-
-        <fieldset id="teclado" class="row g-2" aria-label="Teclado numérico">
-            <div class="col-4" *ngFor="let n of [1,2,3,4,5,6,7,8,9]">
-                <button type="button" class="btn btn-dark w-100 py-3 fs-4" (click)="addDigit(n)">
-                    {{ n }}
-                </button>
-            </div>
-
-            <div class="col-4">
-                <button type="button" class="btn btn-outline-secondary w-100 py-3 fs-4" (click)="backspace()">
-                    ⌫
-                </button>
-            </div>
-            <div class="col-4">
-                <button type="button" class="btn btn-dark w-100 py-3 fs-4" (click)="addDigit(0)">
-                    0
-                </button>
-            </div>
-            <div class="col-4">
-                <button type="button" class="btn btn-outline-secondary w-100 py-3 fs-4" (click)="clear()">
-                    ✕
-                </button>
-            </div>
-        </fieldset>
-
-        <button class="btn btn-primary w-100 mt-3" type="submit" [disabled]="clave.length !== max">
-            Confirmar
-        </button>
-    </form>
-</main> -->
+</main>
+<footer class="border-top bg-white text-center py-3 mt-5">
+    <small class="text-muted">&copy; 2025 Smart Lockers</small>
+</footer>
