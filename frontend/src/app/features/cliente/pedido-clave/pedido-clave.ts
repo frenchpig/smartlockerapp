@@ -61,10 +61,13 @@ export class PedidoClave implements OnInit {
     if (v.length >= 6) return;
     this.clave.setValue(v + n);
 
-    if ((this.clave.value?.length ?? 0) === 6) {
-      this.enviar();
-    }
+    // Para ingresar sin usar el boton :p
+    // if ((this.clave.value?.length ?? 0) === 6) {
+    //   this.enviar();
+    // }
+
   }
+
 
   borrar() {
     if (this.enviando) return;
@@ -72,13 +75,13 @@ export class PedidoClave implements OnInit {
     this.clave.setValue(v.slice(0, -1));
   }
 
-limpiar() {
-  if (this.enviando) return;
-  this.clave.setValue('');
-  this.errorMsg = '';
-  this.qrData = null;
-  this.expiresAt = undefined;
-}
+  limpiar() {
+    if (this.enviando) return;
+    this.clave.setValue('');
+    this.errorMsg = '';
+    this.qrData = null;
+    this.expiresAt = undefined;
+  }
 
   async enviar() {
     if (this.enviando) return;
@@ -91,27 +94,13 @@ limpiar() {
     this.errorMsg = '';
     this.qrData = null;
 
-
-    // Lo que esta comentado es un simulador de qr para probar el boton
-
-    // await new Promise(r => setTimeout(r, 800));
-
-    // if (this.clave.value === '123456') {
-    //   const exp = new Date(Date.now() + 2 * 60 * 1000);
-    //   this.expiresAt = exp.toISOString();
-
-    //   const payload = {
-    //     type: 'OPEN_LOCKER',
-    //     pedidoId: this.pedido!.id,
-    //     token: Math.random().toString(36).substring(2),
-    //     exp: this.expiresAt
-    //   };
-
-    //   this.qrData = `smartlocker://open?data=${encodeURIComponent(JSON.stringify(payload))}`;
-    // } else {
-    //   this.errorMsg = 'Código incorrecto. Intenta nuevamente.';
-    //   this.clave.setValue('');
-    // }
+    this.router.navigate(
+      ['/cliente/pedido', this.pedido!.id, 'qr'],
+      {
+        queryParams: { from: 'clave' },
+        state: { fromClave: true }
+      }
+    );
 
     this.enviando = false;
   }

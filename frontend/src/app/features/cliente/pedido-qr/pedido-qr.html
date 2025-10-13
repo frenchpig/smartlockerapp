@@ -1,30 +1,55 @@
-<!-- <header class="border-bottom bg-white">
-    <div class="container-narrow py-3 d-flex align-items-center gap-2">
-        <a class="btn btn-ghost" routerLink="/cliente" aria-label="Volver">←</a>
-        <h1 class="h5 m-0">Código QR</h1>
-    </div>
-</header>
+<main class="container my-4" role="main">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <a class="text-decoration-none" routerLink="/cliente">
+            <i class="bi bi-arrow-left me-1"></i> Volver
+        </a>
+    </nav>
 
-<main class="container-narrow my-4 text-center">
-    <section aria-labelledby="titulo-qr">
-        <h2 id="titulo-qr" class="h5 mb-3">Pedido #{{ pedidoId }}</h2>
+    <div class="mx-auto text-center" style="max-width: 560px">
+        <header class="mb-3">
+            <h1 class="h5 fw-semibold mb-1">Pedido #{{ pedido?.id }}</h1>
+            <p class="text-muted mb-0">
+                <span class="dot ok" aria-hidden="true"></span>
+                <span class="ms-1">Locker <strong>{{ pedido?.locker }}</strong></span> ·
+                <span>{{ pedido?.sede }}</span> ·
+                <time [attr.datetime]="pedido?.creadoEl">{{ pedido?.creadoEl | date:'medium' }}</time>
+            </p>
+        </header>
 
-        <figure class="mb-3">
-            <img [src]="qrUrl" alt="Código QR del pedido {{ pedidoId }}" width="220" height="220" />
-            <figcaption class="text-muted mt-2">
-                Muestra este código en el locker para abrirlo.
-            </figcaption>
-        </figure>
+        <!-- cargando -->
+        <section *ngIf="cargando" class="qr-card">
+            <div class="placeholder">
+                <div class="spinner-border text-success" role="status" aria-label="Generando QR"></div>
+                <p class="text-muted mt-3">Generando QR…</p>
+            </div>
+        </section>
 
-        <div class="mx-auto" style="max-width:320px">
-            <label for="ttl" class="form-label">Tiempo restante</label>
-            <progress id="ttl" class="w-100" [value]="progress" max="100">{{ progress }}%</progress>
-            <div class="small text-muted mt-1">
-                Te quedan {{ minutes }}:{{ seconds < 10 ? '0' + seconds : seconds }} min </div>
+        <!-- Estado: error -->
+        <section *ngIf="!cargando && errorMsg" class="qr-card">
+            <p class="text-danger mb-3">{{ errorMsg }}</p>
+            <button type="button" class="btn btn-outline-secondary" (click)="reintentar()">Reintentar</button>
+        </section>
+
+        <!-- (contenedor del QR) -->
+        <section *ngIf="!cargando && !errorMsg" class="qr-card">
+            <img *ngIf="qrUrl" [src]="qrUrl" alt="QR del pedido" class="qr-img" />
+
+            <!--  mientras no hay qr -->
+            <div *ngIf="!qrUrl" class="qr-box" aria-label="Aquí se mostrará tu QR">
+                <span class="text-muted">Aquí se mostrará el QR</span>
             </div>
 
-            <p class="mt-3">
-                <a class="btn btn-outline-primary" routerLink="/cliente">Volver a pedidos</a>
+            <p class="text-muted mt-3">
+                Muestra este código QR en el locker para abrirlo.
             </p>
-    </section>
-</main> -->
+
+            <div class="d-flex justify-content-center gap-2 mt-3">
+                <button class="btn btn-outline-secondary volver" (click)="volver()">Volver</button>
+            </div>
+        </section>
+    </div>
+</main>
+
+<footer class="border-top bg-white text-center py-3 mt-5">
+    <small class="text-muted">&copy; 2025 Smart Lockers</small>
+</footer>

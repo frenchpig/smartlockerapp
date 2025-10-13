@@ -1,55 +1,61 @@
-// import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
-// @Component({
-//   selector: 'app-pedido-qr',
-//   standalone: false,
-//   templateUrl: './pedido-qr.html',
-//   styleUrl: './pedido-qr.scss'
-// })
-// export class PedidoQr {
-
-// }
-
-import { Component, inject, OnDestroy } from '@angular/core';
-import { ActivatedRoute, RouterModule } from '@angular/router';
-import { CommonModule } from '@angular/common';
+type Estado = 'Activo' | 'Entregado' | 'Cancelado';
+interface Pedido {
+  id: number;
+  estado: Estado;
+  locker: string;
+  sede: string;
+  creadoEl: string;
+}
 
 @Component({
   standalone: true,
   selector: 'app-pedido-qr',
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, DatePipe],
   templateUrl: './pedido-qr.html',
   styleUrls: ['./pedido-qr.scss']
 })
-export class PedidoQr implements OnDestroy {
+export class PedidoQr implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
-  pedidoId = Number(this.route.snapshot.paramMap.get('id'));
-
-  total = 480;
-  left = this.total;
-  private timer?: any;
+  pedido?: Pedido;
+  cargando = true;
+  errorMsg = '';
+  qrUrl?: string;
 
   ngOnInit(): void {
-    this.timer = setInterval(() => {
-      this.left = Math.max(0, this.left - 1);
-      if (this.left === 0) clearInterval(this.timer);
-    }, 1000);
+    const idParam = this.route.snapshot.paramMap.get('id');
+    const id = Number(idParam);
+    if (!idParam || Number.isNaN(id)) {
+      this.router.navigate(['/cliente']);
+      return;
+    }
+
+    this.pedido = {
+      id,
+      estado: 'Activo',
+      locker: '#12',
+      sede: 'Metro Ñuñoa',
+      creadoEl: '2025-10-01T10:30:00Z',
+    };
+
+    // espera:
+    setTimeout(() => {
+      this.cargando = false;
+    }, 600);
   }
 
-  ngOnDestroy(): void {
-    if (this.timer) clearInterval(this.timer);
+  volver() {
+    this.router.navigate(['/cliente']);
   }
 
-  get minutes(): number { return Math.floor(this.left / 60); }
-  get seconds(): number { return this.left % 60; }
-
-  get progress(): number {
-    return Math.round((this.left / this.total) * 100);
-  }
-
-  get qrUrl(): string {
-    // Reemplazar luego
-    return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=Pedido%20${this.pedidoId}`;
+  reintentar() {
+    this.cargando = true;
+    this.errorMsg = '';
+    setTimeout(() => { this.cargando = false; }, 600);
   }
 }
