@@ -3,13 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Foundation\Auth\User as Authenticatable; // <- importante
-use Laravel\Sanctum\HasApiTokens;                       // <- importante
 
-class Usuario extends Authenticatable
+class Usuario extends Model
 {
-    use HasApiTokens, HasFactory;
+    use HasFactory;
 
     protected $table = 'usuarios';
 
@@ -26,7 +25,6 @@ class Usuario extends Authenticatable
 
     protected $hidden = [
         'contrasena',
-        'remember_token',
     ];
 
     protected $casts = [
@@ -44,10 +42,29 @@ class Usuario extends Authenticatable
         );
     }
 
-    // Relaciones...
-    public function notificaciones() { return $this->hasMany(Notificacion::class, 'usuario_id'); }
-    public function reservas()       { return $this->hasMany(Reserva::class, 'usuario_id'); }
-    public function mantenimientos() { return $this->hasMany(Mantenimiento::class, 'usuario_id'); }
-    public function incidencias()    { return $this->hasMany(Incidencia::class, 'usuario_id'); }
-    public function historialEnvios(){ return $this->hasMany(HistorialEnvio::class, 'usuario_id'); }
+    // Relaciones
+    public function notificaciones()
+    {
+        return $this->hasMany(Notificacion::class, 'usuario_id');
+    }
+
+    public function reservas()
+    {
+        return $this->hasMany(Reserva::class, 'usuario_id');
+    }
+
+    public function mantenimientos()
+    {
+        return $this->hasMany(Mantenimiento::class, 'usuario_id');
+    }
+
+    public function incidencias()
+    {
+        return $this->hasMany(Incidencia::class, 'usuario_id');
+    }
+
+    public function historialEnvios()
+    {
+        return $this->hasMany(HistorialEnvio::class, 'usuario_id');
+    }
 }

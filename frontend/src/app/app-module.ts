@@ -6,13 +6,10 @@ import { App } from './app';
 import { TestBackend } from './features/test-backend/test-backend';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from './core/auth/auth-interceptor';
-<<<<<<< HEAD
-=======
 
 import { Home } from './features/cliente/home/home';
 import { PedidoClave } from './features/cliente/pedido-clave/pedido-clave';
 import { PedidoQr } from './features/cliente/pedido-qr/pedido-qr';
->>>>>>> origin/frontend
 
 @NgModule({
   declarations: [App, TestBackend,],
