@@ -14,6 +14,7 @@ class Locker extends Model
     public const ESTADOS = ['activo', 'bloqueado', 'mantenimiento', 'ocupado'];
 
     protected $fillable = [
+        'numero',
         'ubicacion',
         'latitud',
         'longitud',

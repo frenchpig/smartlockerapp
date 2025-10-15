@@ -26,7 +26,7 @@
                     <button
                         class="nav-link dropdown-toggle d-flex align-items-center btn btn-link p-0 text-decoration-none"
                         type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-person-circle me-2"></i> {{ usuarioNombre || 'Perfil' }}
+                        <i class="bi bi-person-circle me-2"></i> {{ user()?.nombre || 'Perfil' }}
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item" routerLink="/cliente">Mis pedidos</a></li>
@@ -46,7 +46,7 @@
     <main class="container-narrow my-4">
         <section aria-labelledby="saludo-usuario">
             <header class="mb-4">
-                <h2 id="saludo-usuario" class="h3 mb-1">Hi Ema!</h2>
+                <h2 id="saludo-usuario" class="h3 mb-1">Hi {{ user()?.nombre || 'Usuario' }}!</h2>
                 <p class="text-muted mb-0">Revisa tus pedidos activos.</p>
             </header>
         </section>
@@ -57,9 +57,15 @@
                 <small class="text-muted">{{ pedidos.length }} en curso</small>
             </header>
 
-            <p class="text-muted" *ngIf="!pedidos.length">No hay pedidos para mostrar.</p>
+            <!-- Cargando -->
+            <div class="d-flex justify-content-center py-4" *ngIf="loading">
+                <div class="spinner-border text-success" role="status" aria-label="Cargando"></div>
+            </div>
 
-            <ul class="list-unstyled m-0">
+            <!-- Vacío -->
+            <p class="text-muted" *ngIf="!loading && !pedidos.length">No hay pedidos para mostrar.</p>
+
+            <ul class="list-unstyled m-0" *ngIf="!loading && pedidos.length">
                 <li *ngFor="let p of pedidos" class="mb-3">
                     <article class="card card-soft p-3" [attr.aria-label]="'Pedido ' + p.id">
                         <header class="mb-2 d-flex justify-content-between align-items-start flex-wrap">
@@ -77,9 +83,8 @@
                             <time [attr.datetime]="p.creadoEl">{{ p.creadoEl | date:'medium' }}</time>
                         </p>
                         <footer class="d-flex flex-wrap gap-2 justify-content-end">
-                            <button class="btn btn-primary" (click)="abrirConClave(p.id)">
+                            <button class="btn btn-primary" (click)="abrirConClave(p.id)" *ngIf="p.tipoAcceso === 'codigo_temporal' && p.estado === 'Activo'">
                                 Ingresar Clave
-                            <!-- Esta clave es antes de abrir el qrrr -->
                             </button>
                         </footer>
 
@@ -91,7 +96,7 @@
     </main>
 
     <footer class="border-top bg-white text-center py-3 mt-4">
-        <small class="text-muted">&copy; (AGREGAR MAS CARDS PARA QUE EL FOOTER SE AJUSTE) 2025 Smart Lockers</small>
+        <small class="text-muted">&copy; 2025 Smart Lockers</small>
     </footer>
 
 </body>

@@ -40,7 +40,7 @@ export class LoginComponent {
         password: this.form.value.password,
         remember: !!this.form.value.remember
       });
-      await this.router.navigate(['/dashboard']);
+      await this.router.navigate(['/cliente']);
     } catch (err: any) {
       console.error(err);
       alert(err?.error?.message || 'Credenciales inválidas o error de servidor');

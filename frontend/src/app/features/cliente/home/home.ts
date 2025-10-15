@@ -1,6 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { AuthService } from '../../../core/auth/auth';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
 
 type Estado = 'Activo' | 'Entregado' | 'Cancelado';
 interface Pedido {
@@ -9,6 +12,7 @@ interface Pedido {
   locker: string;
   sede: string;
   creadoEl: string;
+  tipoAcceso?: 'qr' | 'codigo_temporal' | string;
 }
 
 @Component({
@@ -18,17 +22,38 @@ interface Pedido {
   templateUrl: './home.html',
   styleUrls: ['./home.scss']
 })
-export class Home {
-  pedidos: Pedido[] = [
-    { id: 18565, estado: 'Activo',    locker: '#12', sede: 'Metro Ñuñoa',  creadoEl: '2025-10-01T10:30:00Z' },
-    { id: 17387, estado: 'Entregado', locker: '#03', sede: 'Metro Ñuble',  creadoEl: '2025-09-28T15:10:00Z' }
-  ];
+export class Home implements OnInit {
+  pedidos: Pedido[] = [];
+  loading = false;
 
-usuarioNombre = 'Ema';
 private readonly router = inject(Router);
+private readonly auth = inject(AuthService);
+private readonly http = inject(HttpClient);
+// Señal con el usuario autenticado
+user = this.auth.user;
 
-  abrirConClave(id: number) {
-    this.router.navigate(['/cliente/pedido', id, 'clave']);
+  ngOnInit(): void {
+    // Asegura que cargamos los datos del usuario al entrar
+    this.auth.fetchMe().catch(() => {}).finally(() => {
+      this.cargarPedidos();
+    });
+  }
+
+  async abrirConClave(id: number) {
+    try {
+      const estado = await this.http
+        .get<{ has_code: boolean; is_valid: boolean; expires_at?: string }>(`${environment.apiUrl}/reservas/${id}/codigo-temporal/estado`)
+        .toPromise();
+
+      if (estado?.has_code && estado.is_valid) {
+        this.router.navigate(['/cliente/pedido', id, 'clave']);
+      } else {
+        alert('No hay un código vigente para esta reserva. Solicítalo nuevamente.');
+      }
+    } catch (e) {
+      console.error('No se pudo comprobar código', e);
+      alert('Error comprobando el estado del código. Intenta más tarde.');
+    }
   }
 
   // verQr(id: number) {
@@ -36,12 +61,44 @@ private readonly router = inject(Router);
   // }
 
 
-  refrescar() {
-    //llamar api
-    this.pedidos = [...this.pedidos];
+  refrescar() { this.cargarPedidos(); }
+
+  private mapEstado(estadoApi: string): Estado {
+    switch (estadoApi) {
+      case 'pendiente': return 'Activo';
+      case 'completado': return 'Entregado';
+      case 'anulado': return 'Cancelado';
+      default: return 'Activo';
+    }
   }
 
-  onLogout() {
-    console.log('logout');
+  private async cargarPedidos() {
+    this.loading = true;
+    try {
+      const res: any[] | undefined = await this.http
+        .get<any[]>(`${environment.apiUrl}/reservas/mis-ultimas`)
+        .toPromise();
+
+      this.pedidos = (res || []).map(r => ({
+        id: r.id,
+        estado: this.mapEstado(r.estado),
+        locker: `#${r.locker?.numero ?? r.locker?.id ?? r.locker_id ?? ''}`,
+        sede: r.locker?.ubicacion ?? '—',
+        creadoEl: r.created_at ?? r.fecha_reserva ?? new Date().toISOString(),
+        tipoAcceso: r.tipo_acceso,
+      }));
+    } catch (err) {
+      console.error('Error cargando pedidos', err);
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  async onLogout() {
+    try {
+      await this.auth.logout();
+    } finally {
+      this.router.navigate(['/login']);
+    }
   }
 }

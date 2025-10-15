@@ -3,6 +3,8 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { QRCodeComponent } from 'angularx-qrcode';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
 
 
 type Estado = 'Activo' | 'Entregado' | 'Cancelado';
@@ -24,6 +26,7 @@ interface Pedido {
 export class PedidoClave implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
 
   pedido?: Pedido;
 
@@ -46,14 +49,51 @@ export class PedidoClave implements OnInit {
       return;
     }
 
-    this.pedido = {
-      id,
-      estado: 'Activo',
-      locker: '#12',
-      sede: 'Metro Ñuñoa',
-      creadoEl: '2025-10-01T10:30:00Z',
-    };
+    this.pedido = { id, estado: 'Activo', locker: '#—', sede: '—', creadoEl: new Date().toISOString() };
+    this.cargarPedido(id);
+
+    // En entorno local, intentamos obtener el código vigente para mostrarlo por consola
+    if (!environment.production) {
+      this.http.get<{ has_code: boolean; is_valid: boolean; code?: string }>(
+        `${environment.apiUrl}/reservas/${id}/codigo-temporal/estado`
+      ).toPromise().then(r => {
+        if (r?.has_code && r.is_valid && r.code) {
+          // Solo log para facilitar pruebas locales
+          // eslint-disable-next-line no-console
+          console.log('[DEV] Código temporal vigente:', r.code);
+        }
+      }).catch(() => {});
+    }
   }
+
+  private mapEstado(estadoApi: string): Estado {
+    switch (estadoApi) {
+      case 'pendiente': return 'Activo';
+      case 'completado': return 'Entregado';
+      case 'anulado': return 'Cancelado';
+      default: return 'Activo';
+    }
+  }
+
+  private async cargarPedido(id: number) {
+    try {
+      const r: any | undefined = await this.http
+        .get<any>(`${environment.apiUrl}/reservas/${id}`)
+        .toPromise();
+      if (r) {
+        this.pedido = {
+          id: r.id,
+          estado: this.mapEstado(r.estado),
+          locker: `#${r.locker?.numero ?? r.locker?.id ?? r.locker_id ?? ''}`,
+          sede: r.locker?.ubicacion ?? '—',
+          creadoEl: r.created_at ?? r.fecha_reserva ?? new Date().toISOString(),
+        };
+      }
+    } catch (e) {
+      console.error('No se pudo cargar la reserva', e);
+    }
+  }
+
 
   press(n: string) {
     if (this.enviando) return;
@@ -94,15 +134,20 @@ export class PedidoClave implements OnInit {
     this.errorMsg = '';
     this.qrData = null;
 
-    this.router.navigate(
-      ['/cliente/pedido', this.pedido!.id, 'qr'],
-      {
-        queryParams: { from: 'clave' },
-        state: { fromClave: true }
-      }
-    );
+    try {
+      await this.http.post(
+        `${environment.apiUrl}/reservas/${this.pedido!.id}/codigo-temporal/verificar`,
+        { code: this.clave.value }
+      ).toPromise();
 
-    this.enviando = false;
+      // Éxito: volver a la lista del cliente
+      this.router.navigate(['/cliente']);
+    } catch (err: any) {
+      const msg = err?.error?.message || 'Código inválido o vencido';
+      this.errorMsg = msg;
+    } finally {
+      this.enviando = false;
+    }
   }
 
   get lleno(): boolean { /* ... */ return (this.clave.value?.length ?? 0) === 6; }

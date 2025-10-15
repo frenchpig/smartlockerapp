@@ -20,6 +20,7 @@ const routes: Routes = [
 
   {
     path: 'cliente',
+    canActivate: [authGuard],
     children: [
       { path: '', component: Home },
       { path: 'pedido/:id/clave', component: PedidoClave },
