@@ -1,0 +1,156 @@
+:root {
+    --brand: #16a34a;
+    --brand-600: #15803d;
+    --brand-50: #dcfce7;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --border: rgba(0, 0, 0, .08);
+}
+
+.header-empresa {
+    background: var(--brand);
+    color: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .08);
+}
+
+.header-empresa .btn-outline-light {
+    color: #fff;
+    border-color: #fff;
+}
+
+.header-empresa .btn-outline-light:hover {
+    background: #fff;
+    color: var(--brand-600);
+}
+
+.panel-wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem 3rem;
+}
+
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+}
+
+@media (max-width: 992px) {
+    .kpi-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 576px) {
+    .kpi-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.kpi-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .06);
+    padding: 1.25rem 1.25rem 1rem;
+    position: relative;
+    min-height: 148px;
+}
+
+.kpi-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 6px;
+    border-radius: 1rem 1rem 0 0;
+    background: linear-gradient(90deg, var(--brand), var(--brand-600));
+}
+
+.kpi-title {
+    color: var(--muted);
+    margin: .25rem 0 .5rem;
+}
+
+.kpi-value {
+    font-size: clamp(1.75rem, 3.5vw, 2.25rem);
+    font-weight: 800;
+    color: var(--ink);
+}
+
+.kpi-hint {
+    color: var(--muted);
+}
+
+.section-title {
+    margin: 2rem 0 1rem;
+    font-weight: 800;
+    color: var(--ink);
+}
+
+.table-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .06);
+    overflow: hidden;
+}
+
+.table-card table {
+    margin: 0;
+}
+
+.table-card thead th {
+    background: #f9fafb;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.table-card tbody tr {
+    border-bottom: 1px solid var(--border);
+}
+
+.table-card tbody tr:hover {
+    background: #fafafa;
+}
+
+.badge-status {
+    display: inline-block;
+    padding: .45rem .9rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: .95rem;
+}
+
+.badge-pendiente {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+.badge-camino {
+    background: #fde68a;
+    color: #92400e;
+}
+
+.badge-entregado {
+    background: #bbf7d0;
+    color: #065f46;
+    /* verde suave/medio */
+}
+
+.btn-outline-success {
+    color: var(--brand-600);
+    border-color: var(--brand-600);
+}
+
+.btn-outline-success:hover {
+    background: var(--brand-600);
+    color: #fff;
+}
+
+footer {
+    margin-top: 2.5rem;
+}
