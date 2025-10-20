@@ -9,6 +9,7 @@ import { authGuard } from './core/auth/auth-guard';
 import { Home } from './features/cliente/home/home';
 import { PedidoClave } from './features/cliente/pedido-clave/pedido-clave';
 import { PedidoQr } from './features/cliente/pedido-qr/pedido-qr';
+import { TotemCodigoComponent } from './features/totem/codigo/totem-codigo';
 
 import { HomeEmpresa } from './features/empresa/home-empresa/home-empresa'
 import { Lockers } from './features/empresa/lockers/lockers'
@@ -19,6 +20,7 @@ import { Pedidos } from './features/empresa/pedidos/pedidos'
 const routes: Routes = [
   { path: 'test-backend', component: TestBackend },
   { path: 'login', component: LoginComponent },
+  { path: 'totem/codigo', component: TotemCodigoComponent },
 
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
 
@@ -44,8 +46,8 @@ const routes: Routes = [
 
 
 
-  { path: '', pathMatch: 'full', redirectTo: 'empresa' }, //login
-  { path: '**', redirectTo: 'empresa' }, //login
+  { path: '', pathMatch: 'full', redirectTo: 'login' }, //login
+  { path: '**', redirectTo: 'login' }, //login
 ];
 
 @NgModule({

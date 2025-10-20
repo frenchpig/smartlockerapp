@@ -1,0 +1,80 @@
+.totem-layout {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background: linear-gradient(135deg, #111827, #0f766e);
+}
+
+.panel {
+  width: min(480px, 100%);
+  border-radius: 24px;
+  padding: 2.5rem 2rem;
+  background: rgba(15, 23, 42, 0.82);
+  color: #f8fafc;
+  backdrop-filter: blur(12px);
+}
+
+.titulo {
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.subtitulo {
+  color: rgba(241, 245, 249, 0.75) !important;
+  font-size: 0.95rem;
+}
+
+.display {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.display-slot {
+  width: 3.4rem;
+  height: 3.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  border: 2px solid rgba(148, 163, 184, 0.45);
+  background: rgba(15, 23, 42, 0.4);
+  font-size: 2.1rem;
+  font-weight: 600;
+  color: rgba(248, 250, 252, 0.8);
+}
+
+.display-slot.filled {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: transparent;
+}
+
+.keypad .btn {
+  border-radius: 16px;
+  font-weight: 600;
+  font-size: 1.75rem;
+  box-shadow: 0 14px 24px rgba(15, 23, 42, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.keypad .btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.25);
+}
+
+.acciones .btn {
+  border-radius: 18px;
+  font-weight: 600;
+  padding-block: 0.95rem;
+  font-size: 1.2rem;
+}
+
+.alert {
+  border-radius: 16px;
+}

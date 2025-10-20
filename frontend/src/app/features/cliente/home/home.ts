@@ -45,14 +45,16 @@ user = this.auth.user;
         .get<{ has_code: boolean; is_valid: boolean; expires_at?: string }>(`${environment.apiUrl}/reservas/${id}/codigo-temporal/estado`)
         .toPromise();
 
-      if (estado?.has_code && estado.is_valid) {
-        this.router.navigate(['/cliente/pedido', id, 'clave']);
-      } else {
-        alert('No hay un código vigente para esta reserva. Solicítalo nuevamente.');
+      if (!estado?.has_code || !estado.is_valid) {
+        await this.http
+          .post(`${environment.apiUrl}/reservas/${id}/codigo-temporal`, {})
+          .toPromise();
       }
+
+      this.router.navigate(['/cliente/pedido', id, 'clave']);
     } catch (e) {
-      console.error('No se pudo comprobar código', e);
-      alert('Error comprobando el estado del código. Intenta más tarde.');
+      console.error('No se pudo preparar el código temporal', e);
+      alert('No se pudo preparar el código temporal. Intenta nuevamente en unos instantes.');
     }
   }
 

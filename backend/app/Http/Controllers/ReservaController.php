@@ -5,10 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Reserva;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
 
 class ReservaController extends Controller
 {
@@ -102,20 +99,14 @@ class ReservaController extends Controller
             'codigo_acceso' => hash('sha256', $code),
         ]);
 
-        // Respuesta: solo metadatos; en entorno local incluimos el código en claro para pruebas
         $expiresAt = now()->addMinutes(5);
-        $payload = [
+        Cache::put('reserva_code_'.$reserva->id, $code, $expiresAt);
+
+        return response()->json([
+            'code' => $code,
             'expires_at' => $expiresAt->toISOString(),
             'valid_for_seconds' => 5 * 60,
-        ];
-
-        if (app()->environment('local')) {
-            $payload['code'] = $code;
-            // Guardamos el código en cache para poder consultarlo desde estado sin regenerar
-            Cache::put('reserva_code_'.$reserva->id, $code, now()->addMinutes(5));
-        }
-
-        return response()->json($payload);
+        ]);
     }
 
     /**
@@ -128,18 +119,14 @@ class ReservaController extends Controller
             return response()->json(['message' => 'No autorizado'], 403);
         }
 
-        $has = !empty($reserva->codigo_acceso) && $reserva->tipo_acceso === 'codigo_temporal';
-        $expiresAt = $reserva->updated_at?->copy()->addMinutes(5);
-        $isValid = $has && $expiresAt && now()->lt($expiresAt);
+        [$has, $expiresAt, $isValid] = $this->calcularEstadoCodigoTemporal($reserva);
+        $code = $isValid ? Cache::get('reserva_code_'.$reserva->id) : null;
 
         return response()->json([
             'has_code' => $has,
             'is_valid' => $isValid,
             'expires_at' => $expiresAt?->toISOString(),
-            // Solo en local, si existe en cache, devolvemos el código para depuración
-            'code' => (app()->environment('local') && $has && $isValid)
-                ? Cache::get('reserva_code_'.$reserva->id)
-                : null,
+            'code' => $code,
         ]);
     }
 
@@ -157,30 +144,57 @@ class ReservaController extends Controller
             return response()->json(['message' => 'No autorizado'], 403);
         }
 
-        // Debe existir un código vigente
-        $has = !empty($reserva->codigo_acceso) && $reserva->tipo_acceso === 'codigo_temporal';
-        $expiresAt = $reserva->updated_at?->copy()->addMinutes(5);
-        $isValidWindow = $has && $expiresAt && now()->lt($expiresAt);
-        if (!$isValidWindow) {
+        [$has, $expiresAt, $isValidWindow] = $this->calcularEstadoCodigoTemporal($reserva);
+        if (!$has || !$isValidWindow) {
             return response()->json(['message' => 'Código vencido o no generado'], 422);
         }
 
-        // Comparar hash
         $hash = hash('sha256', $data['code']);
-        if (!hash_equals($reserva->codigo_acceso, $hash)) {
+        if (!hash_equals($reserva->codigo_acceso ?? '', $hash)) {
             return response()->json(['message' => 'Código inválido'], 422);
         }
 
-        // Marcar completado y registrar hora_fin
-        $reserva->estado = 'completado';
-        $reserva->hora_fin = now();
-        // Opcional: invalidar el código para que no se re-use
-        $reserva->codigo_acceso = null;
-        $reserva->save();
+        $reserva = $this->finalizarReserva($reserva);
 
         return response()->json([
             'message' => 'Reserva completada',
-            'reserva' => $reserva->load(['locker']),
+            'reserva' => $reserva,
+        ]);
+    }
+
+    public function totemVerificarCodigo(Request $request)
+    {
+        $data = $request->validate([
+            'code' => ['required','regex:/^\d{6}$/'],
+        ]);
+
+        $hash = hash('sha256', $data['code']);
+
+        $reserva = Reserva::with(['locker'])
+            ->where('tipo_acceso', 'codigo_temporal')
+            ->where('codigo_acceso', $hash)
+            ->first();
+
+        if (!$reserva) {
+            return response()->json(['message' => 'Código inválido o expirado'], 422);
+        }
+
+        [, , $isValidWindow] = $this->calcularEstadoCodigoTemporal($reserva);
+        if (!$isValidWindow) {
+            return response()->json(['message' => 'Código inválido o expirado'], 422);
+        }
+
+        $reserva = $this->finalizarReserva($reserva);
+
+        return response()->json([
+            'message' => 'Reserva completada',
+            'reserva_id' => $reserva->id,
+            'locker' => [
+                'id' => $reserva->locker?->id,
+                'numero' => $reserva->locker->numero ?? null,
+                'ubicacion' => $reserva->locker->ubicacion ?? null,
+            ],
+            'completado_en' => now()->toISOString(),
         ]);
     }
 
@@ -209,5 +223,26 @@ class ReservaController extends Controller
             'expires_at' => $expiresAt->toISOString(),
             'valid_for_seconds' => 5 * 60,
         ]);
+    }
+
+    private function calcularEstadoCodigoTemporal(Reserva $reserva): array
+    {
+        $has = !empty($reserva->codigo_acceso) && $reserva->tipo_acceso === 'codigo_temporal';
+        $expiresAt = $reserva->updated_at?->copy()->addMinutes(5);
+        $isValid = $has && $expiresAt && now()->lt($expiresAt);
+
+        return [$has, $expiresAt, $isValid];
+    }
+
+    private function finalizarReserva(Reserva $reserva): Reserva
+    {
+        $reserva->estado = 'completado';
+        $reserva->hora_fin = now();
+        $reserva->codigo_acceso = null;
+        $reserva->save();
+
+        Cache::forget('reserva_code_'.$reserva->id);
+
+        return $reserva->load(['locker']);
     }
 }

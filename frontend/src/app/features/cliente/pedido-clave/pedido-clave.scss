@@ -1,36 +1,66 @@
+.pedido-wrap {
+  max-width: 560px;
+}
+
 .dot {
-    width: .6rem;
-    height: .6rem;
-    border-radius: 50%;
-    display: inline-block;
+  width: .6rem;
+  height: .6rem;
+  border-radius: 50%;
+  display: inline-block;
+  background: rgba(16, 185, 129, 0.2);
 }
 
 .dot.ok {
-    background: var(--ok, #16a34a);
+  background: var(--ok, #16a34a);
 }
 
-.pin-dots {
-    gap: .6rem;
-    display: grid;
-    grid-auto-flow: column;
-    width: fit-content;
-    margin: 0 auto 1rem;
+.separator {
+  color: rgba(17, 24, 39, 0.45);
+  font-weight: 500;
 }
 
-.span_dot {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    border: 2px solid rgba(0, 0, 0, .15);
-    background: #fff;
-
-    &.filled {
-        background: #111827;
-        border-color: #111827;
-    }
+.codigo-panel {
+  background: #f9fafb;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  padding: 2.25rem 1rem;
+  display: grid;
+  justify-items: center;
 }
 
-.qr-wrap {
-    display: grid;
-    place-items: center;
+.codigo-display {
+  display: flex;
+  gap: 0.85rem;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.codigo-digit {
+  width: 3.25rem;
+  height: 3.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 2px solid rgba(15, 23, 42, 0.12);
+  background: #ffffff;
+  font-weight: 600;
+  font-size: 2.1rem;
+  letter-spacing: 0.08em;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+}
+
+.estado {
+  min-height: 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.estado-msg {
+  font-size: 0.95rem;
+}
+
+.status-note {
+  font-size: 0.9rem;
 }

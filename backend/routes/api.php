@@ -32,6 +32,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // DEV-ONLY (sin auth): generar/regenerar código temporal para pruebas locales
 Route::post('/dev/reservas/{reserva}/codigo-temporal', [ReservaController::class, 'devGenerarCodigoTemporal']);
+Route::post('/totem/codigo-temporal/verificar', [ReservaController::class, 'totemVerificarCodigo']);
 
 Route::apiResources([
     'usuarios'          => UsuarioController::class,

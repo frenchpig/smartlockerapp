@@ -1,0 +1,50 @@
+<main class="totem-layout">
+  <div class="panel shadow-lg">
+    <header class="text-center mb-4">
+      <h1 class="titulo mb-2">Smart Lockers</h1>
+      <p class="subtitulo text-muted mb-0">Ingresa el código temporal mostrado al cliente.</p>
+    </header>
+
+    <div class="display mb-4" aria-label="Código ingresado">
+      <span class="display-slot" *ngFor="let i of [0,1,2,3,4,5]" [class.filled]="(clave.value.length) > i">
+        {{ clave.value[i] || '•' }}
+      </span>
+    </div>
+
+    <div class="row g-3 keypad">
+      <div class="col-4"><button type="button" class="btn btn-light btn-lg w-100 py-3" (click)="press('1')">1</button></div>
+      <div class="col-4"><button type="button" class="btn btn-light btn-lg w-100 py-3" (click)="press('2')">2</button></div>
+      <div class="col-4"><button type="button" class="btn btn-light btn-lg w-100 py-3" (click)="press('3')">3</button></div>
+
+      <div class="col-4"><button type="button" class="btn btn-light btn-lg w-100 py-3" (click)="press('4')">4</button></div>
+      <div class="col-4"><button type="button" class="btn btn-light btn-lg w-100 py-3" (click)="press('5')">5</button></div>
+      <div class="col-4"><button type="button" class="btn btn-light btn-lg w-100 py-3" (click)="press('6')">6</button></div>
+
+      <div class="col-4"><button type="button" class="btn btn-light btn-lg w-100 py-3" (click)="press('7')">7</button></div>
+      <div class="col-4"><button type="button" class="btn btn-light btn-lg w-100 py-3" (click)="press('8')">8</button></div>
+      <div class="col-4"><button type="button" class="btn btn-light btn-lg w-100 py-3" (click)="press('9')">9</button></div>
+
+      <div class="col-4"><button type="button" class="btn btn-outline-light btn-lg w-100 py-3" (click)="limpiar()" [disabled]="enviando">Limpiar</button></div>
+      <div class="col-4"><button type="button" class="btn btn-light btn-lg w-100 py-3" (click)="press('0')">0</button></div>
+      <div class="col-4"><button type="button" class="btn btn-outline-light btn-lg w-100 py-3" (click)="borrar()" [disabled]="enviando">Borrar</button></div>
+    </div>
+
+    <div class="acciones d-grid gap-3 mt-4">
+      <button type="button" class="btn btn-success btn-lg" [disabled]="!lleno || enviando" (click)="enviar()">
+        Validar código
+      </button>
+    </div>
+
+    <div *ngIf="errorMsg" class="alert alert-danger mt-4" role="alert">
+      {{ errorMsg }}
+    </div>
+
+    <div *ngIf="exito" class="alert alert-success mt-4" role="status">
+      <h2 class="h5 mb-1">Código correcto</h2>
+      <p class="mb-0">
+        Reserva #{{ exito.reserva_id }} • Locker {{ exito.locker?.numero ?? 'N/D' }}
+        <span *ngIf="exito.locker?.ubicacion">en {{ exito.locker?.ubicacion }}</span>
+      </p>
+    </div>
+  </div>
+</main>

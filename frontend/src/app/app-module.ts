@@ -25,7 +25,6 @@ import { PedidoQr } from './features/cliente/pedido-qr/pedido-qr';
   providers: [
     provideHttpClient(withInterceptors([authInterceptor])),
     provideBrowserGlobalErrorListeners(),
-    provideHttpClient(),
   ],
 
   bootstrap: [App]
