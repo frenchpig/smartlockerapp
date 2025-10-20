@@ -13,7 +13,7 @@ import { PedidoQr } from './features/cliente/pedido-qr/pedido-qr';
 import { HomeEmpresa } from './features/empresa/home-empresa/home-empresa'
 import { Lockers } from './features/empresa/lockers/lockers'
 import { Pedidos } from './features/empresa/pedidos/pedidos'
-
+import { EmpresaPedidoDetalle } from './features/empresa/pedidoDetalle/pedido-detalle'
 
 
 const routes: Routes = [
@@ -38,6 +38,7 @@ const routes: Routes = [
     children: [
       { path: '', component: HomeEmpresa },
       { path: 'pedidos', component: Pedidos },
+      { path: 'pedidos/:id', component: EmpresaPedidoDetalle },
       { path: 'lockers', component: Lockers },
     ],
   },
