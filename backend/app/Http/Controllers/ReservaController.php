@@ -19,6 +19,26 @@ class ReservaController extends Controller
         $items = Reserva::with(['locker'])
             ->where('usuario_id', $user->id)
             ->orderByDesc('created_at')
+            ->limit(5)
+            ->get();
+
+        return response()->json($items);
+    }
+
+    /**
+     * Devuelve las ultimas reservas asociadas a la empresa autenticada
+     */
+    public function companyLatest(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user || $user->rol !== 'empresa') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $items = Reserva::with(['usuario', 'locker'])
+            ->where('empresa_id', $user->id)
+            ->orderByDesc('created_at')
             ->limit(10)
             ->get();
 
@@ -39,6 +59,7 @@ class ReservaController extends Controller
     {
         $data = $request->validate([
             'usuario_id'   => ['required','integer','exists:usuarios,id'],
+            'empresa_id'   => ['nullable','integer','exists:usuarios,id'],
             'locker_id'    => ['required','integer','exists:lockers,id'],
             'fecha_reserva'=> ['required','date'],
             'hora_inicio'  => ['required','date_format:H:i'],
@@ -57,6 +78,7 @@ class ReservaController extends Controller
     {
         $data = $request->validate([
             'usuario_id'   => ['sometimes','integer','exists:usuarios,id'],
+            'empresa_id'   => ['sometimes','nullable','integer','exists:usuarios,id'],
             'locker_id'    => ['sometimes','integer','exists:lockers,id'],
             'fecha_reserva'=> ['sometimes','date'],
             'hora_inicio'  => ['sometimes','date_format:H:i'],

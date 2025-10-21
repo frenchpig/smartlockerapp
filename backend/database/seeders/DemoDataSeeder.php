@@ -6,7 +6,6 @@ use Illuminate\Database\Seeder;
 use App\Models\Usuario;
 use App\Models\Locker;
 use App\Models\Reserva;
-use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 class DemoDataSeeder extends Seeder
@@ -16,7 +15,7 @@ class DemoDataSeeder extends Seeder
         // Usuarios
         $u1 = Usuario::create([
             'nombre' => 'Ema',
-            'apellido' => 'García',
+            'apellido' => 'Garcia',
             'email' => 'ema@example.com',
             'contrasena' => '123456', // se encripta por mutator SHA-256
             'telefono' => '56911111111',
@@ -25,17 +24,35 @@ class DemoDataSeeder extends Seeder
 
         $u2 = Usuario::create([
             'nombre' => 'Juan',
-            'apellido' => 'Pérez',
+            'apellido' => 'Perez',
             'email' => 'juan@example.com',
             'contrasena' => '123456',
             'telefono' => '56922222222',
             'rol' => 'usuario',
         ]);
 
-        // Lockers (dos ubicaciones con números repetibles)
+        $empresa1 = Usuario::create([
+            'nombre' => 'Locker',
+            'apellido' => 'Solutions',
+            'email' => 'empresa@example.com',
+            'contrasena' => '123456',
+            'telefono' => '56923334444',
+            'rol' => 'empresa',
+        ]);
+
+        $empresa2 = Usuario::create([
+            'nombre' => 'Smart',
+            'apellido' => 'Logistics',
+            'email' => 'empresa2@example.com',
+            'contrasena' => '123456',
+            'telefono' => '56925556666',
+            'rol' => 'empresa',
+        ]);
+
+        // Lockers (dos ubicaciones con numeros repetibles)
         $l1 = Locker::create([
             'numero' => 1,
-            'ubicacion' => 'Metro Ñuñoa',
+            'ubicacion' => 'Metro Nunoa',
             'latitud' => -33.456,
             'longitud' => -70.648,
             'estado' => 'activo',
@@ -44,7 +61,7 @@ class DemoDataSeeder extends Seeder
 
         $l2 = Locker::create([
             'numero' => 2,
-            'ubicacion' => 'Metro Ñuñoa',
+            'ubicacion' => 'Metro Nunoa',
             'latitud' => -33.4561,
             'longitud' => -70.6482,
             'estado' => 'activo',
@@ -53,7 +70,7 @@ class DemoDataSeeder extends Seeder
 
         $l3 = Locker::create([
             'numero' => 1,
-            'ubicacion' => 'Metro Ñuble',
+            'ubicacion' => 'Metro Nuble',
             'latitud' => -33.476,
             'longitud' => -70.628,
             'estado' => 'activo',
@@ -62,51 +79,45 @@ class DemoDataSeeder extends Seeder
 
         $now = Carbon::now();
 
-        // Reservas para usuario 1
-        Reserva::create([
-            'usuario_id' => $u1->id,
-            'locker_id' => $l1->id,
-            'fecha_reserva' => $now->copy()->subDays(1),
-            'hora_inicio' => $now->copy()->subDays(1)->addHour(),
-            'hora_fin' => null,
-            'estado' => 'pendiente',
-            'tipo_acceso' => 'codigo_temporal',
-            'codigo_acceso' => null, // se generará bajo demanda
-        ]);
+        $usuariosEmpresas = [
+            ['usuario' => $u1, 'empresa' => $empresa1],
+            ['usuario' => $u2, 'empresa' => $empresa2],
+        ];
 
-        Reserva::create([
-            'usuario_id' => $u1->id,
-            'locker_id' => $l2->id,
-            'fecha_reserva' => $now->copy()->subDays(2),
-            'hora_inicio' => $now->copy()->subDays(2)->addHour(),
-            'hora_fin' => $now->copy()->subDays(2)->addHours(2),
-            'estado' => 'completado',
-            'tipo_acceso' => 'qr',
-            'codigo_acceso' => null,
-        ]);
+        $lockers = [$l1, $l2, $l3];
+        $estadoSecuencia = ['pendiente', 'completado', 'anulado'];
 
-        // Reservas para usuario 2
-        Reserva::create([
-            'usuario_id' => $u2->id,
-            'locker_id' => $l3->id,
-            'fecha_reserva' => $now->copy()->subHours(6),
-            'hora_inicio' => $now->copy()->subHours(5),
-            'hora_fin' => null,
-            'estado' => 'pendiente',
-            'tipo_acceso' => 'codigo_temporal',
-            'codigo_acceso' => null,
-        ]);
+        foreach ($usuariosEmpresas as $pair) {
+            $usuario = $pair['usuario'];
+            $empresa = $pair['empresa'];
 
-        Reserva::create([
-            'usuario_id' => $u2->id,
-            'locker_id' => $l1->id,
-            'fecha_reserva' => $now->copy()->subDays(3),
-            'hora_inicio' => $now->copy()->subDays(3)->addHour(),
-            'hora_fin' => $now->copy()->subDays(3)->addHours(2),
-            'estado' => 'anulado',
-            'tipo_acceso' => 'codigo_temporal',
-            'codigo_acceso' => null,
-        ]);
+            for ($i = 0; $i < 15; $i++) {
+                $fechaReserva = $now->copy()->subDays(($usuario->id % 2) + $i + 1);
+                $horaInicio = $fechaReserva->copy()->addHours(1);
+
+                $estado = $estadoSecuencia[$i % count($estadoSecuencia)];
+
+                $horaFin = null;
+                if ($estado === 'completado') {
+                    $horaFin = $horaInicio->copy()->addHours(1);
+                } elseif ($estado === 'anulado') {
+                    $horaFin = $horaInicio->copy()->addMinutes(45);
+                }
+
+                $locker = $lockers[$i % count($lockers)];
+
+                Reserva::create([
+                    'usuario_id' => $usuario->id,
+                    'empresa_id' => $empresa->id,
+                    'locker_id' => $locker->id,
+                    'fecha_reserva' => $fechaReserva,
+                    'hora_inicio' => $horaInicio,
+                    'hora_fin' => $horaFin,
+                    'estado' => $estado,
+                    'tipo_acceso' => $i % 2 === 0 ? 'codigo_temporal' : 'qr',
+                    'codigo_acceso' => null,
+                ]);
+            }
+        }
     }
 }
-

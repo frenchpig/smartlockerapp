@@ -1,38 +1,129 @@
-import { Component, OnInit } from '@angular/core';
-// import { CommonModule, DatePipe } from '@angular/common';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
+import { Router, RouterModule } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 
-import { RouterModule } from '@angular/router';
+import { AuthService } from '../../../core/auth/auth';
+import { environment } from '../../../../environments/environment';
+
+type EstadoReserva = 'pendiente' | 'completado' | 'anulado' | string;
+
+type Kpi = { label: string; value: number; hint: string };
+
+type PedidoEmpresa = {
+  id: number;
+  locker: string;
+  ubicacion: string;
+  estado: EstadoReserva;
+  estadoLabel: string;
+  badgeClass: string;
+  destinatario: string;
+  fechaIso: string;
+};
 
 @Component({
   standalone: true,
   selector: 'app-home-empresa',
-  // imports: [CommonModule, RouterModule, DatePipe],
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, DatePipe],
   templateUrl: './home-empresa.html',
   styleUrls: ['./home-empresa.scss']
 })
 export class HomeEmpresa implements OnInit {
-  kpis: { label: string; value: string | number; hint: string }[] = [];
-  recientes: { id: number; locker: string; estado: string; destinatario: string; fecha: string }[] = [];
+  kpis: Kpi[] = [];
+  pedidos: PedidoEmpresa[] = [];
+  loading = false;
 
-  ngOnInit(): void {
-    this.cargarDashboard();
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
+
+  private readonly badgeClassByEstado: Record<string, string> = {
+    pendiente: 'bg-warning-subtle text-warning-emphasis',
+    completado: 'bg-success-subtle text-success-emphasis',
+    anulado: 'bg-secondary-subtle text-secondary-emphasis',
+  };
+
+  user = this.auth.user;
+
+  async ngOnInit(): Promise<void> {
+    await this.auth.fetchMe().catch(() => undefined);
+    await this.cargarPedidos();
   }
 
-  private cargarDashboard() {
-    // AQUI LA APIII
-    // Simulación de datos
-    this.kpis = [
-      { label: 'Pedidos de hoy', value: 36, hint: '+12% vs ayer' },
-      { label: 'Lockers activos', value: 18, hint: 'de 24 totales' },
-      { label: 'Ocupación', value: '74%', hint: 'últimas 24h' }
-    ];
+  async onLogout() {
+    try {
+      await this.auth.logout();
+    } finally {
+      this.router.navigate(['/login']);
+    }
+  }
 
-    this.recientes = [
-      { id: 18655, locker: '#02', estado: 'Pendiente', destinatario: 'Ana Ruiz', fecha: '2025-10-12T09:10:00Z' },
-      { id: 18654, locker: '#12', estado: 'En camino', destinatario: 'Juan P.', fecha: '2025-10-12T08:40:00Z' },
-      { id: 18630, locker: '#07', estado: 'Entregado', destinatario: 'María L.', fecha: '2025-10-12T07:15:00Z' }
+  private async cargarPedidos() {
+    this.loading = true;
+    try {
+      const res = await this.http
+        .get<any[]>(`${environment.apiUrl}/reservas/empresa/mis-ultimas`)
+        .toPromise();
+
+      const pedidos = (res ?? []).map((item) => this.mapPedido(item));
+      this.pedidos = pedidos;
+      this.kpis = this.buildKpis(pedidos);
+    } catch (error) {
+      console.error('Error cargando pedidos empresa', error);
+      this.pedidos = [];
+      this.kpis = this.buildKpis([]);
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  private mapPedido(data: any): PedidoEmpresa {
+    const estado = String(data?.estado ?? 'pendiente').toLowerCase();
+    const lockerNumero = data?.locker?.numero ?? data?.locker?.id ?? data?.locker_id ?? '';
+    const locker = lockerNumero ? `#${lockerNumero}` : 'N/D';
+
+    const ubicacion = data?.locker?.ubicacion ?? data?.locker_ubicacion ?? 'Sin ubicacion';
+
+    const usuario = data?.usuario;
+    const nombres = [usuario?.nombre, usuario?.apellido].filter(Boolean).join(' ').trim();
+    const destinatario = nombres || usuario?.email || 'Sin destinatario';
+
+    const fechaIso = data?.fecha_reserva ?? data?.created_at ?? new Date().toISOString();
+
+    return {
+      id: data?.id ?? 0,
+      locker,
+      ubicacion,
+      estado,
+      estadoLabel: this.mapEstadoLabel(estado),
+      badgeClass: this.badgeClassByEstado[estado] ?? 'bg-secondary-subtle text-secondary-emphasis',
+      destinatario,
+      fechaIso,
+    };
+  }
+
+  private mapEstadoLabel(estado: string): string {
+    switch (estado) {
+      case 'pendiente':
+        return 'Pendiente';
+      case 'completado':
+        return 'Completado';
+      case 'anulado':
+        return 'Anulado';
+      default:
+        return estado ? estado.charAt(0).toUpperCase() + estado.slice(1) : 'Pendiente';
+    }
+  }
+
+  private buildKpis(pedidos: PedidoEmpresa[]): Kpi[] {
+    const total = pedidos.length;
+    const pendientes = pedidos.filter((p) => p.estado === 'pendiente').length;
+    const completados = pedidos.filter((p) => p.estado === 'completado').length;
+
+    return [
+      { label: 'Pedidos recientes', value: total, hint: 'Ultimos registros asociados a tu empresa' },
+      { label: 'Pendientes', value: pendientes, hint: 'En proceso de retiro o entrega' },
+      { label: 'Completados', value: completados, hint: 'Entregas realizadas recientemente' },
     ];
   }
 }

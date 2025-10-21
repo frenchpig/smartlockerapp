@@ -81,14 +81,16 @@ user = this.auth.user;
         .get<any[]>(`${environment.apiUrl}/reservas/mis-ultimas`)
         .toPromise();
 
-      this.pedidos = (res || []).map(r => ({
-        id: r.id,
-        estado: this.mapEstado(r.estado),
-        locker: `#${r.locker?.numero ?? r.locker?.id ?? r.locker_id ?? ''}`,
-        sede: r.locker?.ubicacion ?? '—',
-        creadoEl: r.created_at ?? r.fecha_reserva ?? new Date().toISOString(),
-        tipoAcceso: r.tipo_acceso,
-      }));
+      this.pedidos = (res || [])
+        .filter(r => r.estado === 'pendiente')
+        .map(r => ({
+          id: r.id,
+          estado: this.mapEstado(r.estado),
+          locker: `#${r.locker?.numero ?? r.locker?.id ?? r.locker_id ?? ''}`,
+          sede: r.locker?.ubicacion ?? 'N/D',
+          creadoEl: r.created_at ?? r.fecha_reserva ?? new Date().toISOString(),
+          tipoAcceso: r.tipo_acceso,
+        }));
     } catch (err) {
       console.error('Error cargando pedidos', err);
     } finally {

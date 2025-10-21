@@ -20,17 +20,18 @@ Route::prefix('auth')->group(function () {
 
 // Rutas protegidas adicionales
 Route::middleware('auth:sanctum')->group(function () {
-    // Últimas 10 reservas del usuario autenticado
+    // Ultimas 10 reservas del usuario autenticado
     Route::get('/reservas/mis-ultimas', [ReservaController::class, 'myLatest']);
-    // Generar código temporal de 6 dígitos para una reserva
+    Route::get('/reservas/empresa/mis-ultimas', [ReservaController::class, 'companyLatest']);
+    // Generar codigo temporal de 6 digitos para una reserva
     Route::post('/reservas/{reserva}/codigo-temporal', [ReservaController::class, 'generarCodigoTemporal']);
-    // Estado de código temporal
+    // Estado de codigo temporal
     Route::get('/reservas/{reserva}/codigo-temporal/estado', [ReservaController::class, 'estadoCodigoTemporal']);
-    // Verificar código temporal y completar reserva
+    // Verificar codigo temporal y completar reserva
     Route::post('/reservas/{reserva}/codigo-temporal/verificar', [ReservaController::class, 'verificarCodigoTemporal']);
 });
 
-// DEV-ONLY (sin auth): generar/regenerar código temporal para pruebas locales
+// DEV-ONLY (sin auth): generar/regenerar codigo temporal para pruebas locales
 Route::post('/dev/reservas/{reserva}/codigo-temporal', [ReservaController::class, 'devGenerarCodigoTemporal']);
 Route::post('/totem/codigo-temporal/verificar', [ReservaController::class, 'totemVerificarCodigo']);
 

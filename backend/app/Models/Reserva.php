@@ -16,6 +16,7 @@ class Reserva extends Model
 
     protected $fillable = [
         'usuario_id',
+        'empresa_id',
         'locker_id',
         'fecha_reserva',
         'hora_inicio',
@@ -37,6 +38,11 @@ class Reserva extends Model
     public function usuario()
     {
         return $this->belongsTo(Usuario::class, 'usuario_id');
+    }
+
+    public function empresa()
+    {
+        return $this->belongsTo(Usuario::class, 'empresa_id');
     }
 
     public function locker()

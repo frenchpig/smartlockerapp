@@ -28,15 +28,20 @@ const routes: Routes = [
   {
     path: 'cliente',
     canActivate: [authGuard],
+    canActivateChild: [authGuard],
+    data: { roles: ['usuario'] },
     children: [
       { path: '', component: Home },
       { path: 'pedido/:id/clave', component: PedidoClave },
       { path: 'pedido/:id/qr', component: PedidoQr },
-    ]
+    ],
   },
 
-    {
+  {
     path: 'empresa',
+    canActivate: [authGuard],
+    canActivateChild: [authGuard],
+    data: { roles: ['empresa'] },
     children: [
       { path: '', component: HomeEmpresa },
       { path: 'pedidos', component: Pedidos },

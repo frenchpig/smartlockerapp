@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -83,8 +83,8 @@
                             <time [attr.datetime]="p.creadoEl">{{ p.creadoEl | date:'medium' }}</time>
                         </p>
                         <footer class="d-flex flex-wrap gap-2 justify-content-end">
-                            <button class="btn btn-primary" (click)="abrirConClave(p.id)" *ngIf="p.tipoAcceso === 'codigo_temporal' && p.estado === 'Activo'">
-                                Ver código
+                            <button class="btn btn-primary" (click)="abrirConClave(p.id)" *ngIf="p.estado === 'Activo'">
+                                Ver codigo
                             </button>
                         </footer>
 
@@ -102,3 +102,4 @@
 </body>
 
 </html>
+
