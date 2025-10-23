@@ -12,6 +12,7 @@ class Reserva extends Model
     protected $table = 'reservas';
 
     public const ESTADOS = ['pendiente', 'completado', 'anulado'];
+    public const LOGISTICA_ESTADOS = ['pendiente_repartidor', 'asignado', 'en_camino', 'completado'];
     public const TIPOS_ACCESO = ['qr', 'codigo_temporal'];
 
     protected $fillable = [
@@ -24,6 +25,8 @@ class Reserva extends Model
         'estado',
         'tipo_acceso',
         'codigo_acceso',
+        'repartidor_id',
+        'logistica_estado',
     ];
 
     protected $casts = [
@@ -36,6 +39,7 @@ class Reserva extends Model
 
     protected $with = [
         'locker.ubicacion',
+        'repartidor.usuario',
     ];
 
     // Relaciones
@@ -52,5 +56,10 @@ class Reserva extends Model
     public function locker()
     {
         return $this->belongsTo(Locker::class, 'locker_id');
+    }
+
+    public function repartidor()
+    {
+        return $this->belongsTo(Repartidor::class, 'repartidor_id');
     }
 }

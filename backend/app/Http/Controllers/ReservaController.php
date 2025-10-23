@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Reserva;
+use App\Models\Repartidor;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class ReservaController extends Controller
 {
@@ -56,7 +58,7 @@ class ReservaController extends Controller
         $perPage = (int) $request->query('per_page', 5);
         $perPage = max(1, min(50, $perPage));
 
-        $query = Reserva::with(['usuario', 'locker.ubicacion'])
+        $query = Reserva::with(['usuario', 'locker.ubicacion', 'repartidor.usuario'])
             ->where('empresa_id', $user->id)
             ->orderByDesc('created_at');
 
@@ -68,6 +70,10 @@ class ReservaController extends Controller
             $query->whereHas('locker.ubicacion', function ($ubicacionQuery) use ($ubicacion) {
                 $ubicacionQuery->where('nombre', 'like', "%{$ubicacion}%");
             });
+        }
+
+        if ($logistica = trim((string) $request->query('logistica_estado', ''))) {
+            $query->where('logistica_estado', $logistica);
         }
 
         if ($email = trim((string) $request->query('email', ''))) {
@@ -84,12 +90,89 @@ class ReservaController extends Controller
 
     public function index()
     {
-        return Reserva::with(['usuario','locker.ubicacion'])->paginate(20);
+        return Reserva::with(['usuario','locker.ubicacion','repartidor.usuario'])->paginate(20);
+    }
+
+    public function createForCompany(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user || $user->rol !== 'empresa') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $data = $request->validate([
+            'usuario_id'   => ['required', 'integer', 'exists:usuarios,id'],
+            'locker_id'    => ['required', 'integer', 'exists:lockers,id'],
+            'fecha_reserva'=> ['required', 'date'],
+            'hora_inicio'  => ['required', 'date_format:H:i'],
+            'hora_fin'     => ['nullable', 'date_format:H:i', 'after:hora_inicio'],
+            'tipo_acceso'  => ['nullable', Rule::in(['qr','codigo_temporal'])],
+        ]);
+
+        $payload = array_merge($data, [
+            'empresa_id' => $user->id,
+            'estado' => 'pendiente',
+            'logistica_estado' => 'pendiente_repartidor',
+            'tipo_acceso' => $data['tipo_acceso'] ?? 'codigo_temporal',
+            'codigo_acceso' => null,
+        ]);
+
+        $reserva = DB::transaction(function () use ($payload) {
+            $reserva = Reserva::create($payload);
+            $this->asignarRepartidorDisponible($reserva);
+            return $reserva->load(['usuario','locker.ubicacion','repartidor.usuario']);
+        });
+
+        return response()->json($reserva, 201);
+    }
+
+    public function repartidorAssignments(Request $request)
+    {
+        $user = $request->user();
+        if (!$user || $user->rol !== 'repartidor') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $repartidor = Repartidor::with('usuario')->where('usuario_id', $user->id)->first();
+        if (!$repartidor) {
+            return response()->json(['message' => 'Repartidor no registrado'], 404);
+        }
+
+        $perPage = (int) $request->query('per_page', 5);
+        $perPage = max(1, min(50, $perPage));
+
+        $query = Reserva::with(['usuario','locker.ubicacion','repartidor.usuario'])
+            ->where('repartidor_id', $repartidor->id)
+            ->orderByDesc('created_at');
+
+        if ($estado = $request->query('estado')) {
+            $query->where('estado', $estado);
+        }
+
+        if ($logistica = $request->query('logistica_estado')) {
+            $query->where('logistica_estado', $logistica);
+        } else {
+            $query->whereIn('logistica_estado', ['pendiente_repartidor','asignado','en_camino']);
+        }
+
+        $items = $query->paginate($perPage);
+
+        return response()->json([
+            'repartidor' => $repartidor,
+            'reservas' => $items->items(),
+            'pagination' => [
+                'current_page' => $items->currentPage(),
+                'last_page' => $items->lastPage(),
+                'per_page' => $items->perPage(),
+                'total' => $items->total(),
+            ],
+        ]);
     }
 
     public function show(Reserva $reserva)
     {
-        return $reserva->load(['usuario','locker.ubicacion']);
+        return $reserva->load(['usuario','locker.ubicacion','repartidor.usuario']);
     }
 
     public function store(Request $request)
@@ -104,11 +187,19 @@ class ReservaController extends Controller
             'estado'       => ['required', Rule::in(['pendiente','completado','anulado'])],
             'tipo_acceso'  => ['required', Rule::in(['qr','codigo_temporal'])],
             'codigo_acceso'=> ['nullable','string','max:120'],
+            'logistica_estado' => ['sometimes','string','max:40'],
+            'repartidor_id' => ['sometimes','nullable','integer','exists:repartidores,id'],
         ]);
+
+        $data['logistica_estado'] = $data['logistica_estado'] ?? 'pendiente_repartidor';
 
         $reserva = Reserva::create($data);
 
-        return response()->json($reserva->load(['usuario','locker']), 201);
+        if (empty($data['repartidor_id'])) {
+            $this->asignarRepartidorDisponible($reserva);
+        }
+
+        return response()->json($reserva->load(['usuario','locker.ubicacion','repartidor.usuario']), 201);
     }
 
     public function update(Request $request, Reserva $reserva)
@@ -127,11 +218,74 @@ class ReservaController extends Controller
 
         $reserva->update($data);
 
-        return $reserva->load(['usuario','locker']);
+        return $reserva->load(['usuario','locker.ubicacion','repartidor.usuario']);
+    }
+
+    public function marcarEnRuta(Request $request, Reserva $reserva)
+    {
+        $user = $request->user();
+        if (!$user || $user->rol !== 'repartidor') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $repartidor = Repartidor::where('usuario_id', $user->id)->first();
+        if (!$repartidor || $reserva->repartidor_id !== $repartidor->id) {
+            return response()->json(['message' => 'Acceso denegado a la reserva'], 403);
+        }
+
+        if ($reserva->estado !== 'pendiente') {
+            return response()->json(['message' => 'La reserva no puede actualizarse'], 422);
+        }
+
+        if (!in_array($reserva->logistica_estado, ['asignado', 'pendiente_repartidor'], true)) {
+            return response()->json(['message' => 'La reserva ya fue marcada en ruta o finalizada'], 422);
+        }
+
+        $reserva->logistica_estado = 'en_camino';
+        $reserva->save();
+
+        return response()->json($reserva->load(['usuario','locker.ubicacion','repartidor.usuario']));
+    }
+
+    public function marcarEntregado(Request $request, Reserva $reserva)
+    {
+        $user = $request->user();
+        if (!$user || $user->rol !== 'repartidor') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $repartidor = Repartidor::where('usuario_id', $user->id)->first();
+        if (!$repartidor || $reserva->repartidor_id !== $repartidor->id) {
+            return response()->json(['message' => 'Acceso denegado a la reserva'], 403);
+        }
+
+        if ($reserva->estado === 'completado') {
+            return response()->json(['message' => 'La reserva ya fue finalizada'], 422);
+        }
+
+        if (!in_array($reserva->logistica_estado, ['en_camino', 'asignado'], true)) {
+            return response()->json(['message' => 'La reserva no está en un estado válido para marcar como entregada'], 422);
+        }
+
+        $reserva = DB::transaction(function () use ($reserva) {
+            $reserva->logistica_estado = 'completado';
+            $reserva->save();
+
+            $this->liberarRepartidor($reserva);
+
+            return $reserva->load(['usuario','locker.ubicacion','repartidor.usuario']);
+        });
+
+        return response()->json([
+            'message' => 'Reserva marcada como entregada',
+            'reserva' => $reserva,
+        ]);
     }
 
     public function destroy(Reserva $reserva)
     {
+        $this->liberarRepartidor($reserva);
+
         $reserva->delete();
         return response()->noContent();
     }
@@ -229,7 +383,7 @@ class ReservaController extends Controller
 
         $hash = hash('sha256', $data['code']);
 
-        $reserva = Reserva::with(['locker.ubicacion'])
+        $reserva = Reserva::with(['locker.ubicacion','repartidor.usuario'])
             ->where('tipo_acceso', 'codigo_temporal')
             ->where('codigo_acceso', $hash)
             ->first();
@@ -253,6 +407,8 @@ class ReservaController extends Controller
                 'numero' => $reserva->locker->numero ?? null,
                 'ubicacion' => $reserva->locker->ubicacion?->nombre ?? null,
             ],
+            'repartidor' => $reserva->repartidor?->usuario?->only(['id','nombre','apellido','email']),
+            'logistica_estado' => $reserva->logistica_estado,
             'completado_en' => now()->toISOString(),
         ]);
     }
@@ -298,10 +454,38 @@ class ReservaController extends Controller
         $reserva->estado = 'completado';
         $reserva->hora_fin = now();
         $reserva->codigo_acceso = null;
+        $reserva->logistica_estado = 'completado';
         $reserva->save();
+
+        $this->liberarRepartidor($reserva);
 
         Cache::forget('reserva_code_'.$reserva->id);
 
-        return $reserva->load(['locker.ubicacion']);
+        return $reserva->load(['locker.ubicacion','repartidor.usuario']);
+    }
+
+    private function asignarRepartidorDisponible(Reserva $reserva): void
+    {
+        if ($reserva->repartidor_id) {
+            return;
+        }
+
+        $repartidor = Repartidor::where('disponible', true)->inRandomOrder()->first();
+        if (!$repartidor) {
+            return;
+        }
+
+        $reserva->repartidor()->associate($repartidor);
+        $reserva->logistica_estado = 'asignado';
+        $reserva->save();
+
+        $repartidor->update(['disponible' => false]);
+    }
+
+    private function liberarRepartidor(Reserva $reserva): void
+    {
+        if ($reserva->repartidor_id) {
+            Repartidor::where('id', $reserva->repartidor_id)->update(['disponible' => true]);
+        }
     }
 }

@@ -7,6 +7,7 @@ use App\Models\Usuario;
 use App\Models\Locker;
 use App\Models\Ubicacion;
 use App\Models\Reserva;
+use App\Models\Repartidor;
 use Carbon\Carbon;
 
 class DemoDataSeeder extends Seeder
@@ -49,6 +50,29 @@ class DemoDataSeeder extends Seeder
             'telefono' => '56925556666',
             'rol' => 'empresa',
         ]);
+
+        $repUser1 = Usuario::create([
+            'nombre' => 'Laura',
+            'apellido' => 'Campos',
+            'email' => 'repartidor1@example.com',
+            'contrasena' => '123456',
+            'telefono' => '56928889999',
+            'rol' => 'repartidor',
+        ]);
+
+        $repUser2 = Usuario::create([
+            'nombre' => 'Pedro',
+            'apellido' => 'Saez',
+            'email' => 'repartidor2@example.com',
+            'contrasena' => '123456',
+            'telefono' => '56927778888',
+            'rol' => 'repartidor',
+        ]);
+
+        $repartidores = [
+            Repartidor::create(['usuario_id' => $repUser1->id]),
+            Repartidor::create(['usuario_id' => $repUser2->id]),
+        ];
 
         $metroNunoa = Ubicacion::create([
             'nombre' => 'Metro Nunoa',
@@ -112,19 +136,28 @@ class DemoDataSeeder extends Seeder
                 }
 
                 $locker = $lockers[$i % count($lockers)];
+                $repartidor = $repartidores[$i % count($repartidores)];
 
                 Reserva::create([
                     'usuario_id' => $usuario->id,
                     'empresa_id' => $empresa->id,
                     'locker_id' => $locker->id,
+                    'repartidor_id' => $repartidor->id,
                     'fecha_reserva' => $fechaReserva,
                     'hora_inicio' => $horaInicio,
                     'hora_fin' => $horaFin,
                     'estado' => $estado,
+                    'logistica_estado' => $estado === 'completado' ? 'completado' : 'asignado',
                     'tipo_acceso' => $i % 2 === 0 ? 'codigo_temporal' : 'qr',
                     'codigo_acceso' => null,
                 ]);
+
+                if ($estado !== 'completado') {
+                    $repartidor->update(['disponible' => false]);
+                }
             }
         }
+
+        Repartidor::query()->update(['disponible' => true]);
     }
 }

@@ -11,6 +11,8 @@ import { Home } from './features/cliente/home/home';
 import { PedidoClave } from './features/cliente/pedido-clave/pedido-clave';
 import { PedidoQr } from './features/cliente/pedido-qr/pedido-qr';
 import { MisPedidos } from './features/cliente/mis-pedidos/mis-pedidos';
+import { RepartidorHome } from './features/repartidor/home/repartidor-home';
+import { ReservaNuevaComponent } from './features/empresa/reservas/reserva-nueva/reserva-nueva';
 
 @NgModule({
   declarations: [App, TestBackend,],
@@ -21,7 +23,9 @@ import { MisPedidos } from './features/cliente/mis-pedidos/mis-pedidos';
     Home,
     PedidoClave,
     PedidoQr,
-    MisPedidos
+    MisPedidos,
+    RepartidorHome,
+    ReservaNuevaComponent
   ],
 
   providers: [

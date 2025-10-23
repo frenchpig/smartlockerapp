@@ -5,10 +5,16 @@ import { AuthService } from '../../../core/auth/auth';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 
-type Estado = 'Activo' | 'Entregado' | 'Cancelado';
+type LogisticaEstado = 'pendiente_repartidor' | 'asignado' | 'en_camino' | 'completado';
+type EstadoVisual = 'Listo para recoger' | 'En camino' | 'Pendiente de repartidor' | 'Repartidor asignado' | 'Cancelado';
 interface Pedido {
   id: number;
-  estado: Estado;
+  estado: EstadoVisual;
+  estadoBadge: string;
+  logisticaEstado: LogisticaEstado;
+  logisticaLabel: string;
+  logisticaBadge: string;
+  canVerCodigo: boolean;
   locker: string;
   sede: string;
   latitud?: number | null;
@@ -65,6 +71,11 @@ user = this.auth.user;
   // }
 
   async abrirPedido(p: Pedido) {
+    if (!p.canVerCodigo) {
+      alert('Tu pedido aún no está listo para retirar. Espera a que el repartidor lo entregue.');
+      return;
+    }
+
     if (p.tipoAcceso === 'qr') {
       this.router.navigate(['/cliente/pedido', p.id, 'qr']);
       return;
@@ -76,15 +87,6 @@ user = this.auth.user;
 
   refrescar() { this.cargarPedidos(); }
 
-  private mapEstado(estadoApi: string): Estado {
-    switch (estadoApi) {
-      case 'pendiente': return 'Activo';
-      case 'completado': return 'Entregado';
-      case 'anulado': return 'Cancelado';
-      default: return 'Activo';
-    }
-  }
-
   private async cargarPedidos() {
     this.loading = true;
     try {
@@ -93,10 +95,10 @@ user = this.auth.user;
         .toPromise();
 
       this.pedidos = (res || [])
-        .filter(r => r.estado === 'pendiente')
+        .filter(r => r.estado !== 'anulado')
         .map(r => ({
           id: r.id,
-          estado: this.mapEstado(r.estado),
+          ...this.mapEstados(r.logistica_estado, r.estado),
           locker: `#${r.locker?.numero ?? r.locker?.id ?? r.locker_id ?? ''}`,
           sede: r.locker?.ubicacion?.nombre ?? 'N/D',
           latitud: r.locker?.ubicacion?.latitud ?? null,
@@ -116,6 +118,67 @@ user = this.auth.user;
       await this.auth.logout();
     } finally {
       this.router.navigate(['/login']);
+    }
+  }
+
+  private mapEstados(logisticaEstado: string | undefined, estadoApi: string | undefined) {
+    const logistica: LogisticaEstado = (logisticaEstado as LogisticaEstado) ?? 'pendiente_repartidor';
+    const estadoBack = estadoApi ?? 'pendiente';
+
+    if (estadoBack === 'anulado') {
+      return {
+        estado: 'Cancelado' as EstadoVisual,
+        estadoBadge: 'badge rounded-pill px-3 py-2 bg-danger-subtle text-danger-emphasis',
+        logisticaEstado: logistica,
+        logisticaLabel: 'Cancelado',
+        logisticaBadge: 'badge-logistica badge-logistica-pendiente',
+        canVerCodigo: false,
+      };
+    }
+
+    const logisticaMap = this.mapLogistica(logistica);
+    const canVerCodigo = logistica === 'completado';
+
+    return {
+      estado: logisticaMap.estadoLabel,
+      estadoBadge: logisticaMap.estadoBadge,
+      logisticaEstado: logistica,
+      logisticaLabel: logisticaMap.logisticaLabel,
+      logisticaBadge: logisticaMap.logisticaBadge,
+      canVerCodigo,
+    };
+  }
+
+  private mapLogistica(estado: LogisticaEstado) {
+    switch (estado) {
+      case 'completado':
+        return {
+          estadoLabel: 'Listo para recoger' as EstadoVisual,
+          estadoBadge: 'badge rounded-pill px-3 py-2 bg-success-subtle text-success-emphasis',
+          logisticaLabel: 'Entregado al locker',
+          logisticaBadge: 'badge-logistica badge-logistica-completado',
+        };
+      case 'en_camino':
+        return {
+          estadoLabel: 'En camino' as EstadoVisual,
+          estadoBadge: 'badge rounded-pill px-3 py-2 bg-warning-subtle text-warning-emphasis',
+          logisticaLabel: 'Repartidor en camino',
+          logisticaBadge: 'badge-logistica badge-logistica-en-camino',
+        };
+      case 'asignado':
+        return {
+          estadoLabel: 'Repartidor asignado' as EstadoVisual,
+          estadoBadge: 'badge rounded-pill px-3 py-2 bg-info-subtle text-info-emphasis',
+          logisticaLabel: 'Repartidor asignado',
+          logisticaBadge: 'badge-logistica badge-logistica-asignado',
+        };
+      default:
+        return {
+          estadoLabel: 'Pendiente de repartidor' as EstadoVisual,
+          estadoBadge: 'badge rounded-pill px-3 py-2 bg-secondary-subtle text-secondary-emphasis',
+          logisticaLabel: 'Pendiente de asignación',
+          logisticaBadge: 'badge-logistica badge-logistica-pendiente',
+        };
     }
   }
 }

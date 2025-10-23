@@ -23,6 +23,11 @@ type PedidoEmpresa = {
   destinatario: string;
   destinatarioEmail: string;
   fechaIso: string;
+  logisticaEstado: string;
+  logisticaLabel: string;
+  logisticaBadge: string;
+  repartidorNombre: string;
+  repartidorEmail: string;
 };
 
 interface PaginatedResponse<T> {
@@ -52,6 +57,7 @@ export class HomeEmpresa implements OnInit {
   filtroEstado = '';
   filtroUbicacion = '';
   filtroEmail = '';
+  filtroLogistica = '';
 
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
@@ -86,6 +92,7 @@ export class HomeEmpresa implements OnInit {
     this.filtroEstado = '';
     this.filtroUbicacion = '';
     this.filtroEmail = '';
+    this.filtroLogistica = '';
     void this.cargarPedidos(1);
   }
 
@@ -116,10 +123,12 @@ export class HomeEmpresa implements OnInit {
       const estado = this.filtroEstado?.trim();
       const ubicacion = this.filtroUbicacion?.trim();
       const email = this.filtroEmail?.trim();
+      const logistica = this.filtroLogistica?.trim();
 
       if (estado) params['estado'] = estado;
       if (ubicacion) params['ubicacion'] = ubicacion;
       if (email) params['email'] = email;
+      if (logistica) params['logistica_estado'] = logistica;
 
       const res = await this.http
         .get<PaginatedResponse<any>>(`${environment.apiUrl}/reservas/empresa/mis-ultimas`, { params })
@@ -163,6 +172,15 @@ export class HomeEmpresa implements OnInit {
     const destinatarioEmail = usuario?.email ?? 'sin-registro';
 
     const fechaIso = data?.fecha_reserva ?? data?.created_at ?? new Date().toISOString();
+    const logisticaEstado = String(data?.logistica_estado ?? 'pendiente_repartidor');
+    const { label: logisticaLabel, badgeClass: logisticaBadge } = this.mapLogisticaEstado(logisticaEstado);
+
+    const repartidorUsuario = data?.repartidor?.usuario;
+    const repartidorNombre = repartidorUsuario
+      ? [repartidorUsuario?.nombre, repartidorUsuario?.apellido].filter(Boolean).join(' ').trim()
+      : '';
+    const repartidorEmail = repartidorUsuario?.email ?? 'Sin asignar';
+    const repartidorNombreFinal = repartidorNombre || repartidorEmail || 'Sin asignar';
 
     return {
       id: data?.id ?? 0,
@@ -176,6 +194,11 @@ export class HomeEmpresa implements OnInit {
       destinatario,
       destinatarioEmail,
       fechaIso,
+      logisticaEstado,
+      logisticaLabel,
+      logisticaBadge,
+      repartidorNombre: repartidorNombreFinal,
+      repartidorEmail,
     };
   }
 
@@ -192,14 +215,31 @@ export class HomeEmpresa implements OnInit {
     }
   }
 
+  private mapLogisticaEstado(estado: string): { label: string; badgeClass: string } {
+    switch (estado) {
+      case 'asignado':
+        return { label: 'Asignado', badgeClass: 'badge-logistica badge-logistica-asignado' };
+      case 'en_camino':
+        return { label: 'En camino', badgeClass: 'badge-logistica badge-logistica-en-camino' };
+      case 'completado':
+        return { label: 'Completado', badgeClass: 'badge-logistica badge-logistica-completado' };
+      default:
+        return { label: 'Pendiente de repartidor', badgeClass: 'badge-logistica badge-logistica-pendiente' };
+    }
+  }
+
   private buildKpis(pedidos: PedidoEmpresa[]): Kpi[] {
     const total = this.total;
-    const pendientes = pedidos.filter((p) => p.estado === 'pendiente').length;
-    const completados = pedidos.filter((p) => p.estado === 'completado').length;
+    const sinRepartidor = pedidos.filter((p) => p.logisticaEstado === 'pendiente_repartidor').length;
+    const asignados = pedidos.filter((p) => p.logisticaEstado === 'asignado').length;
+    const enCamino = pedidos.filter((p) => p.logisticaEstado === 'en_camino').length;
+    const completados = pedidos.filter((p) => p.logisticaEstado === 'completado').length;
 
     return [
       { label: 'Pedidos recientes', value: total, hint: 'Ultimos registros asociados a tu empresa' },
-      { label: 'Pendientes', value: pendientes, hint: 'En proceso de retiro o entrega' },
+      { label: 'Sin repartidor', value: sinRepartidor, hint: 'Reservas esperando asignación' },
+      { label: 'Asignados', value: asignados, hint: 'Repartidores ya designados' },
+      { label: 'En camino', value: enCamino, hint: 'Pedidos en ruta hacia el locker' },
       { label: 'Completados', value: completados, hint: 'Entregas realizadas recientemente' },
     ];
   }

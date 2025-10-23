@@ -25,6 +25,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reservas/mis-ultimas', [ReservaController::class, 'myLatest']);
     Route::get('/reservas/mis-historicas', [ReservaController::class, 'myHistory']);
     Route::get('/reservas/empresa/mis-ultimas', [ReservaController::class, 'companyLatest']);
+    Route::post('/reservas/empresa/solicitudes', [ReservaController::class, 'createForCompany']);
+    Route::get('/reservas/repartidor/mis', [ReservaController::class, 'repartidorAssignments']);
+    Route::post('/reservas/{reserva}/en-ruta', [ReservaController::class, 'marcarEnRuta']);
+    Route::post('/reservas/{reserva}/entregar', [ReservaController::class, 'marcarEntregado']);
     // Generar codigo temporal de 6 digitos para una reserva
     Route::post('/reservas/{reserva}/codigo-temporal', [ReservaController::class, 'generarCodigoTemporal']);
     // Estado de codigo temporal

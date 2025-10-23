@@ -7,6 +7,7 @@ const fallbackRoutes: Record<string, string> = {
   usuario: 'cliente',
   administrador: 'dashboard',
   tecnico: 'dashboard',
+  repartidor: 'repartidor',
 };
 
 export const authGuard: CanActivateFn = async (route, state) => {

@@ -8,9 +8,18 @@ use Illuminate\Validation\Rule;
 
 class LockerController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return Locker::with('ubicacion')->paginate(20);
+        $perPage = (int) $request->query('per_page', 20);
+        $perPage = max(1, min(200, $perPage));
+
+        $query = Locker::with('ubicacion');
+
+        if ($ubicacionId = $request->query('ubicacion_id')) {
+            $query->where('ubicacion_id', $ubicacionId);
+        }
+
+        return $query->paginate($perPage);
     }
 
     public function show(Locker $locker)

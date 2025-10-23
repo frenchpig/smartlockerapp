@@ -5,10 +5,16 @@ import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../core/auth/auth';
 import { environment } from '../../../../environments/environment';
 
-type Estado = 'Activo' | 'Entregado' | 'Cancelado';
+type LogisticaEstado = 'pendiente_repartidor' | 'asignado' | 'en_camino' | 'completado';
+type EstadoVisual = 'Listo para recoger' | 'En camino' | 'Pendiente de repartidor' | 'Repartidor asignado' | 'Entregado' | 'Cancelado';
 interface Pedido {
   id: number;
-  estado: Estado;
+  estado: EstadoVisual;
+  estadoBadge: string;
+  logisticaEstado: LogisticaEstado;
+  logisticaLabel: string;
+  logisticaBadge: string;
+  canVerCodigo: boolean;
   locker: string;
   sede: string;
   latitud?: number | null;
@@ -54,6 +60,11 @@ export class MisPedidos implements OnInit {
   }
 
   async abrirPedido(p: Pedido) {
+    if (!p.canVerCodigo) {
+      alert('Este pedido no está disponible para obtener un código en este momento.');
+      return;
+    }
+
     if (p.tipoAcceso === 'qr') {
       this.router.navigate(['/cliente/pedido', p.id, 'qr']);
       return;
@@ -109,19 +120,6 @@ export class MisPedidos implements OnInit {
     }
   }
 
-  private mapEstado(estadoApi: string): Estado {
-    switch (estadoApi) {
-      case 'pendiente':
-        return 'Activo';
-      case 'completado':
-        return 'Entregado';
-      case 'anulado':
-        return 'Cancelado';
-      default:
-        return 'Activo';
-    }
-  }
-
   private async cargarPedidos(page = 1) {
     this.loading = true;
     try {
@@ -138,7 +136,7 @@ export class MisPedidos implements OnInit {
 
       this.pedidos = data.map((r) => ({
         id: r.id,
-        estado: this.mapEstado(r.estado),
+        ...this.mapEstados(r.logistica_estado, r.estado),
         locker: `#${r.locker?.numero ?? r.locker?.id ?? r.locker_id ?? ''}`,
         sede: r.locker?.ubicacion?.nombre ?? 'N/D',
         latitud: r.locker?.ubicacion?.latitud ?? null,
@@ -159,6 +157,76 @@ export class MisPedidos implements OnInit {
       this.lastPage = 1;
     } finally {
       this.loading = false;
+    }
+  }
+
+  private mapEstados(logisticaEstado: string | undefined, estadoApi: string | undefined) {
+    const estadoBack = estadoApi ?? 'pendiente';
+    const logistica: LogisticaEstado = (logisticaEstado as LogisticaEstado) ?? 'pendiente_repartidor';
+
+    if (estadoBack === 'anulado') {
+      return {
+        estado: 'Cancelado' as EstadoVisual,
+        estadoBadge: 'badge rounded-pill px-3 py-2 bg-danger-subtle text-danger-emphasis',
+        logisticaEstado: logistica,
+        logisticaLabel: 'Cancelado',
+        logisticaBadge: 'badge-logistica badge-logistica-pendiente',
+        canVerCodigo: false,
+      };
+    }
+
+    if (estadoBack === 'completado') {
+      return {
+        estado: 'Entregado' as EstadoVisual,
+        estadoBadge: 'badge rounded-pill px-3 py-2 bg-success-subtle text-success-emphasis',
+        logisticaEstado: 'completado' as LogisticaEstado,
+        logisticaLabel: 'Entregado al cliente',
+        logisticaBadge: 'badge-logistica badge-logistica-completado',
+        canVerCodigo: false,
+      };
+    }
+
+    const map = this.mapLogistica(logistica);
+    return {
+      estado: map.estadoLabel,
+      estadoBadge: map.estadoBadge,
+      logisticaEstado: logistica,
+      logisticaLabel: map.logisticaLabel,
+      logisticaBadge: map.logisticaBadge,
+      canVerCodigo: logistica === 'completado',
+    };
+  }
+
+  private mapLogistica(estado: LogisticaEstado) {
+    switch (estado) {
+      case 'completado':
+        return {
+          estadoLabel: 'Listo para recoger' as EstadoVisual,
+          estadoBadge: 'badge rounded-pill px-3 py-2 bg-success-subtle text-success-emphasis',
+          logisticaLabel: 'Entregado al locker',
+          logisticaBadge: 'badge-logistica badge-logistica-completado',
+        };
+      case 'en_camino':
+        return {
+          estadoLabel: 'En camino' as EstadoVisual,
+          estadoBadge: 'badge rounded-pill px-3 py-2 bg-warning-subtle text-warning-emphasis',
+          logisticaLabel: 'Repartidor en camino',
+          logisticaBadge: 'badge-logistica badge-logistica-en-camino',
+        };
+      case 'asignado':
+        return {
+          estadoLabel: 'Repartidor asignado' as EstadoVisual,
+          estadoBadge: 'badge rounded-pill px-3 py-2 bg-info-subtle text-info-emphasis',
+          logisticaLabel: 'Repartidor asignado',
+          logisticaBadge: 'badge-logistica badge-logistica-asignado',
+        };
+      default:
+        return {
+          estadoLabel: 'Pendiente de repartidor' as EstadoVisual,
+          estadoBadge: 'badge rounded-pill px-3 py-2 bg-secondary-subtle text-secondary-emphasis',
+          logisticaLabel: 'Pendiente de asignación',
+          logisticaBadge: 'badge-logistica badge-logistica-pendiente',
+        };
     }
   }
 }

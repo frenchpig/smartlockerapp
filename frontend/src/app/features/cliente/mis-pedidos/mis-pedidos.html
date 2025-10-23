@@ -71,10 +71,7 @@
                     <article class="card card-soft p-3" [attr.aria-label]="'Pedido ' + p.id">
                         <header class="mb-2 d-flex justify-content-between align-items-start flex-wrap gap-2">
                             <h3 class="h6 fw-bold m-0">Pedido #{{ p.id }}</h3>
-                            <span class="badge"
-                                [class.bg-success]="p.estado === 'Activo'"
-                                [class.bg-secondary]="p.estado === 'Entregado'"
-                                [class.bg-danger]="p.estado === 'Cancelado'">
+                            <span class="badge rounded-pill px-3 py-2" [ngClass]="p.estadoBadge">
                                 {{ p.estado }}
                             </span>
                         </header>
@@ -82,19 +79,23 @@
                         <p class="text-muted mb-3">
                             <span class="dot"
                                 [ngClass]="{
-                                    'ok': p.estado === 'Activo',
-                                    'warn': p.estado === 'Entregado',
-                                    'error': p.estado === 'Cancelado'
+                                    'ok': p.logisticaEstado === 'completado',
+                                    'warn': p.logisticaEstado === 'en_camino',
+                                    'error': p.estado === 'Cancelado',
+                                    'pending': p.logisticaEstado !== 'en_camino' && p.logisticaEstado !== 'completado' && p.estado !== 'Cancelado'
                                 }"></span>
                             <span class="ms-1">Locker <strong>{{ p.locker }}</strong></span> ·
                             <span>{{ p.sede }}</span> ·
                             <time [attr.datetime]="p.creadoEl">Creado {{ p.creadoEl | date:'medium' }}</time>
-                            <ng-container *ngIf="p.finalizadoEl && p.estado !== 'Activo'">
+                            <ng-container *ngIf="p.finalizadoEl && p.estado === 'Entregado'">
                                 · <time [attr.datetime]="p.finalizadoEl">
-                                    {{ p.estado === 'Entregado' ? 'Entregado' : 'Actualizado' }}
-                                    {{ p.finalizadoEl | date:'medium' }}
+                                    Entregado {{ p.finalizadoEl | date:'medium' }}
                                 </time>
                             </ng-container>
+                            <br>
+                            <span class="badge-logistica" [ngClass]="p.logisticaBadge">
+                                {{ p.logisticaLabel }}
+                            </span>
                         </p>
 
                         <div class="history-meta">
@@ -106,7 +107,9 @@
                         <footer class="d-flex flex-wrap gap-2 justify-content-end mt-3">
                             <button class="btn btn-primary"
                                 type="button"
-                                *ngIf="p.estado === 'Activo'"
+                                [class.disabled]="!p.canVerCodigo"
+                                [attr.aria-disabled]="!p.canVerCodigo"
+                                [disabled]="!p.canVerCodigo"
                                 (click)="abrirPedido(p)">
                                 {{ p.tipoAcceso === 'qr' ? 'Ver QR' : 'Ver codigo' }}
                             </button>

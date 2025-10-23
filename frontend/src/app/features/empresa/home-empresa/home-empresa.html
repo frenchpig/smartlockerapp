@@ -48,6 +48,9 @@
                         <small class="text-muted">Total: {{ total }} registros</small>
                     </div>
                     <div class="d-flex flex-wrap gap-2">
+                        <a class="btn btn-primary btn-sm" routerLink="/empresa/reservas/nueva">
+                            <i class="bi bi-plus-lg me-1"></i> Nueva reserva
+                        </a>
                         <button class="btn btn-outline-success btn-sm" type="button" (click)="refrescar()">Refrescar</button>
                         <a class="btn btn-success btn-sm" routerLink="/empresa/pedidos">Ver todos</a>
                     </div>
@@ -63,6 +66,16 @@
                                     <option value="pendiente">Pendiente</option>
                                     <option value="completado">Completado</option>
                                     <option value="anulado">Anulado</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label for="fLogistica" class="form-label text-muted mb-1">Logística</label>
+                                <select id="fLogistica" class="form-select" [(ngModel)]="filtroLogistica" name="logistica_estado">
+                                    <option value="">Todas</option>
+                                    <option value="pendiente_repartidor">Pendiente de repartidor</option>
+                                    <option value="asignado">Asignado</option>
+                                    <option value="en_camino">En camino</option>
+                                    <option value="completado">Completado</option>
                                 </select>
                             </div>
                             <div class="col-12 col-md-4">
@@ -95,6 +108,8 @@
                                 <th>Locker</th>
                                 <th>Ubicacion</th>
                                 <th>Estado</th>
+                                <th>Logística</th>
+                                <th>Repartidor</th>
                                 <th>Destinatario</th>
                                 <th>Correo</th>
                                 <th>Fecha</th>
@@ -110,6 +125,17 @@
                                     <span class="badge rounded-pill px-3 py-2" [ngClass]="pedido.badgeClass">
                                         {{ pedido.estadoLabel }}
                                     </span>
+                                </td>
+                                <td>
+                                    <span class="badge rounded-pill px-3 py-2" [ngClass]="pedido.logisticaBadge">
+                                        {{ pedido.logisticaLabel }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <strong class="d-block">{{ pedido.repartidorNombre }}</strong>
+                                    <small class="text-muted" *ngIf="pedido.repartidorEmail !== pedido.repartidorNombre">
+                                        {{ pedido.repartidorEmail }}
+                                    </small>
                                 </td>
                                 <td>{{ pedido.destinatario }}</td>
                                 <td>{{ pedido.destinatarioEmail }}</td>
