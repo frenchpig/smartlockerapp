@@ -6,7 +6,6 @@ use App\Models\Reserva;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Schema;
 
 class ReservaController extends Controller
 {
@@ -17,7 +16,7 @@ class ReservaController extends Controller
     {
         $user = $request->user();
 
-        $items = Reserva::with(['locker'])
+        $items = Reserva::with(['locker.ubicacion'])
             ->where('usuario_id', $user->id)
             ->where('estado', 'pendiente')
             ->orderByDesc('created_at')
@@ -35,7 +34,7 @@ class ReservaController extends Controller
         $perPage = (int) $request->query('per_page', 5);
         $perPage = max(1, min(50, $perPage));
 
-        $items = Reserva::with(['locker'])
+        $items = Reserva::with(['locker.ubicacion'])
             ->where('usuario_id', $user->id)
             ->orderByDesc('created_at')
             ->paginate($perPage);
@@ -57,7 +56,7 @@ class ReservaController extends Controller
         $perPage = (int) $request->query('per_page', 5);
         $perPage = max(1, min(50, $perPage));
 
-        $query = Reserva::with(['usuario', 'locker'])
+        $query = Reserva::with(['usuario', 'locker.ubicacion'])
             ->where('empresa_id', $user->id)
             ->orderByDesc('created_at');
 
@@ -66,8 +65,8 @@ class ReservaController extends Controller
         }
 
         if ($ubicacion = trim((string) $request->query('ubicacion', ''))) {
-            $query->whereHas('locker', function ($lockerQuery) use ($ubicacion) {
-                $lockerQuery->where('ubicacion', 'like', "%{$ubicacion}%");
+            $query->whereHas('locker.ubicacion', function ($ubicacionQuery) use ($ubicacion) {
+                $ubicacionQuery->where('nombre', 'like', "%{$ubicacion}%");
             });
         }
 
@@ -85,12 +84,12 @@ class ReservaController extends Controller
 
     public function index()
     {
-        return Reserva::with(['usuario','locker'])->paginate(20);
+        return Reserva::with(['usuario','locker.ubicacion'])->paginate(20);
     }
 
     public function show(Reserva $reserva)
     {
-        return $reserva->load(['usuario','locker']);
+        return $reserva->load(['usuario','locker.ubicacion']);
     }
 
     public function store(Request $request)
@@ -230,7 +229,7 @@ class ReservaController extends Controller
 
         $hash = hash('sha256', $data['code']);
 
-        $reserva = Reserva::with(['locker'])
+        $reserva = Reserva::with(['locker.ubicacion'])
             ->where('tipo_acceso', 'codigo_temporal')
             ->where('codigo_acceso', $hash)
             ->first();
@@ -252,7 +251,7 @@ class ReservaController extends Controller
             'locker' => [
                 'id' => $reserva->locker?->id,
                 'numero' => $reserva->locker->numero ?? null,
-                'ubicacion' => $reserva->locker->ubicacion ?? null,
+                'ubicacion' => $reserva->locker->ubicacion?->nombre ?? null,
             ],
             'completado_en' => now()->toISOString(),
         ]);
@@ -303,6 +302,6 @@ class ReservaController extends Controller
 
         Cache::forget('reserva_code_'.$reserva->id);
 
-        return $reserva->load(['locker']);
+        return $reserva->load(['locker.ubicacion']);
     }
 }

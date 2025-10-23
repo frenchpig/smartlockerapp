@@ -10,6 +10,8 @@ interface Pedido {
   estado: Estado;
   locker: string;
   sede: string;
+  latitud?: number | null;
+  longitud?: number | null;
   creadoEl: string;
 }
 
@@ -104,7 +106,9 @@ export class PedidoClave implements OnInit, OnDestroy {
           id: r.id,
           estado: this.mapEstado(r.estado),
           locker: `#${r.locker?.numero ?? r.locker?.id ?? r.locker_id ?? ''}`,
-          sede: r.locker?.ubicacion ?? '---',
+          sede: r.locker?.ubicacion?.nombre ?? '---',
+          latitud: r.locker?.ubicacion?.latitud ?? null,
+          longitud: r.locker?.ubicacion?.longitud ?? null,
           creadoEl: r.created_at ?? r.fecha_reserva ?? new Date().toISOString(),
         };
       }

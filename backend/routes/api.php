@@ -9,6 +9,7 @@ use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\MantenimientoController;
 use App\Http\Controllers\IncidenciaController;
 use App\Http\Controllers\HistorialEnvioController;
+use App\Http\Controllers\UbicacionController;
 
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
@@ -39,6 +40,7 @@ Route::post('/totem/codigo-temporal/verificar', [ReservaController::class, 'tote
 Route::apiResources([
     'usuarios'          => UsuarioController::class,
     'lockers'           => LockerController::class,
+    'ubicaciones'       => UbicacionController::class,
     'reservas'          => ReservaController::class,
     'notificaciones'    => NotificacionController::class,
     'mantenimientos'    => MantenimientoController::class,

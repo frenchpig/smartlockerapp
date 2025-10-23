@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Usuario;
 use App\Models\Locker;
+use App\Models\Ubicacion;
 use App\Models\Reserva;
 use Carbon\Carbon;
 
@@ -49,30 +50,36 @@ class DemoDataSeeder extends Seeder
             'rol' => 'empresa',
         ]);
 
+        $metroNunoa = Ubicacion::create([
+            'nombre' => 'Metro Nunoa',
+            'latitud' => -33.456,
+            'longitud' => -70.648,
+        ]);
+
+        $metroNuble = Ubicacion::create([
+            'nombre' => 'Metro Nuble',
+            'latitud' => -33.476,
+            'longitud' => -70.628,
+        ]);
+
         // Lockers (dos ubicaciones con numeros repetibles)
         $l1 = Locker::create([
             'numero' => 1,
-            'ubicacion' => 'Metro Nunoa',
-            'latitud' => -33.456,
-            'longitud' => -70.648,
+            'ubicacion_id' => $metroNunoa->id,
             'estado' => 'activo',
             'tamano' => 'M',
         ]);
 
         $l2 = Locker::create([
             'numero' => 2,
-            'ubicacion' => 'Metro Nunoa',
-            'latitud' => -33.4561,
-            'longitud' => -70.6482,
+            'ubicacion_id' => $metroNunoa->id,
             'estado' => 'activo',
             'tamano' => 'L',
         ]);
 
         $l3 = Locker::create([
             'numero' => 1,
-            'ubicacion' => 'Metro Nuble',
-            'latitud' => -33.476,
-            'longitud' => -70.628,
+            'ubicacion_id' => $metroNuble->id,
             'estado' => 'activo',
             'tamano' => 'S',
         ]);

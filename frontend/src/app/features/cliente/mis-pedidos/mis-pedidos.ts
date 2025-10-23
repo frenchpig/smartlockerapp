@@ -11,6 +11,8 @@ interface Pedido {
   estado: Estado;
   locker: string;
   sede: string;
+  latitud?: number | null;
+  longitud?: number | null;
   creadoEl: string;
   finalizadoEl?: string | null;
   tipoAcceso?: 'qr' | 'codigo_temporal' | string;
@@ -138,7 +140,9 @@ export class MisPedidos implements OnInit {
         id: r.id,
         estado: this.mapEstado(r.estado),
         locker: `#${r.locker?.numero ?? r.locker?.id ?? r.locker_id ?? ''}`,
-        sede: r.locker?.ubicacion ?? 'N/D',
+        sede: r.locker?.ubicacion?.nombre ?? 'N/D',
+        latitud: r.locker?.ubicacion?.latitud ?? null,
+        longitud: r.locker?.ubicacion?.longitud ?? null,
         creadoEl: r.created_at ?? r.fecha_reserva ?? new Date().toISOString(),
         finalizadoEl: r.hora_fin ?? r.updated_at ?? null,
         tipoAcceso: r.tipo_acceso,

@@ -15,11 +15,13 @@ type PedidoEmpresa = {
   id: number;
   locker: string;
   ubicacion: string;
+  ubicacionLat?: number | null;
+  ubicacionLng?: number | null;
   estado: EstadoReserva;
   estadoLabel: string;
   badgeClass: string;
   destinatario: string;
-  destinatarioRut: string;
+  destinatarioEmail: string;
   fechaIso: string;
 };
 
@@ -151,24 +153,28 @@ export class HomeEmpresa implements OnInit {
     const lockerNumero = data?.locker?.numero ?? data?.locker?.id ?? data?.locker_id ?? '';
     const locker = lockerNumero ? `#${lockerNumero}` : 'N/D';
 
-    const ubicacion = data?.locker?.ubicacion ?? data?.locker_ubicacion ?? 'Sin ubicacion';
+    const ubicacionNombre = data?.locker?.ubicacion?.nombre ?? data?.locker_ubicacion ?? 'Sin ubicacion';
+    const ubicacionLat = data?.locker?.ubicacion?.latitud ?? data?.locker_latitud ?? null;
+    const ubicacionLng = data?.locker?.ubicacion?.longitud ?? data?.locker_longitud ?? null;
 
     const usuario = data?.usuario;
     const nombres = [usuario?.nombre, usuario?.apellido].filter(Boolean).join(' ').trim();
     const destinatario = nombres || usuario?.email || 'Sin destinatario';
-    const destinatarioRut = usuario?.email ?? 'sin-registro';
+    const destinatarioEmail = usuario?.email ?? 'sin-registro';
 
     const fechaIso = data?.fecha_reserva ?? data?.created_at ?? new Date().toISOString();
 
     return {
       id: data?.id ?? 0,
       locker,
-      ubicacion,
+      ubicacion: ubicacionNombre,
+      ubicacionLat,
+      ubicacionLng,
       estado,
       estadoLabel: this.mapEstadoLabel(estado),
       badgeClass: this.badgeClassByEstado[estado] ?? 'bg-secondary-subtle text-secondary-emphasis',
       destinatario,
-      destinatarioRut,
+      destinatarioEmail,
       fechaIso,
     };
   }

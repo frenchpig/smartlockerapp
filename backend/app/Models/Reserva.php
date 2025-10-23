@@ -34,6 +34,10 @@ class Reserva extends Model
         'updated_at'    => 'datetime',
     ];
 
+    protected $with = [
+        'locker.ubicacion',
+    ];
+
     // Relaciones
     public function usuario()
     {

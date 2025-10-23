@@ -10,20 +10,19 @@ class LockerController extends Controller
 {
     public function index()
     {
-        return Locker::paginate(20);
+        return Locker::with('ubicacion')->paginate(20);
     }
 
     public function show(Locker $locker)
     {
-        return $locker;
+        return $locker->load('ubicacion');
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
-            'ubicacion'              => ['required','string','max:255'],
-            'latitud'                => ['required','numeric'],
-            'longitud'               => ['required','numeric'],
+            'numero'                 => ['required','integer','min:1'],
+            'ubicacion_id'           => ['required','integer','exists:ubicaciones,id'],
             'estado'                 => ['required', Rule::in(Locker::ESTADOS)],
             'tamano'                 => ['required','string','max:100'],
             'codigo_acceso_temporal' => ['nullable','string','max:100'],
@@ -31,15 +30,14 @@ class LockerController extends Controller
 
         $locker = Locker::create($data);
 
-        return response()->json($locker, 201);
+        return response()->json($locker->load('ubicacion'), 201);
     }
 
     public function update(Request $request, Locker $locker)
     {
         $data = $request->validate([
-            'ubicacion'              => ['sometimes','string','max:255'],
-            'latitud'                => ['sometimes','numeric'],
-            'longitud'               => ['sometimes','numeric'],
+            'numero'                 => ['sometimes','integer','min:1'],
+            'ubicacion_id'           => ['sometimes','integer','exists:ubicaciones,id'],
             'estado'                 => ['sometimes', Rule::in(Locker::ESTADOS)],
             'tamano'                 => ['sometimes','string','max:100'],
             'codigo_acceso_temporal' => ['sometimes','nullable','string','max:100'],
@@ -47,7 +45,7 @@ class LockerController extends Controller
 
         $locker->update($data);
 
-        return $locker;
+        return $locker->load('ubicacion');
     }
 
     public function destroy(Locker $locker)
