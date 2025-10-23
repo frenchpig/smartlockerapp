@@ -29,7 +29,7 @@
                         <i class="bi bi-person-circle me-2"></i> {{ user()?.nombre || 'Perfil' }}
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" routerLink="/cliente">Mis pedidos</a></li>
+                        <li><a class="dropdown-item" routerLink="/cliente/mis-pedidos">Mis pedidos</a></li>
                         <li><a class="dropdown-item" routerLink="/perfil">Perfil</a></li>
                         <li>
                             <hr class="dropdown-divider">
@@ -83,8 +83,8 @@
                             <time [attr.datetime]="p.creadoEl">{{ p.creadoEl | date:'medium' }}</time>
                         </p>
                         <footer class="d-flex flex-wrap gap-2 justify-content-end">
-                            <button class="btn btn-primary" (click)="abrirConClave(p.id)" *ngIf="p.estado === 'Activo'">
-                                Ver codigo
+                            <button class="btn btn-primary" (click)="abrirPedido(p)" *ngIf="p.estado === 'Activo'">
+                                {{ p.tipoAcceso === 'qr' ? 'Ver QR' : 'Ver codigo' }}
                             </button>
                         </footer>
 

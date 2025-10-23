@@ -14,6 +14,7 @@ import { TotemCodigoComponent } from './features/totem/codigo/totem-codigo';
 import { HomeEmpresa } from './features/empresa/home-empresa/home-empresa'
 import { Lockers } from './features/empresa/lockers/lockers'
 import { Pedidos } from './features/empresa/pedidos/pedidos'
+import { MisPedidos } from './features/cliente/mis-pedidos/mis-pedidos'
 
 
 
@@ -32,6 +33,7 @@ const routes: Routes = [
     data: { roles: ['usuario'] },
     children: [
       { path: '', component: Home },
+      { path: 'mis-pedidos', component: MisPedidos },
       { path: 'pedido/:id/clave', component: PedidoClave },
       { path: 'pedido/:id/qr', component: PedidoQr },
     ],

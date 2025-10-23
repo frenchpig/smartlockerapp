@@ -22,6 +22,7 @@ Route::prefix('auth')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     // Ultimas 10 reservas del usuario autenticado
     Route::get('/reservas/mis-ultimas', [ReservaController::class, 'myLatest']);
+    Route::get('/reservas/mis-historicas', [ReservaController::class, 'myHistory']);
     Route::get('/reservas/empresa/mis-ultimas', [ReservaController::class, 'companyLatest']);
     // Generar codigo temporal de 6 digitos para una reserva
     Route::post('/reservas/{reserva}/codigo-temporal', [ReservaController::class, 'generarCodigoTemporal']);

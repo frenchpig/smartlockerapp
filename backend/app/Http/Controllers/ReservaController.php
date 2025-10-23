@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Cache;
 class ReservaController extends Controller
 {
     /**
-     * Devuelve las 10 últimas reservas del usuario autenticado
+     * Devuelve todas las reservas pendientes del usuario autenticado
      */
     public function myLatest(Request $request)
     {
@@ -18,9 +18,26 @@ class ReservaController extends Controller
 
         $items = Reserva::with(['locker'])
             ->where('usuario_id', $user->id)
+            ->where('estado', 'pendiente')
             ->orderByDesc('created_at')
-            ->limit(5)
             ->get();
+
+        return response()->json($items);
+    }
+
+    /**
+     * Devuelve todas las reservas del usuario autenticado
+     */
+    public function myHistory(Request $request)
+    {
+        $user = $request->user();
+        $perPage = (int) $request->query('per_page', 5);
+        $perPage = max(1, min(50, $perPage));
+
+        $items = Reserva::with(['locker'])
+            ->where('usuario_id', $user->id)
+            ->orderByDesc('created_at')
+            ->paginate($perPage);
 
         return response()->json($items);
     }

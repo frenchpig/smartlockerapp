@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Historial de pedidos</title>
+</head>
+
+<body>
+    <header class="header-green">
+        <nav class="navbar">
+            <div class="container-narrow header-grid">
+
+                <div class="h-left">
+                    <a class="navbar-brand fw-semibold" routerLink="/">Smart Lockers</a>
+                </div>
+
+                <div class="h-center">
+                    <button class="btn btn-ghost d-inline-flex align-items-center" type="button" (click)="refrescar()">
+                        <i class="bi bi-arrow-clockwise me-1"></i><span> Actualizar</span>
+                    </button>
+                </div>
+
+                <div class="h-right dropdown">
+                    <button
+                        class="nav-link dropdown-toggle d-flex align-items-center btn btn-link p-0 text-decoration-none"
+                        type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle me-2"></i> {{ user()?.nombre || 'Perfil' }}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" routerLink="/cliente/mis-pedidos">Mis pedidos</a></li>
+                        <li><a class="dropdown-item" routerLink="/perfil">Perfil</a></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><button class="dropdown-item" type="button" (click)="onLogout()">Cerrar sesion</button></li>
+                    </ul>
+                </div>
+
+            </div>
+        </nav>
+    </header>
+
+    <main class="container-narrow my-4">
+        <section class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+            <button class="btn btn-link d-inline-flex align-items-center px-0" type="button" (click)="volver()">
+                <i class="bi bi-arrow-left me-1"></i>
+                <span>Volver</span>
+            </button>
+            <div class="text-end">
+                <h1 class="h4 mb-1">Historial de pedidos</h1>
+                <p class="text-muted m-0">Revisa cada entrega registrada en Smart Lockers.</p>
+            </div>
+        </section>
+
+        <section aria-labelledby="historial-pedidos">
+            <header class="d-flex justify-content-between align-items-center mb-3">
+                <h2 id="historial-pedidos" class="h5 m-0">Todos tus pedidos</h2>
+                <small class="text-muted">{{ total }} registros</small>
+            </header>
+
+            <div class="d-flex justify-content-center py-4" *ngIf="loading">
+                <div class="spinner-border text-success" role="status" aria-label="Cargando"></div>
+            </div>
+
+            <p class="text-muted" *ngIf="!loading && !pedidos.length">Todavía no tienes pedidos registrados.</p>
+
+            <ul class="list-unstyled m-0" *ngIf="!loading && pedidos.length">
+                <li *ngFor="let p of pedidos" class="mb-3">
+                    <article class="card card-soft p-3" [attr.aria-label]="'Pedido ' + p.id">
+                        <header class="mb-2 d-flex justify-content-between align-items-start flex-wrap gap-2">
+                            <h3 class="h6 fw-bold m-0">Pedido #{{ p.id }}</h3>
+                            <span class="badge"
+                                [class.bg-success]="p.estado === 'Activo'"
+                                [class.bg-secondary]="p.estado === 'Entregado'"
+                                [class.bg-danger]="p.estado === 'Cancelado'">
+                                {{ p.estado }}
+                            </span>
+                        </header>
+
+                        <p class="text-muted mb-3">
+                            <span class="dot"
+                                [ngClass]="{
+                                    'ok': p.estado === 'Activo',
+                                    'warn': p.estado === 'Entregado',
+                                    'error': p.estado === 'Cancelado'
+                                }"></span>
+                            <span class="ms-1">Locker <strong>{{ p.locker }}</strong></span> ·
+                            <span>{{ p.sede }}</span> ·
+                            <time [attr.datetime]="p.creadoEl">Creado {{ p.creadoEl | date:'medium' }}</time>
+                            <ng-container *ngIf="p.finalizadoEl && p.estado !== 'Activo'">
+                                · <time [attr.datetime]="p.finalizadoEl">
+                                    {{ p.estado === 'Entregado' ? 'Entregado' : 'Actualizado' }}
+                                    {{ p.finalizadoEl | date:'medium' }}
+                                </time>
+                            </ng-container>
+                        </p>
+
+                        <div class="history-meta">
+                            <span class="badge bg-light text-dark" *ngIf="p.tipoAcceso">
+                                Acceso: {{ p.tipoAcceso === 'codigo_temporal' ? 'Código temporal' : (p.tipoAcceso === 'qr' ? 'QR' : p.tipoAcceso) }}
+                            </span>
+                        </div>
+
+                        <footer class="d-flex flex-wrap gap-2 justify-content-end mt-3">
+                            <button class="btn btn-primary"
+                                type="button"
+                                *ngIf="p.estado === 'Activo'"
+                                (click)="abrirPedido(p)">
+                                {{ p.tipoAcceso === 'qr' ? 'Ver QR' : 'Ver codigo' }}
+                            </button>
+                        </footer>
+                    </article>
+                </li>
+            </ul>
+
+            <nav class="pagination-controls mt-4" aria-label="Historial de pedidos" *ngIf="!loading && lastPage > 1">
+                <button class="btn btn-outline-secondary" type="button" (click)="anterior()" [disabled]="page <= 1">
+                    <i class="bi bi-chevron-left me-1"></i> Anterior
+                </button>
+                <span class="page-indicator">Pagina {{ page }} de {{ lastPage }}</span>
+                <button class="btn btn-outline-secondary" type="button" (click)="siguiente()" [disabled]="page >= lastPage">
+                    Siguiente <i class="bi bi-chevron-right ms-1"></i>
+                </button>
+            </nav>
+        </section>
+    </main>
+
+    <footer class="border-top bg-white text-center py-3 mt-4">
+        <small class="text-muted">&copy; 2025 Smart Lockers</small>
+    </footer>
+
+</body>
+
+</html>

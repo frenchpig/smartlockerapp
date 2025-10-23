@@ -62,6 +62,15 @@ user = this.auth.user;
   //   this.router.navigate(['/cliente/pedido', id, 'qr']);
   // }
 
+  async abrirPedido(p: Pedido) {
+    if (p.tipoAcceso === 'qr') {
+      this.router.navigate(['/cliente/pedido', p.id, 'qr']);
+      return;
+    }
+
+    await this.abrirConClave(p.id);
+  }
+
 
   refrescar() { this.cargarPedidos(); }
 

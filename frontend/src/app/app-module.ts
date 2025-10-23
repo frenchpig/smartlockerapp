@@ -10,6 +10,7 @@ import { authInterceptor } from './core/auth/auth-interceptor';
 import { Home } from './features/cliente/home/home';
 import { PedidoClave } from './features/cliente/pedido-clave/pedido-clave';
 import { PedidoQr } from './features/cliente/pedido-qr/pedido-qr';
+import { MisPedidos } from './features/cliente/mis-pedidos/mis-pedidos';
 
 @NgModule({
   declarations: [App, TestBackend,],
@@ -19,7 +20,8 @@ import { PedidoQr } from './features/cliente/pedido-qr/pedido-qr';
     AppRoutingModule,
     Home,
     PedidoClave,
-    PedidoQr
+    PedidoQr,
+    MisPedidos
   ],
 
   providers: [
