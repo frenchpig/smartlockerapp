@@ -154,3 +154,26 @@
 footer {
     margin-top: 2.5rem;
 }
+
+.card-filter {
+    background: #fff;
+    border-radius: 1rem;
+    border: 1px solid var(--border);
+}
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.pagination-controls .btn {
+    min-width: 9rem;
+}
+
+.page-indicator {
+    font-weight: 600;
+    color: var(--muted);
+}

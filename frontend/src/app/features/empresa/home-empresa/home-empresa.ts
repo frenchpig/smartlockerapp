@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
 
 import { AuthService } from '../../../core/auth/auth';
 import { environment } from '../../../../environments/environment';
@@ -18,13 +19,22 @@ type PedidoEmpresa = {
   estadoLabel: string;
   badgeClass: string;
   destinatario: string;
+  destinatarioRut: string;
   fechaIso: string;
 };
+
+interface PaginatedResponse<T> {
+  data: T[];
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+}
 
 @Component({
   standalone: true,
   selector: 'app-home-empresa',
-  imports: [CommonModule, RouterModule, DatePipe],
+  imports: [CommonModule, RouterModule, DatePipe, FormsModule],
   templateUrl: './home-empresa.html',
   styleUrls: ['./home-empresa.scss']
 })
@@ -32,6 +42,14 @@ export class HomeEmpresa implements OnInit {
   kpis: Kpi[] = [];
   pedidos: PedidoEmpresa[] = [];
   loading = false;
+  page = 1;
+  lastPage = 1;
+  perPage = 5;
+  total = 0;
+
+  filtroEstado = '';
+  filtroUbicacion = '';
+  filtroEmail = '';
 
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
@@ -58,19 +76,70 @@ export class HomeEmpresa implements OnInit {
     }
   }
 
-  private async cargarPedidos() {
+  aplicarFiltros() {
+    void this.cargarPedidos(1);
+  }
+
+  limpiarFiltros() {
+    this.filtroEstado = '';
+    this.filtroUbicacion = '';
+    this.filtroEmail = '';
+    void this.cargarPedidos(1);
+  }
+
+  siguiente() {
+    if (this.page < this.lastPage) {
+      void this.cargarPedidos(this.page + 1);
+    }
+  }
+
+  anterior() {
+    if (this.page > 1) {
+      void this.cargarPedidos(this.page - 1);
+    }
+  }
+
+  refrescar() {
+    void this.cargarPedidos(this.page);
+  }
+
+  private async cargarPedidos(page = 1) {
     this.loading = true;
     try {
+      const params: Record<string, string | number> = {
+        page,
+        per_page: this.perPage,
+      };
+
+      const estado = this.filtroEstado?.trim();
+      const ubicacion = this.filtroUbicacion?.trim();
+      const email = this.filtroEmail?.trim();
+
+      if (estado) params['estado'] = estado;
+      if (ubicacion) params['ubicacion'] = ubicacion;
+      if (email) params['email'] = email;
+
       const res = await this.http
-        .get<any[]>(`${environment.apiUrl}/reservas/empresa/mis-ultimas`)
+        .get<PaginatedResponse<any>>(`${environment.apiUrl}/reservas/empresa/mis-ultimas`, { params })
         .toPromise();
 
-      const pedidos = (res ?? []).map((item) => this.mapPedido(item));
+      const data = res?.data ?? [];
+      const pedidos = data.map((item) => this.mapPedido(item));
+
       this.pedidos = pedidos;
+      this.page = Number(res?.current_page ?? page) || page;
+      this.lastPage = Number(res?.last_page ?? 1) || 1;
+      const perPage = Number(res?.per_page ?? this.perPage);
+      this.perPage = Number.isFinite(perPage) && perPage > 0 ? perPage : this.perPage;
+      this.total = Number(res?.total ?? pedidos.length) || pedidos.length;
+
       this.kpis = this.buildKpis(pedidos);
     } catch (error) {
       console.error('Error cargando pedidos empresa', error);
       this.pedidos = [];
+      this.page = 1;
+      this.lastPage = 1;
+      this.total = 0;
       this.kpis = this.buildKpis([]);
     } finally {
       this.loading = false;
@@ -87,6 +156,7 @@ export class HomeEmpresa implements OnInit {
     const usuario = data?.usuario;
     const nombres = [usuario?.nombre, usuario?.apellido].filter(Boolean).join(' ').trim();
     const destinatario = nombres || usuario?.email || 'Sin destinatario';
+    const destinatarioRut = usuario?.email ?? 'sin-registro';
 
     const fechaIso = data?.fecha_reserva ?? data?.created_at ?? new Date().toISOString();
 
@@ -98,6 +168,7 @@ export class HomeEmpresa implements OnInit {
       estadoLabel: this.mapEstadoLabel(estado),
       badgeClass: this.badgeClassByEstado[estado] ?? 'bg-secondary-subtle text-secondary-emphasis',
       destinatario,
+      destinatarioRut,
       fechaIso,
     };
   }
@@ -116,7 +187,7 @@ export class HomeEmpresa implements OnInit {
   }
 
   private buildKpis(pedidos: PedidoEmpresa[]): Kpi[] {
-    const total = pedidos.length;
+    const total = this.total;
     const pendientes = pedidos.filter((p) => p.estado === 'pendiente').length;
     const completados = pedidos.filter((p) => p.estado === 'completado').length;
 

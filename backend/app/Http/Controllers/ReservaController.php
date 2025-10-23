@@ -6,6 +6,7 @@ use App\Models\Reserva;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 
 class ReservaController extends Controller
 {
@@ -43,7 +44,7 @@ class ReservaController extends Controller
     }
 
     /**
-     * Devuelve las ultimas reservas asociadas a la empresa autenticada
+     * Devuelve las reservas asociadas a la empresa autenticada con filtros y paginacion
      */
     public function companyLatest(Request $request)
     {
@@ -53,11 +54,31 @@ class ReservaController extends Controller
             return response()->json(['message' => 'No autorizado'], 403);
         }
 
-        $items = Reserva::with(['usuario', 'locker'])
+        $perPage = (int) $request->query('per_page', 5);
+        $perPage = max(1, min(50, $perPage));
+
+        $query = Reserva::with(['usuario', 'locker'])
             ->where('empresa_id', $user->id)
-            ->orderByDesc('created_at')
-            ->limit(10)
-            ->get();
+            ->orderByDesc('created_at');
+
+        if ($estado = $request->query('estado')) {
+            $query->where('estado', $estado);
+        }
+
+        if ($ubicacion = trim((string) $request->query('ubicacion', ''))) {
+            $query->whereHas('locker', function ($lockerQuery) use ($ubicacion) {
+                $lockerQuery->where('ubicacion', 'like', "%{$ubicacion}%");
+            });
+        }
+
+        if ($email = trim((string) $request->query('email', ''))) {
+            $query->whereHas('usuario', function ($usuarioQuery) use ($email) {
+                $like = "%{$email}%";
+                $usuarioQuery->where('email', 'like', $like);
+            });
+        }
+
+        $items = $query->paginate($perPage);
 
         return response()->json($items);
     }

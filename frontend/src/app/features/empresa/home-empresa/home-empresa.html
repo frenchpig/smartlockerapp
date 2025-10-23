@@ -42,10 +42,44 @@
                     </div>
                 </div>
 
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h2 class="h5 mb-0">Ultimos pedidos</h2>
-                    <a class="btn btn-success btn-sm" routerLink="/empresa/pedidos">Ver todos</a>
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+                    <div>
+                        <h2 class="h5 mb-0">Pedidos recientes</h2>
+                        <small class="text-muted">Total: {{ total }} registros</small>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-outline-success btn-sm" type="button" (click)="refrescar()">Refrescar</button>
+                        <a class="btn btn-success btn-sm" routerLink="/empresa/pedidos">Ver todos</a>
+                    </div>
                 </div>
+
+                <form class="card card-filter shadow-sm border-0 mb-4" (ngSubmit)="aplicarFiltros()">
+                    <div class="card-body">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-12 col-md-4">
+                                <label for="fEstado" class="form-label text-muted mb-1">Estado</label>
+                                <select id="fEstado" class="form-select" [(ngModel)]="filtroEstado" name="estado">
+                                    <option value="">Todos</option>
+                                    <option value="pendiente">Pendiente</option>
+                                    <option value="completado">Completado</option>
+                                    <option value="anulado">Anulado</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label for="fUbicacion" class="form-label text-muted mb-1">Ubicacion</label>
+                                <input id="fUbicacion" type="text" class="form-control" [(ngModel)]="filtroUbicacion" name="ubicacion" placeholder="Ej: Centro, Sucursal..." />
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label for="fEmail" class="form-label text-muted mb-1">Correo destinatario</label>
+                                <input id="fEmail" type="email" class="form-control" [(ngModel)]="filtroEmail" name="email" placeholder="usuario@dominio.cl" />
+                            </div>
+                            <div class="col-12 d-flex flex-wrap gap-2 justify-content-end">
+                                <button class="btn btn-outline-secondary" type="button" (click)="limpiarFiltros()">Limpiar</button>
+                                <button class="btn btn-success" type="submit">Aplicar filtros</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
 
                 <div class="d-flex justify-content-center py-4" *ngIf="loading">
                     <div class="spinner-border text-success" role="status" aria-label="Cargando"></div>
@@ -62,6 +96,7 @@
                                 <th>Ubicacion</th>
                                 <th>Estado</th>
                                 <th>Destinatario</th>
+                                <th>Correo</th>
                                 <th>Fecha</th>
                                 <th></th>
                             </tr>
@@ -77,6 +112,7 @@
                                     </span>
                                 </td>
                                 <td>{{ pedido.destinatario }}</td>
+                                <td>{{ pedido.destinatarioRut }}</td>
                                 <td>{{ pedido.fechaIso | date:'dd/MM/yy, h:mm a' }}</td>
                                 <td class="text-end">
                                     <button class="btn btn-outline-secondary btn-sm" type="button">Detalle</button>
@@ -85,6 +121,16 @@
                         </tbody>
                     </table>
                 </div>
+
+                <nav class="pagination-controls mt-4" aria-label="Pedidos empresa" *ngIf="!loading && lastPage > 1">
+                    <button class="btn btn-outline-secondary" type="button" (click)="anterior()" [disabled]="page <= 1">
+                        <i class="bi bi-chevron-left me-1"></i> Anterior
+                    </button>
+                    <span class="page-indicator">Pagina {{ page }} de {{ lastPage }}</span>
+                    <button class="btn btn-outline-secondary" type="button" (click)="siguiente()" [disabled]="page >= lastPage">
+                        Siguiente <i class="bi bi-chevron-right ms-1"></i>
+                    </button>
+                </nav>
 
             </div>
         </div>
