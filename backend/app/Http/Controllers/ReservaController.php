@@ -381,6 +381,12 @@ class ReservaController extends Controller
             'code' => ['required','regex:/^\d{6}$/'],
         ]);
 
+        // Obtener la ubicación del dispositivo autenticado
+        $ubicacionDevice = $request->user();
+        if (!$ubicacionDevice) {
+            return response()->json(['message' => 'No autorizado'], 401);
+        }
+
         $hash = hash('sha256', $data['code']);
 
         $reserva = Reserva::with(['locker.ubicacion','repartidor.usuario'])
@@ -389,12 +395,17 @@ class ReservaController extends Controller
             ->first();
 
         if (!$reserva) {
-            return response()->json(['message' => 'Código inválido o expirado'], 422);
+            return response()->json(['message' => 'Código no reconocido'], 422);
+        }
+
+        // Validar que el locker pertenece a la ubicación del dispositivo
+        if (!$reserva->locker || $reserva->locker->ubicacion_id !== $ubicacionDevice->id) {
+            return response()->json(['message' => 'Código no reconocido'], 422);
         }
 
         [, , $isValidWindow] = $this->calcularEstadoCodigoTemporal($reserva);
         if (!$isValidWindow) {
-            return response()->json(['message' => 'Código inválido o expirado'], 422);
+            return response()->json(['message' => 'Código no reconocido'], 422);
         }
 
         $reserva = $this->finalizarReserva($reserva);

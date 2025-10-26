@@ -5,11 +5,13 @@ import { TestBackend } from './features/test-backend/test-backend';
 import { LoginComponent } from './features/auth/login/login';
 import { DashboardComponent } from './features/dashboard/dashboard/dashboard';
 import { authGuard } from './core/auth/auth-guard';
+import { deviceGuard } from './core/auth/device-guard';
 
 import { Home } from './features/cliente/home/home';
 import { PedidoClave } from './features/cliente/pedido-clave/pedido-clave';
 import { PedidoQr } from './features/cliente/pedido-qr/pedido-qr';
 import { TotemCodigoComponent } from './features/totem/codigo/totem-codigo';
+import { DeviceLoginComponent } from './features/totem/device-login/device-login';
 
 import { HomeEmpresa } from './features/empresa/home-empresa/home-empresa'
 import { Lockers } from './features/empresa/lockers/lockers'
@@ -23,7 +25,11 @@ import { ReservaNuevaComponent } from './features/empresa/reservas/reserva-nueva
 const routes: Routes = [
   { path: 'test-backend', component: TestBackend },
   { path: 'login', component: LoginComponent },
-  { path: 'totem/codigo', component: TotemCodigoComponent },
+  
+  // Totem routes
+  { path: 'totem/device-login', component: DeviceLoginComponent },
+  { path: 'totem/codigo', component: TotemCodigoComponent, canActivate: [deviceGuard] },
+  { path: 'totem', redirectTo: 'totem/device-login', pathMatch: 'full' },
 
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
 

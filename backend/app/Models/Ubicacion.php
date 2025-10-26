@@ -4,10 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Sanctum\HasApiTokens;
 
-class Ubicacion extends Model
+class Ubicacion extends Authenticatable
 {
-    use HasFactory;
+    use HasApiTokens, HasFactory;
 
     protected $table = 'ubicaciones';
 
@@ -15,6 +18,12 @@ class Ubicacion extends Model
         'nombre',
         'latitud',
         'longitud',
+        'device_username',
+        'device_password',
+    ];
+
+    protected $hidden = [
+        'device_password',
     ];
 
     protected $casts = [
@@ -23,6 +32,16 @@ class Ubicacion extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    /**
+     * Mutator para encriptar la contraseña del dispositivo con SHA-256
+     */
+    protected function devicePassword(): Attribute
+    {
+        return Attribute::make(
+            set: fn ($value) => $value ? hash('sha256', $value) : null
+        );
+    }
 
     public function lockers()
     {

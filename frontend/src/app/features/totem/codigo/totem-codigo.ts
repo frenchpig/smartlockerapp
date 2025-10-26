@@ -2,7 +2,9 @@ import { Component, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { environment } from '../../../../environments/environment';
+import { DeviceAuthService } from '../../../core/auth/device-auth.service';
 
 type TotemResponse = {
   message: string;
@@ -24,6 +26,8 @@ type TotemResponse = {
 })
 export class TotemCodigoComponent implements OnDestroy {
   private readonly http = inject(HttpClient);
+  private readonly deviceAuth = inject(DeviceAuthService);
+  private readonly router = inject(Router);
 
   clave = new FormControl<string>('', {
     nonNullable: true,
@@ -34,6 +38,14 @@ export class TotemCodigoComponent implements OnDestroy {
   exito?: TotemResponse;
   errorMsg = '';
   private clearHandle?: ReturnType<typeof setTimeout>;
+
+  // Computed signals from DeviceAuthService
+  ubicacion = this.deviceAuth.ubicacion;
+
+  async cerrarSesion() {
+    await this.deviceAuth.logout();
+    await this.router.navigate(['/totem/device-login']);
+  }
 
   ngOnDestroy(): void {
     if (this.clearHandle) {

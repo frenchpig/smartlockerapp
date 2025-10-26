@@ -78,12 +78,16 @@ class DemoDataSeeder extends Seeder
             'nombre' => 'Metro Nunoa',
             'latitud' => -33.456,
             'longitud' => -70.648,
+            'device_username' => 'totem-nunoa',
+            'device_password' => '123456', // se encripta por mutator SHA-256
         ]);
 
         $metroNuble = Ubicacion::create([
             'nombre' => 'Metro Nuble',
             'latitud' => -33.476,
             'longitud' => -70.628,
+            'device_username' => 'totem-nuble',
+            'device_password' => '123456', // se encripta por mutator SHA-256
         ]);
 
         // Lockers (dos ubicaciones con numeros repetibles)

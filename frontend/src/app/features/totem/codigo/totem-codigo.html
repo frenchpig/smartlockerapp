@@ -1,18 +1,25 @@
-<main class="container my-4" role="main">
-  <div class="mx-auto totem-wrap text-center">
-    <header class="mb-4">
-      <h1 class="h5 fw-semibold mb-1">Smart Lockers</h1>
-      <p class="text-muted mb-0">Ingresa el código temporal mostrado al cliente.</p>
+<div class="totem-container">
+  <div class="totem-box">
+    <header class="totem-header">
+      <div class="header-top">
+        <h1>Smart Lockers</h1>
+        <button type="button" class="btn-logout" (click)="cerrarSesion()">
+          Cerrar Sesión
+        </button>
+      </div>
+      <p class="subtitle">Ingresa el código temporal mostrado al cliente.</p>
+      <p *ngIf="ubicacion()" class="location">
+        <span class="location-icon">📍</span> {{ ubicacion()?.nombre }}
+      </p>
     </header>
 
-    <!-- Panel estilo "pedido" -->
-    <section class="codigo-panel" aria-live="polite">
-      <h3 class="h6 text-uppercase text-muted mb-3">Código temporal</h3>
+    <section class="code-section">
+      <h2 class="section-title">Código temporal</h2>
 
-      <!-- Display de dígitos ingresados -->
-      <div class="codigo-display" aria-label="Código ingresado">
+      <!-- Display de dígitos -->
+      <div class="code-display">
         <span
-          class="codigo-digit"
+          class="code-digit"
           *ngFor="let i of [0,1,2,3,4,5]"
           [class.filled]="(clave.value.length) > i"
         >
@@ -20,52 +27,40 @@
         </span>
       </div>
 
-      <!-- Keypad numérico -->
-      <div class="row g-3 keypad mt-4">
-        <div class="col-4"><button type="button" class="btn btn-light btn-lg w-100 py-3" (click)="press('1')">1</button></div>
-        <div class="col-4"><button type="button" class="btn btn-light btn-lg w-100 py-3" (click)="press('2')">2</button></div>
-        <div class="col-4"><button type="button" class="btn btn-light btn-lg w-100 py-3" (click)="press('3')">3</button></div>
-
-        <div class="col-4"><button type="button" class="btn btn-light btn-lg w-100 py-3" (click)="press('4')">4</button></div>
-        <div class="col-4"><button type="button" class="btn btn-light btn-lg w-100 py-3" (click)="press('5')">5</button></div>
-        <div class="col-4"><button type="button" class="btn btn-light btn-lg w-100 py-3" (click)="press('6')">6</button></div>
-
-        <div class="col-4"><button type="button" class="btn btn-light btn-lg w-100 py-3" (click)="press('7')">7</button></div>
-        <div class="col-4"><button type="button" class="btn btn-light btn-lg w-100 py-3" (click)="press('8')">8</button></div>
-        <div class="col-4"><button type="button" class="btn btn-light btn-lg w-100 py-3" (click)="press('9')">9</button></div>
-
-        <div class="col-4">
-          <button type="button" class="btn btn-outline-secondary btn-lg w-100 py-3" (click)="limpiar()" [disabled]="enviando">
-            Limpiar
-          </button>
-        </div>
-        <div class="col-4"><button type="button" class="btn btn-light btn-lg w-100 py-3" (click)="press('0')">0</button></div>
-        <div class="col-4">
-          <button type="button" class="btn btn-outline-secondary btn-lg w-100 py-3" (click)="borrar()" [disabled]="enviando">
-            Borrar
-          </button>
-        </div>
+      <!-- Keypad -->
+      <div class="keypad">
+        <button type="button" class="keypad-btn" (click)="press('1')">1</button>
+        <button type="button" class="keypad-btn" (click)="press('2')">2</button>
+        <button type="button" class="keypad-btn" (click)="press('3')">3</button>
+        <button type="button" class="keypad-btn" (click)="press('4')">4</button>
+        <button type="button" class="keypad-btn" (click)="press('5')">5</button>
+        <button type="button" class="keypad-btn" (click)="press('6')">6</button>
+        <button type="button" class="keypad-btn" (click)="press('7')">7</button>
+        <button type="button" class="keypad-btn" (click)="press('8')">8</button>
+        <button type="button" class="keypad-btn" (click)="press('9')">9</button>
+        <button type="button" class="keypad-btn keypad-btn-secondary" (click)="limpiar()" [disabled]="enviando">Limpiar</button>
+        <button type="button" class="keypad-btn" (click)="press('0')">0</button>
+        <button type="button" class="keypad-btn keypad-btn-secondary" (click)="borrar()" [disabled]="enviando">Borrar</button>
       </div>
 
-      <!-- Acciones -->
-      <div class="d-grid gap-3 mt-4">
-        <button type="button" class="btn btn-success btn-lg px-4" [disabled]="!lleno || enviando" (click)="enviar()">
-          Validar código
-        </button>
-      </div>
+      <!-- Botón validar -->
+      <button type="button" class="btn-validate" [disabled]="!lleno || enviando" (click)="enviar()">
+        <span *ngIf="!enviando">Validar código</span>
+        <span *ngIf="enviando">Validando...</span>
+      </button>
     </section>
 
     <!-- Mensajes -->
-    <div *ngIf="errorMsg" class="alert alert-warning mt-3" role="alert">
+    <div *ngIf="errorMsg" class="alert-error">
       {{ errorMsg }}
     </div>
 
-    <div *ngIf="exito" class="alert alert-success mt-3" role="status">
-      <h2 class="h6 mb-1">Código correcto</h2>
-      <p class="mb-0">
+    <div *ngIf="exito" class="alert-success">
+      <h3>✅ Código correcto</h3>
+      <p>
         Reserva #{{ exito.reserva_id }} • Locker {{ exito.locker?.numero ?? 'N/D' }}
         <span *ngIf="exito.locker?.ubicacion">en {{ exito.locker?.ubicacion }}</span>
       </p>
     </div>
   </div>
-</main>
+</div>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DeviceAuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\LockerController;
@@ -39,7 +40,18 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // DEV-ONLY (sin auth): generar/regenerar codigo temporal para pruebas locales
 Route::post('/dev/reservas/{reserva}/codigo-temporal', [ReservaController::class, 'devGenerarCodigoTemporal']);
-Route::post('/totem/codigo-temporal/verificar', [ReservaController::class, 'totemVerificarCodigo']);
+
+// Device authentication routes (no auth middleware)
+Route::prefix('device')->group(function () {
+    Route::post('/auth/login', [DeviceAuthController::class, 'login']);
+});
+
+// Totem routes - now require device authentication
+Route::prefix('totem')->middleware('auth.device')->group(function () {
+    Route::post('/codigo-temporal/verificar', [ReservaController::class, 'totemVerificarCodigo']);
+    Route::get('/me', [DeviceAuthController::class, 'me']);
+    Route::post('/logout', [DeviceAuthController::class, 'logout']);
+});
 
 Route::apiResources([
     'usuarios'          => UsuarioController::class,

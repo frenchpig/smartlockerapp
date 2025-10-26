@@ -6,6 +6,7 @@ import { App } from './app';
 import { TestBackend } from './features/test-backend/test-backend';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from './core/auth/auth-interceptor';
+import { deviceAuthInterceptor } from './core/auth/device-auth.interceptor';
 
 import { Home } from './features/cliente/home/home';
 import { PedidoClave } from './features/cliente/pedido-clave/pedido-clave';
@@ -29,7 +30,7 @@ import { ReservaNuevaComponent } from './features/empresa/reservas/reserva-nueva
   ],
 
   providers: [
-    provideHttpClient(withInterceptors([authInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor, deviceAuthInterceptor])),
     provideBrowserGlobalErrorListeners(),
   ],
 
