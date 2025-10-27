@@ -1,0 +1,155 @@
+.perfil-header {
+    padding: .75rem 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, .15);
+}
+
+.perfil-header-inner {
+    max-width: 640px;
+    width: 100%;
+    margin: 0 auto;
+
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: 0 1rem;
+}
+
+.perfil-titulo {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+    color: #fff;
+}
+
+.perfil-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+.perfil-main {
+    min-height: calc(100dvh - 56px);
+    background-color: #f9fafb;
+    padding: 2rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.perfil-card {
+    width: 100%;
+    max-width: 640px;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, .08);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, .06);
+    border-radius: .75rem;
+    padding: 1rem 1rem 1.5rem;
+}
+
+.perfil-section+.perfil-section {
+    border-top: 1px solid rgba(0, 0, 0, .06);
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+}
+
+.perfil-section-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    row-gap: .5rem;
+    margin-bottom: 1rem;
+}
+
+.section-title {
+    font-size: .95rem;
+    font-weight: 600;
+    margin: 0;
+    color: #111827;
+}
+
+.section-hint {
+    font-size: .8rem;
+    color: #6b7280;
+    margin: 0;
+}
+
+.section-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+.perfil-datos {
+    margin: 0;
+    padding: 0;
+}
+
+.dato-row {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    padding: .75rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, .05);
+
+    dt {
+        margin: 0;
+        font-size: .8rem;
+        font-weight: 500;
+        color: #6b7280;
+    }
+
+    dd {
+        margin: 0;
+        font-size: .9rem;
+        color: #111827;
+        font-weight: 600;
+        word-break: break-word;
+    }
+}
+
+.dato-row:last-child {
+    border-bottom: none;
+}
+
+.perfil-footer {
+    max-width: 640px;
+    width: 100%;
+    text-align: center;
+    font-size: .8rem;
+    color: #6b7280;
+    margin-top: 2rem;
+    padding-top: 1rem;
+}
+
+@media (max-width: 480px) {
+    .dato-row {
+        grid-template-columns: 1fr;
+        row-gap: .25rem;
+    }
+
+    .perfil-section-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .section-actions {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .section-actions .btn {
+        width: 100%;
+        text-align: center;
+    }
+
+    .perfil-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .perfil-actions .btn {
+        flex: 1 1 auto;
+    }
+}

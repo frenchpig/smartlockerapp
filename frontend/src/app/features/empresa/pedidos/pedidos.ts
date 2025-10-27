@@ -71,10 +71,10 @@ export class Pedidos {
         .toPromise();
 
       const data = res?.data ?? [];
-      
+
       // Mapeamos los datos de la API al formato de la interfaz
       this.pedidos = data.map((item) => this.mapPedido(item));
-      
+
       this.page = Number(res?.current_page ?? page) || page;
       this.lastPage = Number(res?.last_page ?? 1) || 1;
       this.total = Number(res?.total ?? this.pedidos.length) || this.pedidos.length;

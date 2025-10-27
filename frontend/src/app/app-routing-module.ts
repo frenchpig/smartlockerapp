@@ -12,6 +12,7 @@ import { PedidoClave } from './features/cliente/pedido-clave/pedido-clave';
 import { PedidoQr } from './features/cliente/pedido-qr/pedido-qr';
 import { TotemCodigoComponent } from './features/totem/codigo/totem-codigo';
 import { DeviceLoginComponent } from './features/totem/device-login/device-login';
+import { Perfil } from './features/cliente/perfil/perfil'
 
 import { HomeEmpresa } from './features/empresa/home-empresa/home-empresa'
 import { Lockers } from './features/empresa/lockers/lockers'
@@ -22,10 +23,16 @@ import { ReservaNuevaComponent } from './features/empresa/reservas/reserva-nueva
 import { EmpresaPedidoDetalle } from './features/empresa/pedidoDetalle/pedido-detalle'
 
 
+
 const routes: Routes = [
   { path: 'test-backend', component: TestBackend },
   { path: 'login', component: LoginComponent },
   
+  // Totem routes
+  { path: 'totem/device-login', component: DeviceLoginComponent },
+  { path: 'totem/codigo', component: TotemCodigoComponent, canActivate: [deviceGuard] },
+  { path: 'totem', redirectTo: 'totem/device-login', pathMatch: 'full' },
+
   // Totem routes
   { path: 'totem/device-login', component: DeviceLoginComponent },
   { path: 'totem/codigo', component: TotemCodigoComponent, canActivate: [deviceGuard] },
@@ -42,6 +49,7 @@ const routes: Routes = [
     children: [
       { path: '', component: Home },
       { path: 'mis-pedidos', component: MisPedidos },
+      { path: 'perfil', component: Perfil },
       { path: 'pedido/:id/clave', component: PedidoClave },
       { path: 'pedido/:id/qr', component: PedidoQr },
     ],

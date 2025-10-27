@@ -55,7 +55,7 @@ export class EmpresaPedidoDetalle implements OnInit {
     async cargarPedido() {
         this.cargando = true;
         this.error = '';
-        
+
         try {
             const res = await this.http
                 .get<any>(`${environment.apiUrl}/reservas/${this.id}`)
@@ -102,7 +102,7 @@ export class EmpresaPedidoDetalle implements OnInit {
         } catch (err: any) {
             console.error('Error al cargar pedido', err);
             this.error = err?.error?.message || 'Error al cargar el pedido';
-            
+
             // Si el pedido no existe o hay error de autorización, volver atrás
             if (err?.status === 404 || err?.status === 403) {
                 setTimeout(() => {
