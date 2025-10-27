@@ -19,6 +19,7 @@ import { Lockers } from './features/empresa/lockers/lockers'
 import { Pedidos } from './features/empresa/pedidos/pedidos'
 import { MisPedidos } from './features/cliente/mis-pedidos/mis-pedidos'
 import { RepartidorHome } from './features/repartidor/home/repartidor-home'
+import { PerfilRepartidor } from './features/repartidor/perfil/perfil'
 import { ReservaNuevaComponent } from './features/empresa/reservas/reserva-nueva/reserva-nueva'
 import { EmpresaPedidoDetalle } from './features/empresa/pedidoDetalle/pedido-detalle'
 
@@ -71,9 +72,13 @@ const routes: Routes = [
 
   {
     path: 'repartidor',
-    component: RepartidorHome,
     canActivate: [authGuard],
+    canActivateChild: [authGuard],
     data: { roles: ['repartidor'] },
+    children: [
+      { path: '', component: RepartidorHome },
+      { path: 'perfil', component: PerfilRepartidor },
+    ],
   },
 
 

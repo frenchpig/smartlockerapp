@@ -5,7 +5,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { AuthService } from '../../../core/auth/auth';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
-import { HeaderClienteComponent } from '../shared/header-cliente/header-cliente.component';
+import { HeaderRepartidorComponent } from '../shared/header-repartidor/header-repartidor.component';
 
 interface UserProfile {
   id: number;
@@ -18,12 +18,12 @@ interface UserProfile {
 
 @Component({
   standalone: true,
-  selector: 'app-perfil-cliente',
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, HeaderClienteComponent],
+  selector: 'app-perfil-repartidor',
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, HeaderRepartidorComponent],
   templateUrl: './perfil.html',
   styleUrls: ['./perfil.scss'],
 })
-export class Perfil implements OnInit {
+export class PerfilRepartidor implements OnInit {
   private router = inject(Router);
   private auth = inject(AuthService);
   private http = inject(HttpClient);
@@ -63,7 +63,6 @@ export class Perfil implements OnInit {
   }
 
   ngOnInit(): void {
-    // Get current user from auth service
     const currentUser = this.auth.user();
     
     if (!currentUser) {
@@ -71,7 +70,6 @@ export class Perfil implements OnInit {
       return;
     }
 
-    // Load full user profile from API
     this.loadUserProfile();
   }
 
@@ -84,7 +82,6 @@ export class Perfil implements OnInit {
       }
     } catch (err) {
       console.error('Error loading profile:', err);
-      // Fallback to basic user data
       const currentUser = this.auth.user();
       if (currentUser) {
         this.user = {
@@ -129,7 +126,6 @@ export class Perfil implements OnInit {
 
       if (updated) {
         this.user = updated;
-        // Update auth service user
         await this.auth.fetchMe();
         this.showEditModal.set(false);
       }
@@ -197,8 +193,8 @@ export class Perfil implements OnInit {
       await this.router.navigate(['/login']);
     } catch (err) {
       console.error('Error during logout:', err);
-      // Navigate anyway
       await this.router.navigate(['/login']);
     }
   }
 }
+

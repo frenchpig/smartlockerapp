@@ -4,6 +4,7 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
+import { HeaderClienteComponent } from '../shared/header-cliente/header-cliente.component';
 
 type LogisticaEstado = 'pendiente_repartidor' | 'asignado' | 'en_camino' | 'completado';
 type EstadoVisual = 'Listo para recoger' | 'En camino' | 'Pendiente de repartidor' | 'Repartidor asignado' | 'Cancelado';
@@ -26,7 +27,7 @@ interface Pedido {
 @Component({
   standalone: true,
   selector: 'app-home',
-  imports: [CommonModule, RouterModule, DatePipe],
+  imports: [CommonModule, RouterModule, DatePipe, HeaderClienteComponent],
   templateUrl: './home.html',
   styleUrls: ['./home.scss']
 })

@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { environment } from '../../../../environments/environment';
 import { AuthService } from '../../../core/auth/auth';
+import { HeaderRepartidorComponent } from '../shared/header-repartidor/header-repartidor.component';
 
 type LogisticaEstado = 'pendiente_repartidor' | 'asignado' | 'en_camino' | 'completado';
 
@@ -35,7 +36,7 @@ interface Paginacion {
 @Component({
   standalone: true,
   selector: 'app-repartidor-home',
-  imports: [CommonModule, RouterModule, DatePipe, FormsModule],
+  imports: [CommonModule, RouterModule, DatePipe, FormsModule, HeaderRepartidorComponent],
   templateUrl: './repartidor-home.html',
   styleUrls: ['./repartidor-home.scss'],
 })
