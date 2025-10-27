@@ -1,0 +1,74 @@
+:root {
+    --brand: #16a34a;
+    --brand-600: #15803d;
+    --brand-50: #dcfce7;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --border: rgba(0, 0, 0, .08);
+}
+
+.table-responsive {
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.table-responsive table {
+    margin: 0;
+}
+
+.table thead th {
+    background: #f9fafb;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.table tbody tr {
+    border-bottom: 1px solid var(--border);
+}
+
+.table tbody tr:hover {
+    background: #fafafa;
+}
+
+.btn-outline-success {
+    color: var(--brand-600);
+    border-color: var(--brand-600);
+}
+
+.btn-outline-success:hover {
+    background: var(--brand-600);
+    color: #fff;
+}
+
+.badge-logistica {
+    display: inline-block;
+    padding: .35rem .75rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: .9rem;
+}
+
+.badge-logistica-pendiente {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.badge-logistica-asignado {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.badge-logistica-en-camino {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.badge-logistica-completado {
+    background: #dcfce7;
+    color: #166534;
+}
+
+footer {
+    margin-top: 2.5rem;
+}

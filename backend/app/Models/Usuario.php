@@ -13,7 +13,7 @@ class Usuario extends Authenticatable
 
     protected $table = 'usuarios';
 
-    public const ROLES = ['empresa', 'usuario', 'administrador', 'tecnico'];
+    public const ROLES = ['empresa', 'usuario', 'administrador', 'tecnico', 'repartidor'];
 
     protected $fillable = [
         'nombre',

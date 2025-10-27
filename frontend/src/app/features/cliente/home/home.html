@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -29,8 +29,8 @@
                         <i class="bi bi-person-circle me-2"></i> {{ user()?.nombre || 'Perfil' }}
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" routerLink="/cliente">Mis pedidos</a></li>
-                        <li><a class="dropdown-item" routerLink="/perfil">Perfil</a></li>
+                        <li><a class="dropdown-item" routerLink="/cliente/mis-pedidos">Mis pedidos</a></li>
+                        <li><a class="dropdown-item" routerLink="/cliente/perfil">Perfil</a></li>
                         <li>
                             <hr class="dropdown-divider">
                         </li>
@@ -68,23 +68,33 @@
             <ul class="list-unstyled m-0" *ngIf="!loading && pedidos.length">
                 <li *ngFor="let p of pedidos" class="mb-3">
                     <article class="card card-soft p-3" [attr.aria-label]="'Pedido ' + p.id">
-                        <header class="mb-2 d-flex justify-content-between align-items-start flex-wrap">
+                        <header class="mb-2 d-flex justify-content-between align-items-start flex-wrap gap-2">
                             <h4 class="h6 fw-bold m-0">Pedido #{{ p.id }}</h4>
-                            <span class="badge" [class.bg-success]="p.estado==='Activo'"
-                                [class.bg-secondary]="p.estado!=='Activo'">
+                            <span class="badge rounded-pill px-3 py-2" [ngClass]="p.estadoBadge">
                                 {{ p.estado }}
                             </span>
                         </header>
 
                         <p class="text-muted mb-3">
-                            <span class="dot" [ngClass]="p.estado==='Activo' ? 'ok' : 'warn'"></span>
+                            <span class="dot" [ngClass]="{
+                                'ok': p.logisticaEstado === 'completado',
+                                'warn': p.logisticaEstado === 'en_camino',
+                                'pending': p.logisticaEstado !== 'en_camino' && p.logisticaEstado !== 'completado'
+                            }"></span>
                             <span class="ms-1">Locker <strong>{{ p.locker }}</strong></span> ·
                             <span>{{ p.sede }}</span> ·
                             <time [attr.datetime]="p.creadoEl">{{ p.creadoEl | date:'medium' }}</time>
+                            <br>
+                            <span class="badge-logistica" [ngClass]="p.logisticaBadge">{{ p.logisticaLabel }}</span>
                         </p>
                         <footer class="d-flex flex-wrap gap-2 justify-content-end">
-                            <button class="btn btn-primary" (click)="abrirConClave(p.id)" *ngIf="p.tipoAcceso === 'codigo_temporal' && p.estado === 'Activo'">
-                                Ingresar Clave
+                            <button class="btn btn-primary"
+                                type="button"
+                                [class.disabled]="!p.canVerCodigo"
+                                [attr.aria-disabled]="!p.canVerCodigo"
+                                [disabled]="!p.canVerCodigo"
+                                (click)="abrirPedido(p)">
+                                {{ p.tipoAcceso === 'qr' ? 'Ver QR' : 'Ver codigo' }}
                             </button>
                         </footer>
 
@@ -102,3 +112,4 @@
 </body>
 
 </html>
+

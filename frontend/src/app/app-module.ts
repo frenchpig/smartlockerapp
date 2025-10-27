@@ -6,10 +6,14 @@ import { App } from './app';
 import { TestBackend } from './features/test-backend/test-backend';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from './core/auth/auth-interceptor';
+import { deviceAuthInterceptor } from './core/auth/device-auth.interceptor';
 
 import { Home } from './features/cliente/home/home';
 import { PedidoClave } from './features/cliente/pedido-clave/pedido-clave';
 import { PedidoQr } from './features/cliente/pedido-qr/pedido-qr';
+import { MisPedidos } from './features/cliente/mis-pedidos/mis-pedidos';
+import { RepartidorHome } from './features/repartidor/home/repartidor-home';
+import { ReservaNuevaComponent } from './features/empresa/reservas/reserva-nueva/reserva-nueva';
 
 @NgModule({
   declarations: [App, TestBackend,],
@@ -19,13 +23,15 @@ import { PedidoQr } from './features/cliente/pedido-qr/pedido-qr';
     AppRoutingModule,
     Home,
     PedidoClave,
-    PedidoQr
+    PedidoQr,
+    MisPedidos,
+    RepartidorHome,
+    ReservaNuevaComponent
   ],
 
   providers: [
-    provideHttpClient(withInterceptors([authInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor, deviceAuthInterceptor])),
     provideBrowserGlobalErrorListeners(),
-    provideHttpClient(),
   ],
 
   bootstrap: [App]

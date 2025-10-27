@@ -1,0 +1,167 @@
+#saludo-usuario+p,
+section[aria-labelledby="saludo-usuario"] p {
+    color: var(--muted);
+}
+
+section[aria-labelledby="historial-pedidos"] header small {
+    color: var(--muted);
+}
+
+article.card-soft {
+    transition: box-shadow .2s ease, transform .05s ease;
+}
+
+article.card-soft:hover {
+    transform: translateY(-1px);
+}
+
+article.card-soft p.text-muted {
+    margin-bottom: 1rem !important;
+    color: var(--muted) !important;
+}
+
+.badge {
+    padding: .4rem .6rem;
+    border-radius: 2rem;
+    font-weight: 600;
+}
+
+.history-meta {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+    color: var(--muted);
+}
+
+.history-meta .badge {
+    border-radius: .5rem;
+    font-weight: 500;
+}
+
+.badge-logistica {
+    display: inline-block;
+    padding: .35rem .75rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: .85rem;
+}
+
+.badge-logistica-pendiente {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.badge-logistica-asignado {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.badge-logistica-en-camino {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.badge-logistica-completado {
+    background: #dcfce7;
+    color: #166534;
+}
+
+footer.d-flex.stack-sm .btn {
+    min-width: 10rem;
+}
+
+@media (max-width: 576px) {
+    footer.d-flex .btn {
+        width: 100%;
+    }
+}
+
+.container-narrow {
+    max-width: 920px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+header.border-bottom,
+footer.border-top {
+    text-align: center;
+}
+
+.header-green .btn-ghost {
+    background-color: #ffffff;
+    color: #16a34a;
+    border: none;
+    transition: all .2s ease-in-out;
+}
+
+.header-green .btn-ghost:hover,
+.header-green .btn-ghost:focus {
+    color: #000000;
+}
+
+.header-green .btn-ghost:active {
+    background-color: #c8e6c9;
+}
+
+.app-shell {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+}
+
+.app-shell main {
+    flex: 1;
+}
+
+.header-green .dropdown-toggle {
+    color: #ffffff;
+    background: transparent;
+    border: none;
+}
+
+.header-green .dropdown-toggle:hover,
+.header-green .dropdown-toggle:focus,
+.header-green .dropdown-toggle:active {
+    color: #e6ffe6;
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: none;
+    outline: none;
+}
+
+.header-green .dropdown-menu {
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.header-green .dropdown-item:hover {
+    background-color: #e8f5e9;
+    color: #0f7a2a;
+}
+
+.dot.pending {
+    background-color: #cbd5f5;
+}
+
+.dot.error {
+    background-color: #dc3545;
+}
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.pagination-controls .btn {
+    min-width: 9rem;
+}
+
+.page-indicator {
+    font-weight: 600;
+    color: var(--muted);
+}

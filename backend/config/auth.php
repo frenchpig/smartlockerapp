@@ -65,6 +65,11 @@ return [
             'model' => env('AUTH_MODEL', App\Models\User::class),
         ],
 
+        'ubicaciones' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Ubicacion::class,
+        ],
+
         // 'users' => [
         //     'driver' => 'database',
         //     'table' => 'users',

@@ -8,9 +8,18 @@ use Illuminate\Validation\Rule;
 
 class UsuarioController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return Usuario::paginate(20);
+        $query = Usuario::query();
+
+        if ($rol = $request->query('rol')) {
+            $query->where('rol', $rol);
+        }
+
+        $perPage = (int) $request->query('per_page', 20);
+        $perPage = max(1, min(200, $perPage));
+
+        return $query->paginate($perPage);
     }
 
     public function show(Usuario $usuario)
@@ -26,7 +35,7 @@ class UsuarioController extends Controller
             'email'     => ['required','email','max:255','unique:usuarios,email'],
             'contrasena'=> ['required','string','min:6'],
             'telefono'  => ['nullable','string','max:50'],
-            'rol'       => ['required', Rule::in(['empresa','usuario','administrador','tecnico'])],
+            'rol'       => ['required', Rule::in(Usuario::ROLES)],
         ]);
 
         $usuario = Usuario::create($data); // mutator aplica SHA-256
@@ -42,7 +51,7 @@ class UsuarioController extends Controller
             'email'     => ['sometimes','email','max:255', Rule::unique('usuarios','email')->ignore($usuario->id)],
             'contrasena'=> ['sometimes','string','min:6'],
             'telefono'  => ['sometimes','nullable','string','max:50'],
-            'rol'       => ['sometimes', Rule::in(['empresa','usuario','administrador','tecnico'])],
+            'rol'       => ['sometimes', Rule::in(Usuario::ROLES)],
         ]);
 
         $usuario->update($data);

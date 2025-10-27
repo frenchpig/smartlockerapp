@@ -40,7 +40,12 @@ export class LoginComponent {
         password: this.form.value.password,
         remember: !!this.form.value.remember
       });
-      await this.router.navigate(['/cliente']);
+      const user = this.auth.user();
+      let target = '/cliente';
+      if (user?.rol === 'empresa') target = '/empresa';
+      else if (user?.rol === 'administrador' || user?.rol === 'tecnico') target = '/dashboard';
+      else if (user?.rol === 'repartidor') target = '/repartidor';
+      await this.router.navigate([target]);
     } catch (err: any) {
       console.error(err);
       alert(err?.error?.message || 'Credenciales inválidas o error de servidor');

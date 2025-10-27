@@ -15,20 +15,21 @@ class Locker extends Model
 
     protected $fillable = [
         'numero',
-        'ubicacion',
-        'latitud',
-        'longitud',
+        'ubicacion_id',
         'estado',
         'tamano',
         'codigo_acceso_temporal',
     ];
 
     protected $casts = [
-        'latitud' => 'float',
-        'longitud' => 'float',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function ubicacion()
+    {
+        return $this->belongsTo(Ubicacion::class, 'ubicacion_id');
+    }
 
     // Relaciones
     public function reservas()

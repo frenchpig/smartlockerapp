@@ -8,22 +8,30 @@ use Illuminate\Validation\Rule;
 
 class LockerController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return Locker::paginate(20);
+        $perPage = (int) $request->query('per_page', 20);
+        $perPage = max(1, min(200, $perPage));
+
+        $query = Locker::with('ubicacion');
+
+        if ($ubicacionId = $request->query('ubicacion_id')) {
+            $query->where('ubicacion_id', $ubicacionId);
+        }
+
+        return $query->paginate($perPage);
     }
 
     public function show(Locker $locker)
     {
-        return $locker;
+        return $locker->load('ubicacion');
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
-            'ubicacion'              => ['required','string','max:255'],
-            'latitud'                => ['required','numeric'],
-            'longitud'               => ['required','numeric'],
+            'numero'                 => ['required','integer','min:1'],
+            'ubicacion_id'           => ['required','integer','exists:ubicaciones,id'],
             'estado'                 => ['required', Rule::in(Locker::ESTADOS)],
             'tamano'                 => ['required','string','max:100'],
             'codigo_acceso_temporal' => ['nullable','string','max:100'],
@@ -31,15 +39,14 @@ class LockerController extends Controller
 
         $locker = Locker::create($data);
 
-        return response()->json($locker, 201);
+        return response()->json($locker->load('ubicacion'), 201);
     }
 
     public function update(Request $request, Locker $locker)
     {
         $data = $request->validate([
-            'ubicacion'              => ['sometimes','string','max:255'],
-            'latitud'                => ['sometimes','numeric'],
-            'longitud'               => ['sometimes','numeric'],
+            'numero'                 => ['sometimes','integer','min:1'],
+            'ubicacion_id'           => ['sometimes','integer','exists:ubicaciones,id'],
             'estado'                 => ['sometimes', Rule::in(Locker::ESTADOS)],
             'tamano'                 => ['sometimes','string','max:100'],
             'codigo_acceso_temporal' => ['sometimes','nullable','string','max:100'],
@@ -47,7 +54,7 @@ class LockerController extends Controller
 
         $locker->update($data);
 
-        return $locker;
+        return $locker->load('ubicacion');
     }
 
     public function destroy(Locker $locker)

@@ -1,11 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { QRCodeComponent } from 'angularx-qrcode';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
-
 
 type Estado = 'Activo' | 'Entregado' | 'Cancelado';
 interface Pedido {
@@ -13,32 +10,43 @@ interface Pedido {
   estado: Estado;
   locker: string;
   sede: string;
+  latitud?: number | null;
+  longitud?: number | null;
   creadoEl: string;
 }
+
+type EstadoCodigoResponse = {
+  has_code: boolean;
+  is_valid: boolean;
+  expires_at?: string;
+  code?: string;
+};
+
+type CodigoResponse = {
+  code: string;
+  expires_at: string;
+  valid_for_seconds: number;
+};
 
 @Component({
   standalone: true,
   selector: 'app-pedido-clave',
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, DatePipe, QRCodeComponent],
+  imports: [CommonModule, RouterModule, DatePipe],
   templateUrl: './pedido-clave.html',
   styleUrls: ['./pedido-clave.scss']
 })
-export class PedidoClave implements OnInit {
+export class PedidoClave implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
 
   pedido?: Pedido;
-
-  clave = new FormControl<string>('', [
-    Validators.required,
-    Validators.pattern(/^\d{6}$/),
-  ]);
-
-  enviando = false;
-  errorMsg = '';
-  qrData: string | null = null;
+  codigo?: string;
   expiresAt?: string;
+  errorMsg = '';
+  loadingCodigo = false;
+  private checkingEstado = false;
+  private pollHandle?: ReturnType<typeof setInterval>;
 
   ngOnInit(): void {
     const idParam = this.route.snapshot.paramMap.get('id');
@@ -49,21 +57,34 @@ export class PedidoClave implements OnInit {
       return;
     }
 
-    this.pedido = { id, estado: 'Activo', locker: '#—', sede: '—', creadoEl: new Date().toISOString() };
-    this.cargarPedido(id);
+    this.pedido = { id, estado: 'Activo', locker: '#---', sede: '---', creadoEl: new Date().toISOString() };
+    void this.inicializar(id);
+  }
 
-    // En entorno local, intentamos obtener el código vigente para mostrarlo por consola
-    if (!environment.production) {
-      this.http.get<{ has_code: boolean; is_valid: boolean; code?: string }>(
-        `${environment.apiUrl}/reservas/${id}/codigo-temporal/estado`
-      ).toPromise().then(r => {
-        if (r?.has_code && r.is_valid && r.code) {
-          // Solo log para facilitar pruebas locales
-          // eslint-disable-next-line no-console
-          console.log('[DEV] Código temporal vigente:', r.code);
-        }
-      }).catch(() => {});
+  ngOnDestroy(): void {
+    if (this.pollHandle) {
+      clearInterval(this.pollHandle);
     }
+  }
+
+  private async inicializar(id: number) {
+    await this.cargarPedido(id);
+    await this.ensureCodigoDisponible();
+    this.iniciarPolling();
+
+    if (!environment.production) {
+      console.log('[DEV] Monitor de código temporal activo para reserva', id);
+    }
+  }
+
+  private iniciarPolling(): void {
+    if (this.pollHandle) {
+      clearInterval(this.pollHandle);
+    }
+
+    this.pollHandle = setInterval(() => {
+      void this.verificarEstadoCodigo();
+    }, 5000);
   }
 
   private mapEstado(estadoApi: string): Estado {
@@ -77,7 +98,7 @@ export class PedidoClave implements OnInit {
 
   private async cargarPedido(id: number) {
     try {
-      const r: any | undefined = await this.http
+      const r = await this.http
         .get<any>(`${environment.apiUrl}/reservas/${id}`)
         .toPromise();
       if (r) {
@@ -85,7 +106,9 @@ export class PedidoClave implements OnInit {
           id: r.id,
           estado: this.mapEstado(r.estado),
           locker: `#${r.locker?.numero ?? r.locker?.id ?? r.locker_id ?? ''}`,
-          sede: r.locker?.ubicacion ?? '—',
+          sede: r.locker?.ubicacion?.nombre ?? '---',
+          latitud: r.locker?.ubicacion?.latitud ?? null,
+          longitud: r.locker?.ubicacion?.longitud ?? null,
           creadoEl: r.created_at ?? r.fecha_reserva ?? new Date().toISOString(),
         };
       }
@@ -94,61 +117,96 @@ export class PedidoClave implements OnInit {
     }
   }
 
+  private async ensureCodigoDisponible() {
+    if (!this.pedido) return;
 
-  press(n: string) {
-    if (this.enviando) return;
-    const v = this.clave.value ?? '';
-    if (v.length >= 6) return;
-    this.clave.setValue(v + n);
-
-    // Para ingresar sin usar el boton :p
-    // if ((this.clave.value?.length ?? 0) === 6) {
-    //   this.enviar();
-    // }
-
-  }
-
-
-  borrar() {
-    if (this.enviando) return;
-    const v = this.clave.value ?? '';
-    this.clave.setValue(v.slice(0, -1));
-  }
-
-  limpiar() {
-    if (this.enviando) return;
-    this.clave.setValue('');
+    this.loadingCodigo = true;
     this.errorMsg = '';
-    this.qrData = null;
-    this.expiresAt = undefined;
-  }
-
-  async enviar() {
-    if (this.enviando) return;
-    if (!this.clave.valid) {
-      this.errorMsg = 'Ingresa los 6 dígitos.';
-      return;
-    }
-
-    this.enviando = true;
-    this.errorMsg = '';
-    this.qrData = null;
 
     try {
-      await this.http.post(
-        `${environment.apiUrl}/reservas/${this.pedido!.id}/codigo-temporal/verificar`,
-        { code: this.clave.value }
-      ).toPromise();
-
-      // Éxito: volver a la lista del cliente
-      this.router.navigate(['/cliente']);
-    } catch (err: any) {
-      const msg = err?.error?.message || 'Código inválido o vencido';
-      this.errorMsg = msg;
+      const tieneCodigo = await this.actualizarCodigoDesdeEstado();
+      if (!tieneCodigo) {
+        await this.generarNuevoCodigo();
+      }
     } finally {
-      this.enviando = false;
+      this.loadingCodigo = false;
     }
   }
 
-  get lleno(): boolean { /* ... */ return (this.clave.value?.length ?? 0) === 6; }
+  private async actualizarCodigoDesdeEstado(): Promise<boolean> {
+    if (!this.pedido) return false;
+
+    try {
+      const estado = await this.http
+        .get<EstadoCodigoResponse>(`${environment.apiUrl}/reservas/${this.pedido.id}/codigo-temporal/estado`)
+        .toPromise();
+
+      if (estado?.has_code && estado.is_valid) {
+        if (estado.code) {
+          this.codigo = estado.code;
+        }
+        this.expiresAt = estado.expires_at;
+        this.errorMsg = '';
+        return true;
+      }
+
+      this.codigo = undefined;
+      this.expiresAt = estado?.expires_at;
+      return false;
+    } catch (error: any) {
+      console.error('No se pudo consultar el estado del código temporal', error);
+      this.errorMsg = error?.error?.message ?? 'No se pudo consultar el estado del código temporal.';
+      return false;
+    }
+  }
+
+  private async generarNuevoCodigo(): Promise<boolean> {
+    if (!this.pedido) return false;
+
+    try {
+      const data = await this.http
+        .post<CodigoResponse>(`${environment.apiUrl}/reservas/${this.pedido.id}/codigo-temporal`, {})
+        .toPromise();
+
+      if (data?.code) {
+        this.codigo = data.code;
+        this.expiresAt = data.expires_at;
+        this.errorMsg = '';
+        return true;
+      }
+
+      this.errorMsg = 'No se pudo obtener un nuevo código temporal.';
+      return false;
+    } catch (error: any) {
+      console.error('No se pudo generar un nuevo código temporal', error);
+      this.errorMsg = error?.error?.message ?? 'No se pudo generar un nuevo código temporal.';
+      return false;
+    }
+  }
+
+  private async verificarEstadoCodigo() {
+    if (!this.pedido || this.checkingEstado) return;
+
+    this.checkingEstado = true;
+
+    try {
+      const vigente = await this.actualizarCodigoDesdeEstado();
+      if (vigente) return;
+
+      await this.cargarPedido(this.pedido.id);
+      if (this.pedido?.estado !== 'Activo') {
+        this.router.navigate(['/cliente']);
+        return;
+      }
+
+      await this.generarNuevoCodigo();
+    } finally {
+      this.checkingEstado = false;
+    }
+  }
+
+  get codigoDigits(): string[] {
+    const digits = this.codigo ? this.codigo.split('') : [];
+    return Array.from({ length: 6 }, (_, i) => digits[i] ?? '–');
+  }
 }

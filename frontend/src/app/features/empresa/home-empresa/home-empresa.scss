@@ -141,6 +141,34 @@
     /* verde suave/medio */
 }
 
+.badge-logistica {
+    display: inline-block;
+    padding: .35rem .75rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: .9rem;
+}
+
+.badge-logistica-pendiente {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.badge-logistica-asignado {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.badge-logistica-en-camino {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.badge-logistica-completado {
+    background: #dcfce7;
+    color: #166534;
+}
+
 .btn-outline-success {
     color: var(--brand-600);
     border-color: var(--brand-600);
@@ -153,4 +181,27 @@
 
 footer {
     margin-top: 2.5rem;
+}
+
+.card-filter {
+    background: #fff;
+    border-radius: 1rem;
+    border: 1px solid var(--border);
+}
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.pagination-controls .btn {
+    min-width: 9rem;
+}
+
+.page-indicator {
+    font-weight: 600;
+    color: var(--muted);
 }

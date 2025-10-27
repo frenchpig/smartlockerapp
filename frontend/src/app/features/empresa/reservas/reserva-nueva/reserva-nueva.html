@@ -1,0 +1,139 @@
+<header class="bg-success text-white py-3 shadow-sm">
+  <div class="container d-flex align-items-center justify-content-between">
+    <h1 class="h5 mb-0 fw-bold">Nueva reserva</h1>
+    <a class="btn btn-outline-light btn-sm" routerLink="/empresa">
+      <i class="bi bi-arrow-left me-1"></i> Volver
+    </a>
+  </div>
+</header>
+
+<main class="py-4">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-12 col-lg-8">
+        <div class="card shadow-sm border-0">
+          <div class="card-body p-4">
+            <h2 class="h5 mb-3">Datos de la reserva</h2>
+
+            <p class="text-muted mb-4">
+              Selecciona al cliente, la ubicacion y los horarios para generar la solicitud. El repartidor se asigna automaticamente.
+            </p>
+
+            <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+              <div class="row g-3">
+                <div class="col-12">
+                  <label for="cliente" class="form-label fw-semibold">Cliente</label>
+                  <input
+                    type="text"
+                    class="form-control mb-2"
+                    id="clienteFiltro"
+                    placeholder="Buscar por correo"
+                    [value]="clienteFiltro"
+                    (input)="onClienteFiltro($any($event.target).value)"
+                    [disabled]="loadingData || submitting"
+                  />
+                  <select id="cliente" class="form-select" formControlName="usuario_id" [disabled]="loadingData || submitting">
+                    <option value="" disabled>Selecciona un cliente</option>
+                    <option *ngFor="let c of clientesFiltrados" [value]="c.id">{{ c.label }} - {{ c.email }}</option>
+                  </select>
+                  <div
+                    class="invalid-feedback d-block"
+                    *ngIf="form.controls.usuario_id.invalid && (form.controls.usuario_id.dirty || form.controls.usuario_id.touched)"
+                  >
+                    Debes seleccionar un cliente.
+                  </div>
+                </div>
+
+                <div class="col-12">
+                  <label for="ubicacion" class="form-label fw-semibold">Ubicacion</label>
+                  <select
+                    id="ubicacion"
+                    class="form-select"
+                    formControlName="ubicacion_id"
+                    (change)="onUbicacionChange($event)"
+                    [disabled]="loadingData || submitting"
+                  >
+                    <option value="" disabled>Selecciona una ubicacion</option>
+                    <option *ngFor="let u of ubicaciones" [value]="u.id">{{ u.nombre }}</option>
+                  </select>
+                  <div
+                    class="invalid-feedback d-block"
+                    *ngIf="form.controls.ubicacion_id.invalid && (form.controls.ubicacion_id.dirty || form.controls.ubicacion_id.touched)"
+                  >
+                    Debes seleccionar una ubicacion.
+                  </div>
+                </div>
+
+                <div class="col-12">
+                  <label for="locker" class="form-label fw-semibold">Locker</label>
+                  <select
+                    id="locker"
+                    class="form-select"
+                    formControlName="locker_id"
+                    [disabled]="submitting || !lockersFiltrados.length"
+                  >
+                    <option value="" disabled>
+                      {{ lockersFiltrados.length ? 'Selecciona un locker' : 'No hay lockers disponibles' }}
+                    </option>
+                    <option *ngFor="let l of lockersFiltrados" [value]="l.id">{{ l.label }}</option>
+                  </select>
+                  <div
+                    class="invalid-feedback d-block"
+                    *ngIf="form.controls.locker_id.invalid && (form.controls.locker_id.dirty || form.controls.locker_id.touched)"
+                  >
+                    Debes seleccionar un locker.
+                  </div>
+                  <small class="text-muted" *ngIf="form.value.ubicacion_id && !lockersFiltrados.length">
+                    No hay lockers disponibles en esta ubicacion.
+                  </small>
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <label for="fecha" class="form-label fw-semibold">Fecha</label>
+                  <input id="fecha" type="date" class="form-control" formControlName="fecha_reserva" [disabled]="submitting" />
+                  <div
+                    class="invalid-feedback d-block"
+                    *ngIf="form.controls.fecha_reserva.invalid && (form.controls.fecha_reserva.dirty || form.controls.fecha_reserva.touched)"
+                  >
+                    Selecciona una fecha valida.
+                  </div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <label for="horaInicio" class="form-label fw-semibold">Hora inicio</label>
+                  <input id="horaInicio" type="time" class="form-control" formControlName="hora_inicio" [disabled]="submitting" />
+                  <div
+                    class="invalid-feedback d-block"
+                    *ngIf="form.controls.hora_inicio.invalid && (form.controls.hora_inicio.dirty || form.controls.hora_inicio.touched)"
+                  >
+                    Selecciona una hora valida.
+                  </div>
+                </div>
+
+                <div class="col-12">
+                  <label for="tipoAcceso" class="form-label fw-semibold">Tipo de acceso</label>
+                  <select id="tipoAcceso" class="form-select" formControlName="tipo_acceso" [disabled]="submitting">
+                    <option value="codigo_temporal">Codigo temporal</option>
+                    <option value="qr">Codigo QR</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="alert alert-danger mt-4" role="alert" *ngIf="errorMsg">
+                {{ errorMsg }}
+              </div>
+
+              <div class="d-flex justify-content-end gap-2 mt-4">
+                <button class="btn btn-outline-secondary" type="button" (click)="cancelar()" [disabled]="submitting">Cancelar</button>
+                <button class="btn btn-success" type="submit" [disabled]="submitting || loadingData">
+                  <span *ngIf="submitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  Crear reserva
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

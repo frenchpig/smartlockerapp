@@ -12,10 +12,12 @@ class Reserva extends Model
     protected $table = 'reservas';
 
     public const ESTADOS = ['pendiente', 'completado', 'anulado'];
+    public const LOGISTICA_ESTADOS = ['pendiente_repartidor', 'asignado', 'en_camino', 'completado'];
     public const TIPOS_ACCESO = ['qr', 'codigo_temporal'];
 
     protected $fillable = [
         'usuario_id',
+        'empresa_id',
         'locker_id',
         'fecha_reserva',
         'hora_inicio',
@@ -23,6 +25,8 @@ class Reserva extends Model
         'estado',
         'tipo_acceso',
         'codigo_acceso',
+        'repartidor_id',
+        'logistica_estado',
     ];
 
     protected $casts = [
@@ -33,14 +37,35 @@ class Reserva extends Model
         'updated_at'    => 'datetime',
     ];
 
+    protected $with = [
+        'locker.ubicacion',
+        'repartidor.usuario',
+        'articulos',
+    ];
+
     // Relaciones
     public function usuario()
     {
         return $this->belongsTo(Usuario::class, 'usuario_id');
     }
 
+    public function empresa()
+    {
+        return $this->belongsTo(Usuario::class, 'empresa_id');
+    }
+
     public function locker()
     {
         return $this->belongsTo(Locker::class, 'locker_id');
+    }
+
+    public function repartidor()
+    {
+        return $this->belongsTo(Repartidor::class, 'repartidor_id');
+    }
+
+    public function articulos()
+    {
+        return $this->hasMany(ArticuloReserva::class, 'reserva_id');
     }
 }

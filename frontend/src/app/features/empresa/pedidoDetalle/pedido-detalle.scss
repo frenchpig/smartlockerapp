@@ -1,47 +1,46 @@
-.container {
-    max-width: 900px;
+:root {
+    --brand: #16a34a;
+    --brand-600: #15803d;
+    --brand-50: #dcfce7;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --border: rgba(0, 0, 0, .08);
 }
 
-.card {
-    border-radius: .8rem;
+.table-responsive {
+    border-radius: 1rem;
+    overflow: hidden;
 }
 
-.btn {
-    border-radius: .6rem;
+.table-responsive table {
+    margin: 0;
 }
 
-.pedido-detalle {
-    max-width: 900px;
+.table thead th {
+    background: #f9fafb;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    font-weight: 600;
+}
 
-    h2,
-    h3 {
-        color: #155724;
-    }
+.table tbody tr {
+    border-bottom: 1px solid var(--border);
+}
 
-    .card {
-        border-radius: 1rem;
-        transition: all 0.3s ease;
-    }
+.table tbody tr:hover {
+    background: #fafafa;
+}
 
-    .card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-    }
+.btn-outline-success {
+    color: var(--brand-600);
+    border-color: var(--brand-600);
+}
 
-    table {
-        border-radius: 0.5rem;
-        overflow: hidden;
-    }
+.btn-outline-success:hover {
+    background: var(--brand-600);
+    color: #fff;
+}
 
-    th {
-        font-weight: 600;
-    }
-
-    td {
-        vertical-align: middle;
-    }
-
-    .btn-outline-success {
-        border-radius: 0.6rem;
-    }
+footer {
+    margin-top: 2.5rem;
 }

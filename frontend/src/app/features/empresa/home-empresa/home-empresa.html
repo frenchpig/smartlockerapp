@@ -1,13 +1,4 @@
-<header class="bg-success text-white py-3 shadow-sm">
-    <div class="container d-flex align-items-center justify-content-between">
-        <h1 class="h5 mb-0 fw-bold">Panel Empresa</h1>
-
-        <div class="d-flex align-items-center gap-2">
-            <a routerLink="/empresa/pedidos" class="btn btn-outline-light btn-sm">Pedidos</a>
-            <a routerLink="/empresa/lockers" class="btn btn-outline-light btn-sm">Lockers</a>
-        </div>
-    </div>
-</header>
+<app-header-empresa titulo="Panel Empresa"></app-header-empresa>
 
 <main class="py-4">
     <div class="container">
@@ -15,100 +6,134 @@
             <div class="col-12 col-lg-11 col-xl-10">
 
                 <div class="row g-4 mb-4">
-                    <div class="col-12 col-md-6 col-lg-4">
+                    <div class="col-12 col-md-6 col-lg-4" *ngFor="let kpi of kpis">
                         <div class="card border-0 shadow-sm h-100">
                             <div class="card-body">
-                                <p class="text-muted mb-1 fw-semibold">Pedidos de hoy</p>
-                                <div class="display-6 fw-bold">36</div>
-                                <small class="text-success">+12% vs ayer</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-12 col-md-6 col-lg-4">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <p class="text-muted mb-1 fw-semibold">Lockers activos</p>
-                                <div class="display-6 fw-bold">18</div>
-                                <small class="text-muted">de 24 totales</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-12 col-md-6 col-lg-4">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <p class="text-muted mb-1 fw-semibold">Ocupación</p>
-                                <div class="display-6 fw-bold">74%</div>
-                                <small class="text-muted">últimas 24h</small>
+                                <p class="text-muted mb-1 fw-semibold">{{ kpi.label }}</p>
+                                <div class="display-6 fw-bold">{{ kpi.value }}</div>
+                                <small class="text-muted">{{ kpi.hint }}</small>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h2 class="h5 mb-0">Últimos pedidos</h2>
-                    <a class="btn btn-success btn-sm" routerLink="/empresa/pedidos">Ver todos</a>
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+                    <div>
+                        <h2 class="h5 mb-0">Pedidos de esta semana</h2>
+                        <small class="text-muted">Total: {{ total }} registros (últimos 7 días)</small>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a class="btn btn-primary btn-sm" routerLink="/empresa/reservas/nueva">
+                            <i class="bi bi-plus-lg me-1"></i> Nueva reserva
+                        </a>
+                        <button class="btn btn-outline-success btn-sm" type="button" (click)="refrescar()">Refrescar</button>
+                        <a class="btn btn-success btn-sm" routerLink="/empresa/pedidos">Ver todos</a>
+                    </div>
                 </div>
 
-                <div class="table-responsive shadow-sm rounded">
+                <form class="card card-filter shadow-sm border-0 mb-4" (ngSubmit)="aplicarFiltros()">
+                    <div class="card-body">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-12 col-md-4">
+                                <label for="fEstado" class="form-label text-muted mb-1">Estado</label>
+                                <select id="fEstado" class="form-select" [(ngModel)]="filtroEstado" name="estado">
+                                    <option value="">Todos</option>
+                                    <option value="pendiente">Pendiente</option>
+                                    <option value="completado">Completado</option>
+                                    <option value="anulado">Anulado</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label for="fLogistica" class="form-label text-muted mb-1">Logística</label>
+                                <select id="fLogistica" class="form-select" [(ngModel)]="filtroLogistica" name="logistica_estado">
+                                    <option value="">Todas</option>
+                                    <option value="pendiente_repartidor">Pendiente de repartidor</option>
+                                    <option value="asignado">Asignado</option>
+                                    <option value="en_camino">En camino</option>
+                                    <option value="completado">Completado</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label for="fUbicacion" class="form-label text-muted mb-1">Ubicacion</label>
+                                <input id="fUbicacion" type="text" class="form-control" [(ngModel)]="filtroUbicacion" name="ubicacion" placeholder="Ej: Centro, Sucursal..." />
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label for="fEmail" class="form-label text-muted mb-1">Correo destinatario</label>
+                                <input id="fEmail" type="email" class="form-control" [(ngModel)]="filtroEmail" name="email" placeholder="usuario@dominio.cl" />
+                            </div>
+                            <div class="col-12 d-flex flex-wrap gap-2 justify-content-end">
+                                <button class="btn btn-outline-secondary" type="button" (click)="limpiarFiltros()">Limpiar</button>
+                                <button class="btn btn-success" type="submit">Aplicar filtros</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="d-flex justify-content-center py-4" *ngIf="loading">
+                    <div class="spinner-border text-success" role="status" aria-label="Cargando"></div>
+                </div>
+
+                <p class="text-muted" *ngIf="!loading && !pedidos.length">No hay pedidos en esta semana.</p>
+
+                <div class="table-responsive shadow-sm rounded" *ngIf="!loading && pedidos.length">
                     <table class="table align-middle mb-0">
                         <thead class="table-light">
                             <tr>
                                 <th>ID</th>
                                 <th>Locker</th>
+                                <th>Ubicacion</th>
                                 <th>Estado</th>
+                                <th>Logística</th>
+                                <th>Repartidor</th>
                                 <th>Destinatario</th>
+                                <th>Correo</th>
                                 <th>Fecha</th>
                                 <th></th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>#18655</td>
-                                <td>#02</td>
+                            <tr *ngFor="let pedido of pedidos">
+                                <td>#{{ pedido.id }}</td>
+                                <td>{{ pedido.locker }}</td>
+                                <td>{{ pedido.ubicacion }}</td>
                                 <td>
-                                    <span
-                                        class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis px-3 py-2">Pendiente</span>
+                                    <span class="badge rounded-pill px-3 py-2" [ngClass]="pedido.badgeClass">
+                                        {{ pedido.estadoLabel }}
+                                    </span>
                                 </td>
-                                <td>Ana Ruiz</td>
-                                <td>10/12/25, 9:10 AM</td>
-                                <td class="text-end">
-                                    <button class="btn btn-outline-secondary btn-sm">Detalle</button>
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <td>#18654</td>
-                                <td>#12</td>
                                 <td>
-                                    <span
-                                        class="badge rounded-pill bg-warning-subtle text-warning-emphasis px-3 py-2">En
-                                        camino</span>
+                                    <span class="badge rounded-pill px-3 py-2" [ngClass]="pedido.logisticaBadge">
+                                        {{ pedido.logisticaLabel }}
+                                    </span>
                                 </td>
-                                <td>Juan P.</td>
-                                <td>10/12/25, 8:40 AM</td>
-                                <td class="text-end">
-                                    <button class="btn btn-outline-secondary btn-sm">Detalle</button>
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <td>#18630</td>
-                                <td>#07</td>
                                 <td>
-                                    <span
-                                        class="badge rounded-pill bg-success-subtle text-success-emphasis px-3 py-2">Entregado</span>
+                                    <strong class="d-block">{{ pedido.repartidorNombre }}</strong>
+                                    <small class="text-muted" *ngIf="pedido.repartidorEmail !== pedido.repartidorNombre">
+                                        {{ pedido.repartidorEmail }}
+                                    </small>
                                 </td>
-                                <td>María L.</td>
-                                <td>10/12/25, 7:15 AM</td>
+                                <td>{{ pedido.destinatario }}</td>
+                                <td>{{ pedido.destinatarioEmail }}</td>
+                                <td>{{ pedido.fechaIso | date:'dd/MM/yy, h:mm a' }}</td>
                                 <td class="text-end">
-                                    <button class="btn btn-outline-secondary btn-sm">Detalle</button>
+                                    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="verDetalle(pedido.id)">
+                                        <i class="bi bi-eye me-1"></i>Detalle
+                                    </button>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
+
+                <nav class="pagination-controls mt-4" aria-label="Pedidos empresa" *ngIf="!loading && lastPage > 1">
+                    <button class="btn btn-outline-secondary" type="button" (click)="anterior()" [disabled]="page <= 1">
+                        <i class="bi bi-chevron-left me-1"></i> Anterior
+                    </button>
+                    <span class="page-indicator">Pagina {{ page }} de {{ lastPage }}</span>
+                    <button class="btn btn-outline-secondary" type="button" (click)="siguiente()" [disabled]="page >= lastPage">
+                        Siguiente <i class="bi bi-chevron-right ms-1"></i>
+                    </button>
+                </nav>
 
             </div>
         </div>
@@ -116,5 +141,5 @@
 </main>
 
 <footer class="text-center text-muted py-3">
-    <small>&copy; 2025 Smart Lockers — Empresa</small>
+    <small>&copy; 2025 Smart Lockers - Empresa</small>
 </footer>
