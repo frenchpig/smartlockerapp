@@ -12,6 +12,14 @@ use Carbon\Carbon;
 
 class DemoDataSeeder extends Seeder
 {
+    /**
+     * Seeder para datos de demostración
+     * 
+     * Crea:
+     * - 15 pedidos recientes (últimos días) - aparecen en home y pedidos
+     * - 10 pedidos antiguos (hace 10-37 días) - SOLO aparecen en pedidos, NO en home
+     * Total: 25 pedidos por empresa
+     */
     public function run(): void
     {
         // Usuarios
@@ -126,6 +134,7 @@ class DemoDataSeeder extends Seeder
             $usuario = $pair['usuario'];
             $empresa = $pair['empresa'];
 
+            // Crear 15 pedidos recientes (últimos 7 días y algunos fuera de ese rango)
             for ($i = 0; $i < 15; $i++) {
                 $fechaReserva = $now->copy()->subDays(($usuario->id % 2) + $i + 1);
                 $horaInicio = $fechaReserva->copy()->addHours(1);
@@ -159,6 +168,39 @@ class DemoDataSeeder extends Seeder
                 if ($estado !== 'completado') {
                     $repartidor->update(['disponible' => false]);
                 }
+            }
+
+            // Crear 10 pedidos antiguos (hace más de 7 días - no aparecerán en home pero sí en pedidos)
+            for ($i = 0; $i < 10; $i++) {
+                $diasAtras = 10 + $i * 3; // Entre 10 y 37 días atrás
+                $fechaReserva = $now->copy()->subDays($diasAtras);
+                $horaInicio = $fechaReserva->copy()->addHours(2);
+
+                $estado = $estadoSecuencia[($i + 1) % count($estadoSecuencia)];
+
+                $horaFin = null;
+                if ($estado === 'completado') {
+                    $horaFin = $horaInicio->copy()->addHours(2);
+                } elseif ($estado === 'anulado') {
+                    $horaFin = $horaInicio->copy()->addMinutes(30);
+                }
+
+                $locker = $lockers[$i % count($lockers)];
+                $repartidor = $repartidores[$i % count($repartidores)];
+
+                Reserva::create([
+                    'usuario_id' => $usuario->id,
+                    'empresa_id' => $empresa->id,
+                    'locker_id' => $locker->id,
+                    'repartidor_id' => $repartidor->id,
+                    'fecha_reserva' => $fechaReserva,
+                    'hora_inicio' => $horaInicio,
+                    'hora_fin' => $horaFin,
+                    'estado' => $estado,
+                    'logistica_estado' => 'completado', // Los antiguos están completados
+                    'tipo_acceso' => $i % 2 === 0 ? 'qr' : 'codigo_temporal',
+                    'codigo_acceso' => null,
+                ]);
             }
         }
 

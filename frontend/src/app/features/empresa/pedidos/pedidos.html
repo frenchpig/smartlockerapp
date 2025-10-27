@@ -14,35 +14,36 @@
 
                 <div class="card border-0 shadow-sm mb-3">
                     <div class="card-body">
-                        <div class="row g-2 align-items-center">
-                            <div class="col-12 col-md-6">
-                                <input type="search" class="form-control"
-                                    placeholder="Buscar por ID, locker o destinatario…" [(ngModel)]="q"
-                                    (ngModelChange)="aplicarFiltros()" />
+                        <div class="row g-2 align-items-end">
+                            <div class="col-12 col-md-4">
+                                <label for="fEstado" class="form-label text-muted mb-1">Estado</label>
+                                <select id="fEstado" class="form-select form-select-sm" [(ngModel)]="filtroEstado">
+                                    <option value="">Todos</option>
+                                    <option value="pendiente">Pendiente</option>
+                                    <option value="completado">Completado</option>
+                                    <option value="anulado">Anulado</option>
+                                </select>
                             </div>
-
-                            <div class="col-12 col-md-6 d-flex gap-2 justify-content-md-end">
-                                <div class="btn-group" role="group" aria-label="Filtro por estado">
-                                    <button class="btn btn-outline-secondary btn-sm" [class.active]="estado==='Todos'"
-                                        (click)="estado='Todos'; aplicarFiltros()">
-                                        Todos
-                                    </button>
-                                    <button class="btn btn-outline-secondary btn-sm"
-                                        [class.active]="estado==='Pendiente'"
-                                        (click)="estado='Pendiente'; aplicarFiltros()">
-                                        Pendiente
-                                    </button>
-                                    <button class="btn btn-outline-secondary btn-sm"
-                                        [class.active]="estado==='En camino'"
-                                        (click)="estado='En camino'; aplicarFiltros()">
-                                        En camino
-                                    </button>
-                                    <button class="btn btn-outline-secondary btn-sm"
-                                        [class.active]="estado==='Entregado'"
-                                        (click)="estado='Entregado'; aplicarFiltros()">
-                                        Entregado
-                                    </button>
-                                </div>
+                            <div class="col-12 col-md-4">
+                                <label for="fLogistica" class="form-label text-muted mb-1">Logística</label>
+                                <select id="fLogistica" class="form-select form-select-sm" [(ngModel)]="filtroLogistica">
+                                    <option value="">Todas</option>
+                                    <option value="pendiente_repartidor">Pendiente de repartidor</option>
+                                    <option value="asignado">Asignado</option>
+                                    <option value="en_camino">En camino</option>
+                                    <option value="completado">Completado</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4 d-flex gap-2 justify-content-end">
+                                <button class="btn btn-outline-secondary btn-sm" type="button" (click)="limpiarFiltros()">
+                                    Limpiar
+                                </button>
+                                <button class="btn btn-success btn-sm" type="button" (click)="aplicarFiltros()">
+                                    Aplicar
+                                </button>
+                                <button class="btn btn-outline-success btn-sm" type="button" (click)="cargarPedidos(page)">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -55,6 +56,7 @@
                                 <th class="text-nowrap">ID</th>
                                 <th>Locker</th>
                                 <th>Estado</th>
+                                <th>Logística</th>
                                 <th>Destinatario</th>
                                 <th class="text-nowrap">Fecha</th>
                                 <th></th>
@@ -62,9 +64,9 @@
                         </thead>
 
                         <tbody>
-                            <tr *ngIf="!cargando && !filtrados.length">
-                                <td colspan="6" class="text-center text-muted py-4">
-                                    No se encontraron pedidos con los filtros actuales.
+                            <tr *ngIf="!cargando && !pageItems.length">
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    No se encontraron pedidos.
                                 </td>
                             </tr>
 
@@ -74,6 +76,11 @@
                                     <td>{{ p.locker }}</td>
                                     <td>
                                         <span [class]="badgeClasses(p.estado)">{{ p.estado }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge rounded-pill px-3 py-2" [ngClass]="p.logisticaBadge">
+                                            {{ p.logisticaLabel }}
+                                        </span>
                                     </td>
                                     <td>{{ p.destinatario }}</td>
                                     <td class="text-nowrap">
@@ -89,7 +96,7 @@
                             </ng-container>
 
                             <tr *ngIf="cargando">
-                                <td colspan="6" class="py-4">
+                                <td colspan="7" class="py-4">
                                     <div class="d-flex align-items-center justify-content-center gap-2 text-muted">
                                         <div class="spinner-border spinner-border-sm"></div>
                                         Cargando…
@@ -103,12 +110,12 @@
                 <!-- Paginación -->
                 <nav class="mt-3 d-flex justify-content-between align-items-center">
                     <div class="text-muted small">
-                        Mostrando {{ pageItems.length }} de {{ filtrados.length }} pedidos
+                        Mostrando {{ pageItems.length }} de {{ total }} pedidos
                     </div>
 
                     <ul class="pagination pagination-sm mb-0">
                         <li class="page-item" [class.disabled]="page===1">
-                            <button class="page-link" (click)="go(page-1)">Anterior</button>
+                            <button class="page-link" (click)="anterior()">Anterior</button>
                         </li>
 
                         <li class="page-item disabled">
@@ -118,7 +125,7 @@
                         </li>
 
                         <li class="page-item" [class.disabled]="page===totalPages()">
-                            <button class="page-link" (click)="go(page+1)">Siguiente</button>
+                            <button class="page-link" (click)="siguiente()">Siguiente</button>
                         </li>
                     </ul>
                 </nav>

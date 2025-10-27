@@ -3,8 +3,6 @@
         <h1 class="h5 mb-0 fw-bold">Panel Empresa</h1>
 
         <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
-            <a routerLink="/empresa/pedidos" class="btn btn-outline-light btn-sm">Pedidos</a>
-            <a routerLink="/empresa/lockers" class="btn btn-outline-light btn-sm">Lockers</a>
             <div class="dropdown">
                 <button
                     class="btn btn-outline-light btn-sm dropdown-toggle d-inline-flex align-items-center"
@@ -44,8 +42,8 @@
 
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
                     <div>
-                        <h2 class="h5 mb-0">Pedidos recientes</h2>
-                        <small class="text-muted">Total: {{ total }} registros</small>
+                        <h2 class="h5 mb-0">Pedidos de esta semana</h2>
+                        <small class="text-muted">Total: {{ total }} registros (últimos 7 días)</small>
                     </div>
                     <div class="d-flex flex-wrap gap-2">
                         <a class="btn btn-primary btn-sm" routerLink="/empresa/reservas/nueva">
@@ -98,7 +96,7 @@
                     <div class="spinner-border text-success" role="status" aria-label="Cargando"></div>
                 </div>
 
-                <p class="text-muted" *ngIf="!loading && !pedidos.length">No hay pedidos recientes para mostrar.</p>
+                <p class="text-muted" *ngIf="!loading && !pedidos.length">No hay pedidos en esta semana.</p>
 
                 <div class="table-responsive shadow-sm rounded" *ngIf="!loading && pedidos.length">
                     <table class="table align-middle mb-0">

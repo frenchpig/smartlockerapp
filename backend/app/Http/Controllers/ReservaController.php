@@ -83,6 +83,10 @@ class ReservaController extends Controller
             });
         }
 
+        if ($fechaDesde = trim((string) $request->query('fecha_desde', ''))) {
+            $query->where('created_at', '>=', $fechaDesde);
+        }
+
         $items = $query->paginate($perPage);
 
         return response()->json($items);

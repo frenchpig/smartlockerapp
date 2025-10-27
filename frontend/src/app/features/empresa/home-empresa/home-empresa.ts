@@ -115,9 +115,15 @@ export class HomeEmpresa implements OnInit {
   private async cargarPedidos(page = 1) {
     this.loading = true;
     try {
+      // Calcular fecha de hace 7 días para filtrar solo la semana actual
+      const fechaLimite = new Date();
+      fechaLimite.setDate(fechaLimite.getDate() - 7);
+      const fechaLimiteStr = fechaLimite.toISOString().split('T')[0];
+
       const params: Record<string, string | number> = {
         page,
         per_page: this.perPage,
+        fecha_desde: fechaLimiteStr, // Solo pedidos de la última semana
       };
 
       const estado = this.filtroEstado?.trim();
@@ -236,7 +242,7 @@ export class HomeEmpresa implements OnInit {
     const completados = pedidos.filter((p) => p.logisticaEstado === 'completado').length;
 
     return [
-      { label: 'Pedidos recientes', value: total, hint: 'Ultimos registros asociados a tu empresa' },
+      { label: 'Pedidos esta semana', value: total, hint: 'Pedidos de los últimos 7 días' },
       { label: 'Sin repartidor', value: sinRepartidor, hint: 'Reservas esperando asignación' },
       { label: 'Asignados', value: asignados, hint: 'Repartidores ya designados' },
       { label: 'En camino', value: enCamino, hint: 'Pedidos en ruta hacia el locker' },
