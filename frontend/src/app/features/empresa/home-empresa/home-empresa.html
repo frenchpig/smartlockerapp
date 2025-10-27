@@ -1,27 +1,4 @@
-<header class="bg-success text-white py-3 shadow-sm">
-    <div class="container d-flex align-items-center justify-content-between">
-        <h1 class="h5 mb-0 fw-bold">Panel Empresa</h1>
-
-        <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
-            <div class="dropdown">
-                <button
-                    class="btn btn-outline-light btn-sm dropdown-toggle d-inline-flex align-items-center"
-                    type="button"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false">
-                    <i class="bi bi-person-circle me-1"></i>
-                    <span>{{ user()?.nombre || 'Perfil' }}</span>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" routerLink="/empresa">Panel</a></li>
-                    <li><a class="dropdown-item" routerLink="/empresa/pedidos">Pedidos</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><button class="dropdown-item" type="button" (click)="onLogout()">Cerrar sesion</button></li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</header>
+<app-header-empresa titulo="Panel Empresa"></app-header-empresa>
 
 <main class="py-4">
     <div class="container">
@@ -139,7 +116,9 @@
                                 <td>{{ pedido.destinatarioEmail }}</td>
                                 <td>{{ pedido.fechaIso | date:'dd/MM/yy, h:mm a' }}</td>
                                 <td class="text-end">
-                                    <button class="btn btn-outline-secondary btn-sm" type="button">Detalle</button>
+                                    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="verDetalle(pedido.id)">
+                                        <i class="bi bi-eye me-1"></i>Detalle
+                                    </button>
                                 </td>
                             </tr>
                         </tbody>

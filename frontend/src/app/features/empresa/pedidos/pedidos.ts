@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
+import { HeaderEmpresaComponent } from '../shared/header-empresa/header-empresa.component';
 
 type EstadoPedido = 'Pendiente' | 'En camino' | 'Entregado';
 
@@ -29,7 +30,7 @@ interface PaginatedResponse<T> {
 @Component({
   standalone: true,
   selector: 'app-empresa-pedidos',
-  imports: [CommonModule, RouterModule, DatePipe, FormsModule],
+  imports: [CommonModule, RouterModule, DatePipe, FormsModule, HeaderEmpresaComponent],
   templateUrl: './pedidos.html',
   styleUrls: ['./pedidos.scss']
 })

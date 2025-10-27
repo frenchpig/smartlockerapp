@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Reserva;
 use App\Models\Repartidor;
+use App\Models\ArticuloReserva;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Cache;
@@ -56,7 +57,7 @@ class ReservaController extends Controller
         }
 
         $perPage = (int) $request->query('per_page', 5);
-        $perPage = max(1, min(50, $perPage));
+        $perPage = max(1, min(1000, $perPage)); // Aumentado límite para permitir obtener todos los datos
 
         $query = Reserva::with(['usuario', 'locker.ubicacion', 'repartidor.usuario'])
             ->where('empresa_id', $user->id)
@@ -112,6 +113,12 @@ class ReservaController extends Controller
             'hora_inicio'  => ['required', 'date_format:H:i'],
             'hora_fin'     => ['nullable', 'date_format:H:i', 'after:hora_inicio'],
             'tipo_acceso'  => ['nullable', Rule::in(['qr','codigo_temporal'])],
+            'articulos'    => ['sometimes', 'array'],
+            'articulos.*.nombre' => ['required', 'string', 'max:255'],
+            'articulos.*.cantidad' => ['required', 'integer', 'min:1'],
+            'articulos.*.descripcion' => ['nullable', 'string', 'max:1000'],
+            'articulos.*.sku' => ['nullable', 'string', 'max:100'],
+            'articulos.*.peso' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $payload = array_merge($data, [
@@ -122,10 +129,25 @@ class ReservaController extends Controller
             'codigo_acceso' => null,
         ]);
 
-        $reserva = DB::transaction(function () use ($payload) {
+        $reserva = DB::transaction(function () use ($payload, $data) {
             $reserva = Reserva::create($payload);
+            
+            // Crear artículos si se proporcionan
+            if (!empty($data['articulos'])) {
+                foreach ($data['articulos'] as $articulo) {
+                    ArticuloReserva::create([
+                        'reserva_id' => $reserva->id,
+                        'nombre' => $articulo['nombre'],
+                        'cantidad' => $articulo['cantidad'],
+                        'descripcion' => $articulo['descripcion'] ?? null,
+                        'sku' => $articulo['sku'] ?? null,
+                        'peso' => $articulo['peso'] ?? null,
+                    ]);
+                }
+            }
+            
             $this->asignarRepartidorDisponible($reserva);
-            return $reserva->load(['usuario','locker.ubicacion','repartidor.usuario']);
+            return $reserva->load(['usuario','locker.ubicacion','repartidor.usuario','articulos']);
         });
 
         return response()->json($reserva, 201);
@@ -176,7 +198,7 @@ class ReservaController extends Controller
 
     public function show(Reserva $reserva)
     {
-        return $reserva->load(['usuario','locker.ubicacion','repartidor.usuario']);
+        return $reserva->load(['usuario','locker.ubicacion','repartidor.usuario','articulos']);
     }
 
     public function store(Request $request)
@@ -193,17 +215,41 @@ class ReservaController extends Controller
             'codigo_acceso'=> ['nullable','string','max:120'],
             'logistica_estado' => ['sometimes','string','max:40'],
             'repartidor_id' => ['sometimes','nullable','integer','exists:repartidores,id'],
+            'articulos'    => ['sometimes', 'array'],
+            'articulos.*.nombre' => ['required', 'string', 'max:255'],
+            'articulos.*.cantidad' => ['required', 'integer', 'min:1'],
+            'articulos.*.descripcion' => ['nullable', 'string', 'max:1000'],
+            'articulos.*.sku' => ['nullable', 'string', 'max:100'],
+            'articulos.*.peso' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $data['logistica_estado'] = $data['logistica_estado'] ?? 'pendiente_repartidor';
 
-        $reserva = Reserva::create($data);
+        $reserva = DB::transaction(function () use ($data) {
+            $reserva = Reserva::create($data);
 
-        if (empty($data['repartidor_id'])) {
-            $this->asignarRepartidorDisponible($reserva);
-        }
+            // Crear artículos si se proporcionan
+            if (!empty($data['articulos'])) {
+                foreach ($data['articulos'] as $articulo) {
+                    ArticuloReserva::create([
+                        'reserva_id' => $reserva->id,
+                        'nombre' => $articulo['nombre'],
+                        'cantidad' => $articulo['cantidad'],
+                        'descripcion' => $articulo['descripcion'] ?? null,
+                        'sku' => $articulo['sku'] ?? null,
+                        'peso' => $articulo['peso'] ?? null,
+                    ]);
+                }
+            }
 
-        return response()->json($reserva->load(['usuario','locker.ubicacion','repartidor.usuario']), 201);
+            if (empty($data['repartidor_id'])) {
+                $this->asignarRepartidorDisponible($reserva);
+            }
+
+            return $reserva->load(['usuario','locker.ubicacion','repartidor.usuario','articulos']);
+        });
+
+        return response()->json($reserva, 201);
     }
 
     public function update(Request $request, Reserva $reserva)

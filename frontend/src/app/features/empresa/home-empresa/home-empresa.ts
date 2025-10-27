@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms';
 
 import { AuthService } from '../../../core/auth/auth';
 import { environment } from '../../../../environments/environment';
+import { HeaderEmpresaComponent } from '../shared/header-empresa/header-empresa.component';
 
 type EstadoReserva = 'pendiente' | 'completado' | 'anulado' | string;
 
@@ -41,7 +42,7 @@ interface PaginatedResponse<T> {
 @Component({
   standalone: true,
   selector: 'app-home-empresa',
-  imports: [CommonModule, RouterModule, DatePipe, FormsModule],
+  imports: [CommonModule, RouterModule, DatePipe, FormsModule, HeaderEmpresaComponent],
   templateUrl: './home-empresa.html',
   styleUrls: ['./home-empresa.scss']
 })
@@ -60,8 +61,8 @@ export class HomeEmpresa implements OnInit {
   filtroLogistica = '';
 
   private readonly auth = inject(AuthService);
-  private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
+  private readonly router = inject(Router);
 
   private readonly badgeClassByEstado: Record<string, string> = {
     pendiente: 'bg-warning-subtle text-warning-emphasis',
@@ -69,19 +70,9 @@ export class HomeEmpresa implements OnInit {
     anulado: 'bg-secondary-subtle text-secondary-emphasis',
   };
 
-  user = this.auth.user;
-
   async ngOnInit(): Promise<void> {
     await this.auth.fetchMe().catch(() => undefined);
     await this.cargarPedidos();
-  }
-
-  async onLogout() {
-    try {
-      await this.auth.logout();
-    } finally {
-      this.router.navigate(['/login']);
-    }
   }
 
   aplicarFiltros() {
@@ -110,6 +101,10 @@ export class HomeEmpresa implements OnInit {
 
   refrescar() {
     void this.cargarPedidos(this.page);
+  }
+
+  verDetalle(pedidoId: number) {
+    void this.router.navigate(['/empresa/pedidos', pedidoId]);
   }
 
   private async cargarPedidos(page = 1) {
@@ -150,7 +145,8 @@ export class HomeEmpresa implements OnInit {
       this.perPage = Number.isFinite(perPage) && perPage > 0 ? perPage : this.perPage;
       this.total = Number(res?.total ?? pedidos.length) || pedidos.length;
 
-      this.kpis = this.buildKpis(pedidos);
+      // Cargar todos los pedidos de la semana para calcular KPIs correctamente
+      await this.cargarKpis(fechaLimiteStr);
     } catch (error) {
       console.error('Error cargando pedidos empresa', error);
       this.pedidos = [];
@@ -160,6 +156,28 @@ export class HomeEmpresa implements OnInit {
       this.kpis = this.buildKpis([]);
     } finally {
       this.loading = false;
+    }
+  }
+
+  private async cargarKpis(fechaDesde: string) {
+    try {
+      // Obtener todos los pedidos de la semana sin paginación para KPIs precisos
+      const params: Record<string, string | number> = {
+        per_page: 1000, // Número suficientemente grande para obtener todos
+        fecha_desde: fechaDesde,
+      };
+
+      const res = await this.http
+        .get<PaginatedResponse<any>>(`${environment.apiUrl}/reservas/empresa/mis-ultimas`, { params })
+        .toPromise();
+
+      const data = res?.data ?? [];
+      const todosPedidos = data.map((item) => this.mapPedido(item));
+
+      this.kpis = this.buildKpis(todosPedidos);
+    } catch (error) {
+      console.error('Error cargando KPIs', error);
+      this.kpis = this.buildKpis([]);
     }
   }
 
@@ -235,7 +253,7 @@ export class HomeEmpresa implements OnInit {
   }
 
   private buildKpis(pedidos: PedidoEmpresa[]): Kpi[] {
-    const total = this.total;
+    const total = pedidos.length;
     const sinRepartidor = pedidos.filter((p) => p.logisticaEstado === 'pendiente_repartidor').length;
     const asignados = pedidos.filter((p) => p.logisticaEstado === 'asignado').length;
     const enCamino = pedidos.filter((p) => p.logisticaEstado === 'en_camino').length;

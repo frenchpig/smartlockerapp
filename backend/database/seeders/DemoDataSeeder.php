@@ -8,6 +8,7 @@ use App\Models\Locker;
 use App\Models\Ubicacion;
 use App\Models\Reserva;
 use App\Models\Repartidor;
+use App\Models\ArticuloReserva;
 use Carbon\Carbon;
 
 class DemoDataSeeder extends Seeder
@@ -15,9 +16,9 @@ class DemoDataSeeder extends Seeder
     /**
      * Seeder para datos de demostración
      * 
-     * Crea:
-     * - 15 pedidos recientes (últimos días) - aparecen en home y pedidos
-     * - 10 pedidos antiguos (hace 10-37 días) - SOLO aparecen en pedidos, NO en home
+     * Crea por empresa:
+     * - 7 pedidos recientes (últimos 7 días) - aparecen en home y pedidos
+     * - 18 pedidos antiguos (hace 8-25 días) - SOLO aparecen en pedidos, NO en home
      * Total: 25 pedidos por empresa
      */
     public function run(): void
@@ -130,14 +131,29 @@ class DemoDataSeeder extends Seeder
         $lockers = [$l1, $l2, $l3];
         $estadoSecuencia = ['pendiente', 'completado', 'anulado'];
 
+        // Artículos de ejemplo para los pedidos
+        $articulosDisponibles = [
+            ['nombre' => 'Zapatos deportivos', 'descripcion' => 'Zapatillas running Nike', 'sku' => 'NIKE-001', 'peso' => 0.5],
+            ['nombre' => 'Chaqueta impermeable', 'descripcion' => 'Chaqueta North Face talla M', 'sku' => 'NF-JAC-M', 'peso' => 0.8],
+            ['nombre' => 'Libro "Desarrollo Web"', 'descripcion' => 'Manual de programación', 'sku' => 'BOOK-DEV-001', 'peso' => 0.6],
+            ['nombre' => 'Auriculares inalámbricos', 'descripcion' => 'Auriculares Bluetooth Sony', 'sku' => 'SONY-BT-100', 'peso' => 0.2],
+            ['nombre' => 'Mochila', 'descripcion' => 'Mochila 30L impermeable', 'sku' => 'BAG-30L', 'peso' => 0.9],
+            ['nombre' => 'Tablet', 'descripcion' => 'Tablet Samsung 10 pulgadas', 'sku' => 'SAMSUNG-TAB-10', 'peso' => 0.5],
+            ['nombre' => 'Reloj inteligente', 'descripcion' => 'Smartwatch Garmin', 'sku' => 'GARMIN-SW-200', 'peso' => 0.1],
+            ['nombre' => 'Camiseta', 'descripcion' => 'Camiseta deportiva Adidas', 'sku' => 'ADIDAS-TS-M', 'peso' => 0.2],
+            ['nombre' => 'Pantalón', 'descripcion' => 'Pantalón jeans talla 32', 'sku' => 'JEANS-32', 'peso' => 0.5],
+            ['nombre' => 'Gorra', 'descripcion' => 'Gorra de béisbol', 'sku' => 'CAP-001', 'peso' => 0.1],
+        ];
+
         foreach ($usuariosEmpresas as $pair) {
             $usuario = $pair['usuario'];
             $empresa = $pair['empresa'];
 
-            // Crear 15 pedidos recientes (últimos 7 días y algunos fuera de ese rango)
-            for ($i = 0; $i < 15; $i++) {
-                $fechaReserva = $now->copy()->subDays(($usuario->id % 2) + $i + 1);
-                $horaInicio = $fechaReserva->copy()->addHours(1);
+            // Crear 7 pedidos recientes (últimos 7 días - aparecerán en home)
+            for ($i = 0; $i < 7; $i++) {
+                $diasAtras = $i + 1; // De 1 a 7 días atrás
+                $fechaReserva = $now->copy()->subDays($diasAtras);
+                $horaInicio = $fechaReserva->copy()->addHours(rand(9, 18)); // Hora aleatoria del día
 
                 $estado = $estadoSecuencia[$i % count($estadoSecuencia)];
 
@@ -151,7 +167,7 @@ class DemoDataSeeder extends Seeder
                 $locker = $lockers[$i % count($lockers)];
                 $repartidor = $repartidores[$i % count($repartidores)];
 
-                Reserva::create([
+                $reserva = new Reserva([
                     'usuario_id' => $usuario->id,
                     'empresa_id' => $empresa->id,
                     'locker_id' => $locker->id,
@@ -164,17 +180,41 @@ class DemoDataSeeder extends Seeder
                     'tipo_acceso' => $i % 2 === 0 ? 'codigo_temporal' : 'qr',
                     'codigo_acceso' => null,
                 ]);
+                
+                // Forzar los timestamps para que coincidan con la fecha retroactiva
+                $reserva->created_at = $fechaReserva;
+                $reserva->updated_at = $fechaReserva;
+                $reserva->save();
+
+                // Agregar artículos a cada reserva (1 a 3 artículos aleatorios)
+                $numArticulos = rand(1, 3);
+                $articulosSeleccionados = array_rand($articulosDisponibles, $numArticulos);
+                if (!is_array($articulosSeleccionados)) {
+                    $articulosSeleccionados = [$articulosSeleccionados];
+                }
+                
+                foreach ($articulosSeleccionados as $index) {
+                    $articulo = $articulosDisponibles[$index];
+                    ArticuloReserva::create([
+                        'reserva_id' => $reserva->id,
+                        'nombre' => $articulo['nombre'],
+                        'cantidad' => rand(1, 3),
+                        'descripcion' => $articulo['descripcion'],
+                        'sku' => $articulo['sku'],
+                        'peso' => $articulo['peso'],
+                    ]);
+                }
 
                 if ($estado !== 'completado') {
                     $repartidor->update(['disponible' => false]);
                 }
             }
 
-            // Crear 10 pedidos antiguos (hace más de 7 días - no aparecerán en home pero sí en pedidos)
-            for ($i = 0; $i < 10; $i++) {
-                $diasAtras = 10 + $i * 3; // Entre 10 y 37 días atrás
+            // Crear 18 pedidos antiguos (hace más de 7 días - no aparecerán en home pero sí en pedidos)
+            for ($i = 0; $i < 18; $i++) {
+                $diasAtras = 8 + $i; // De 8 a 25 días atrás
                 $fechaReserva = $now->copy()->subDays($diasAtras);
-                $horaInicio = $fechaReserva->copy()->addHours(2);
+                $horaInicio = $fechaReserva->copy()->addHours(rand(9, 18));
 
                 $estado = $estadoSecuencia[($i + 1) % count($estadoSecuencia)];
 
@@ -188,7 +228,7 @@ class DemoDataSeeder extends Seeder
                 $locker = $lockers[$i % count($lockers)];
                 $repartidor = $repartidores[$i % count($repartidores)];
 
-                Reserva::create([
+                $reserva = new Reserva([
                     'usuario_id' => $usuario->id,
                     'empresa_id' => $empresa->id,
                     'locker_id' => $locker->id,
@@ -201,6 +241,30 @@ class DemoDataSeeder extends Seeder
                     'tipo_acceso' => $i % 2 === 0 ? 'qr' : 'codigo_temporal',
                     'codigo_acceso' => null,
                 ]);
+                
+                // Forzar los timestamps para que coincidan con la fecha retroactiva
+                $reserva->created_at = $fechaReserva;
+                $reserva->updated_at = $fechaReserva;
+                $reserva->save();
+
+                // Agregar artículos a cada reserva antigua también
+                $numArticulos = rand(1, 4);
+                $articulosSeleccionados = array_rand($articulosDisponibles, $numArticulos);
+                if (!is_array($articulosSeleccionados)) {
+                    $articulosSeleccionados = [$articulosSeleccionados];
+                }
+                
+                foreach ($articulosSeleccionados as $index) {
+                    $articulo = $articulosDisponibles[$index];
+                    ArticuloReserva::create([
+                        'reserva_id' => $reserva->id,
+                        'nombre' => $articulo['nombre'],
+                        'cantidad' => rand(1, 2),
+                        'descripcion' => $articulo['descripcion'],
+                        'sku' => $articulo['sku'],
+                        'peso' => $articulo['peso'],
+                    ]);
+                }
             }
         }
 

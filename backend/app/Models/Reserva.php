@@ -40,6 +40,7 @@ class Reserva extends Model
     protected $with = [
         'locker.ubicacion',
         'repartidor.usuario',
+        'articulos',
     ];
 
     // Relaciones
@@ -61,5 +62,10 @@ class Reserva extends Model
     public function repartidor()
     {
         return $this->belongsTo(Repartidor::class, 'repartidor_id');
+    }
+
+    public function articulos()
+    {
+        return $this->hasMany(ArticuloReserva::class, 'reserva_id');
     }
 }

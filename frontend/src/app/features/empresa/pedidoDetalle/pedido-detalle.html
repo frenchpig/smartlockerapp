@@ -1,77 +1,119 @@
-<div class="pedido-detalle container my-5">
-    <div class="mb-4 d-flex justify-content-between align-items-center">
-        <a routerLink="/empresa/pedidos" class="btn btn-outline-success d-flex align-items-center gap-2">
-            <i class="bi bi-arrow-left"></i> Volver a pedidos
-        </a>
+<app-header-empresa titulo="Detalle del Pedido"></app-header-empresa>
 
-        <span class="text-muted small">
-            ID del pedido: <strong>#{{ pedido?.id }}</strong>
-        </span>
-    </div>
+<main class="py-4">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12 col-lg-11 col-xl-10">
 
-    <div class="card border-0 shadow-sm rounded-4">
-        <div class="card-body p-4">
-            <div class="d-flex justify-content-between flex-wrap align-items-center border-bottom pb-3 mb-3">
-                <div>
-                    <h2 class="h5 fw-bold mb-1">Locker {{ pedido?.locker }}</h2>
-                    <p class="text-muted small mb-0">
-                        <i class="bi bi-geo-alt"></i> Sucursal Ñuñoa
-                    </p>
+                <div class="mb-4 d-flex justify-content-between align-items-center">
+                    <button type="button" (click)="volver()" class="btn btn-outline-success d-flex align-items-center gap-2">
+                        <i class="bi bi-arrow-left"></i> Volver
+                    </button>
+
+                    <span class="text-muted small" *ngIf="pedido">
+                        ID del pedido: <strong>#{{ pedido.id }}</strong>
+                    </span>
                 </div>
 
-                <span class="badge px-3 py-2 fs-6" [ngClass]="{
-                'bg-secondary-subtle text-secondary-emphasis': pedido?.estado === 'Pendiente',
-                'bg-warning-subtle text-warning-emphasis': pedido?.estado === 'En camino',
-                'bg-success-subtle text-success-emphasis': pedido?.estado === 'Entregado'}">
-                    {{ pedido?.estado }}
-                </span>
-            </div>
-
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <p class="fw-semibold mb-1 text-muted">Destinatario</p>
-                    <p class="fs-6">{{ pedido?.destinatario }}</p>
+                <!-- Estado de carga -->
+                <div *ngIf="cargando" class="text-center py-5">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="text-muted mt-3">Cargando detalles del pedido...</p>
                 </div>
-                <div class="col-md-6">
-                    <p class="fw-semibold mb-1 text-muted">Fecha de entrega</p>
-                    <p class="fs-6">
-                        <time [attr.datetime]="pedido?.fecha">{{ pedido?.fecha | date:'medium' }}</time>
-                    </p>
-                </div>
-            </div>
 
-            <div>
-                <h3 class="h6 fw-bold border-bottom pb-2 mb-3">Artículos en el pedido</h3>
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-success-subtle">
-                        <tr>
-                            <th>Artículo</th>
-                            <th class="text-center">Cantidad</th>
-                            <th class="text-end">Estado</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr *ngFor="let it of pedido?.items">
-                            <td>{{ it.nombre }}</td>
-                            <td class="text-center">
-                                <span class="badge bg-success-subtle text-success-emphasis px-3">{{ it.cantidad
-                                    }}</span>
-                            </td>
-                            <td class="text-end">
-                                <i class="bi bi-check-circle-fill text-success"
-                                    *ngIf="pedido?.estado === 'Entregado'"></i>
-                                <i class="bi bi-hourglass-split text-warning"
-                                    *ngIf="pedido?.estado === 'En camino'"></i>
-                                <i class="bi bi-clock text-secondary" *ngIf="pedido?.estado === 'Pendiente'"></i>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <!-- Mensaje de error -->
+                <div *ngIf="!cargando && error" class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    {{ error }}
+                </div>
+
+                <!-- Contenido del pedido -->
+                <div *ngIf="!cargando && !error && pedido" class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between flex-wrap align-items-center border-bottom pb-3 mb-4">
+                            <div>
+                                <h2 class="h5 fw-bold mb-1">Locker {{ pedido.locker }}</h2>
+                                <p class="text-muted small mb-0">
+                                    <i class="bi bi-geo-alt"></i> {{ pedido.ubicacion }}
+                                </p>
+                            </div>
+
+                            <span class="badge px-3 py-2 fs-6" [ngClass]="{
+                            'bg-secondary-subtle text-secondary-emphasis': pedido.estado === 'Pendiente' || pedido.estado === 'Asignado',
+                            'bg-warning-subtle text-warning-emphasis': pedido.estado === 'En camino',
+                            'bg-success-subtle text-success-emphasis': pedido.estado === 'Entregado'}">
+                                {{ pedido.estado }}
+                            </span>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <p class="fw-semibold mb-1 text-muted small">Destinatario</p>
+                                <p class="fs-6 mb-0">{{ pedido.destinatario }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="fw-semibold mb-1 text-muted small">Fecha de entrega</p>
+                                <p class="fs-6 mb-0">
+                                    <time [attr.datetime]="pedido.fecha">{{ pedido.fecha | date:'dd/MM/yy, h:mm a' }}</time>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="h6 fw-bold mb-3">Artículos en el pedido</h3>
+                            
+                            <div *ngIf="pedido.items.length === 0" class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                No hay artículos registrados en este pedido.
+                            </div>
+
+                            <div *ngIf="pedido.items.length > 0" class="table-responsive shadow-sm rounded">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Artículo</th>
+                                            <th class="text-center">Cantidad</th>
+                                            <th class="d-none d-md-table-cell">SKU</th>
+                                            <th class="text-end">Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let it of pedido.items">
+                                            <td>
+                                                <div class="fw-semibold">{{ it.nombre }}</div>
+                                                <small class="text-muted" *ngIf="it.descripcion">{{ it.descripcion }}</small>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-success-subtle text-success-emphasis px-3">{{ it.cantidad }}</span>
+                                            </td>
+                                            <td class="d-none d-md-table-cell">
+                                                <small class="text-muted">{{ it.sku || 'N/A' }}</small>
+                                            </td>
+                                            <td class="text-end">
+                                                <i class="bi bi-check-circle-fill text-success"
+                                                    *ngIf="pedido.estado === 'Entregado'" title="Entregado"></i>
+                                                <i class="bi bi-hourglass-split text-warning"
+                                                    *ngIf="pedido.estado === 'En camino'" title="En camino"></i>
+                                                <i class="bi bi-truck text-info"
+                                                    *ngIf="pedido.estado === 'Asignado'" title="Asignado"></i>
+                                                <i class="bi bi-clock text-secondary" 
+                                                    *ngIf="pedido.estado === 'Pendiente'" title="Pendiente"></i>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
-</div>
+</main>
 
-<footer class="text-center text-muted py-4 mt-5 border-top">
+<footer class="text-center text-muted py-3">
     <small>&copy; 2025 Smart Lockers — Empresa</small>
 </footer>
