@@ -19,7 +19,7 @@ import { Pedidos } from './features/empresa/pedidos/pedidos'
 import { MisPedidos } from './features/cliente/mis-pedidos/mis-pedidos'
 import { RepartidorHome } from './features/repartidor/home/repartidor-home'
 import { ReservaNuevaComponent } from './features/empresa/reservas/reserva-nueva/reserva-nueva'
-
+import { EmpresaPedidoDetalle } from './features/empresa/pedidoDetalle/pedido-detalle'
 
 
 const routes: Routes = [
@@ -55,6 +55,7 @@ const routes: Routes = [
     children: [
       { path: '', component: HomeEmpresa },
       { path: 'pedidos', component: Pedidos },
+      { path: 'pedidos/:id', component: EmpresaPedidoDetalle },
       { path: 'lockers', component: Lockers },
       { path: 'reservas/nueva', component: ReservaNuevaComponent },
     ],

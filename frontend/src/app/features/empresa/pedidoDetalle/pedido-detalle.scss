@@ -1,0 +1,47 @@
+.container {
+    max-width: 900px;
+}
+
+.card {
+    border-radius: .8rem;
+}
+
+.btn {
+    border-radius: .6rem;
+}
+
+.pedido-detalle {
+    max-width: 900px;
+
+    h2,
+    h3 {
+        color: #155724;
+    }
+
+    .card {
+        border-radius: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    table {
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+
+    th {
+        font-weight: 600;
+    }
+
+    td {
+        vertical-align: middle;
+    }
+
+    .btn-outline-success {
+        border-radius: 0.6rem;
+    }
+}
