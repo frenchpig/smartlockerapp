@@ -1,49 +1,6 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+﻿<app-header-cliente titulo="Smart Lockers"></app-header-cliente>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Document</title>
-</head>
-
-<body>
-    <header class="header-green">
-        <nav class="navbar">
-            <div class="container-narrow header-grid">
-
-                <div class="h-left">
-                    <a class="navbar-brand fw-semibold" routerLink="/">Smart Lockers</a>
-                </div>
-
-                <div class="h-center">
-                    <button class="btn btn-ghost d-inline-flex align-items-center" type="button" (click)="refrescar()">
-                        <i class="bi bi-arrow-clockwise me-1"></i><span> Actualizar</span>
-                    </button>
-                </div>
-
-                <div class="h-right dropdown">
-                    <button
-                        class="nav-link dropdown-toggle d-flex align-items-center btn btn-link p-0 text-decoration-none"
-                        type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-person-circle me-2"></i> {{ user()?.nombre || 'Perfil' }}
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" routerLink="/cliente/mis-pedidos">Mis pedidos</a></li>
-                        <li><a class="dropdown-item" routerLink="/cliente/perfil">Perfil</a></li>
-                        <li>
-                            <hr class="dropdown-divider">
-                        </li>
-                        <li><button class="dropdown-item" type="button" (click)="onLogout()">Cerrar sesión</button></li>
-                    </ul>
-                </div>
-
-            </div>
-        </nav>
-    </header>
-
-
-    <main class="container-narrow my-4">
+<main class="container-narrow my-4">
         <section aria-labelledby="saludo-usuario">
             <header class="mb-4">
                 <h2 id="saludo-usuario" class="h3 mb-1">Hi {{ user()?.nombre || 'Usuario' }}!</h2>
@@ -103,13 +60,5 @@
             </ul>
 
         </section>
-    </main>
-
-    <footer class="border-top bg-white text-center py-3 mt-4">
-        <small class="text-muted">&copy; 2025 Smart Lockers</small>
-    </footer>
-
-</body>
-
-</html>
+</main>
 

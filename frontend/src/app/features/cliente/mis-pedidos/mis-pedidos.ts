@@ -4,6 +4,7 @@ import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../core/auth/auth';
 import { environment } from '../../../../environments/environment';
+import { HeaderClienteComponent } from '../shared/header-cliente/header-cliente.component';
 
 type LogisticaEstado = 'pendiente_repartidor' | 'asignado' | 'en_camino' | 'completado';
 type EstadoVisual = 'Listo para recoger' | 'En camino' | 'Pendiente de repartidor' | 'Repartidor asignado' | 'Entregado' | 'Cancelado';
@@ -35,7 +36,7 @@ interface PaginatedResponse<T> {
 @Component({
   standalone: true,
   selector: 'app-mis-pedidos',
-  imports: [CommonModule, RouterModule, DatePipe],
+  imports: [CommonModule, RouterModule, DatePipe, HeaderClienteComponent],
   templateUrl: './mis-pedidos.html',
   styleUrls: ['./mis-pedidos.scss'],
 })

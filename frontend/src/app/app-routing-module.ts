@@ -12,20 +12,32 @@ import { PedidoClave } from './features/cliente/pedido-clave/pedido-clave';
 import { PedidoQr } from './features/cliente/pedido-qr/pedido-qr';
 import { TotemCodigoComponent } from './features/totem/codigo/totem-codigo';
 import { DeviceLoginComponent } from './features/totem/device-login/device-login';
-import { Perfil } from './features/cliente/perfil/perfil'
+import { Perfil } from './features/cliente/perfil/perfil';
 
-import { HomeEmpresa } from './features/empresa/home-empresa/home-empresa'
-import { Lockers } from './features/empresa/lockers/lockers'
-import { Pedidos } from './features/empresa/pedidos/pedidos'
-import { MisPedidos } from './features/cliente/mis-pedidos/mis-pedidos'
-import { RepartidorHome } from './features/repartidor/home/repartidor-home'
-import { ReservaNuevaComponent } from './features/empresa/reservas/reserva-nueva/reserva-nueva'
-import { EmpresaPedidoDetalle } from './features/empresa/pedidoDetalle/pedido-detalle'
+import { HomeEmpresa } from './features/empresa/home-empresa/home-empresa';
+import { Lockers } from './features/empresa/lockers/lockers';
+import { Pedidos } from './features/empresa/pedidos/pedidos';
+import { MisPedidos } from './features/cliente/mis-pedidos/mis-pedidos';
+import { RepartidorHome } from './features/repartidor/home/repartidor-home';
+import { PerfilRepartidor } from './features/repartidor/perfil/perfil';
+import { ReservaNuevaComponent } from './features/empresa/reservas/reserva-nueva/reserva-nueva';
+import { EmpresaPedidoDetalle } from './features/empresa/pedidoDetalle/pedido-detalle';
+
+import { AdminHomeComponent } from './features/admin/admin-home/adminHome'
+import { AdminLockers } from './features/admin/admin-lockers/adminLockers'
+import { LockerDetalle } from "./features/admin/detalleLockers/detalleLockers";
+import { EditarLockers } from "./features/admin/editarLockers/editarLockers";
+
 
 
 const routes: Routes = [
   { path: 'test-backend', component: TestBackend },
   { path: 'login', component: LoginComponent },
+
+  // Totem routes
+  { path: 'totem/device-login', component: DeviceLoginComponent },
+  { path: 'totem/codigo', component: TotemCodigoComponent, canActivate: [deviceGuard] },
+  { path: 'totem', redirectTo: 'totem/device-login', pathMatch: 'full' },
 
   // Totem routes
   { path: 'totem/device-login', component: DeviceLoginComponent },
@@ -65,15 +77,28 @@ const routes: Routes = [
 
   {
     path: 'repartidor',
-    component: RepartidorHome,
     canActivate: [authGuard],
+    canActivateChild: [authGuard],
     data: { roles: ['repartidor'] },
+    children: [
+      { path: '', component: RepartidorHome },
+      { path: 'perfil', component: PerfilRepartidor },
+    ],
+  },
+
+  {
+    path: 'admin',
+    children: [
+      { path: '', component: AdminHomeComponent },
+      { path: 'lockers', component: AdminLockers },
+      { path: 'detalle', component: LockerDetalle },
+      { path: 'editar', component: EditarLockers },
+    ]
   },
 
 
-
-  { path: '', pathMatch: 'full', redirectTo: 'login' }, //login
-  { path: '**', redirectTo: 'login' }, //login
+  { path: '', pathMatch: 'full', redirectTo: 'admin' }, //login
+  { path: '**', redirectTo: 'admin' }, //login
 ];
 
 @NgModule({
