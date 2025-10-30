@@ -24,9 +24,10 @@ import { ReservaNuevaComponent } from './features/empresa/reservas/reserva-nueva
 import { EmpresaPedidoDetalle } from './features/empresa/pedidoDetalle/pedido-detalle';
 
 import { AdminHomeComponent } from './features/admin/admin-home/adminHome'
-import { AdminLockers } from './features/admin/admin-lockers/adminLockers'
+import { AdminLockers } from './features/admin/adminLockers/adminLockers'
 import { LockerDetalle } from "./features/admin/detalleLockers/detalleLockers";
 import { EditarLockers } from "./features/admin/editarLockers/editarLockers";
+import { CrearLockers } from "./features/admin/crearLockers/crearLockers";
 
 
 
@@ -93,6 +94,7 @@ const routes: Routes = [
       { path: 'lockers', component: AdminLockers },
       { path: 'detalle', component: LockerDetalle },
       { path: 'editar', component: EditarLockers },
+      { path: 'crear', component: CrearLockers },
     ]
   },
 

@@ -1,0 +1,185 @@
+<app-header-admin></app-header-admin>
+
+<main class="lockers-wrap">
+    <div class="container">
+        <div class="toolbar">
+            <h1 class="page-title">Nuevo locker</h1>
+            <div class="toolbar-actions">
+                <button type="button" class="btn btn-outline" (click)="cancelar()">Cancelar</button>
+                <button type="submit" form="form-crear-locker" class="btn btn-success">Guardar</button>
+            </div>
+        </div>
+
+        <form [formGroup]="form" (ngSubmit)="guardar()" id="form-crear-locker" class="form-shell">
+
+            <!-- Datos generales -->
+            <section class="group-card">
+                <h2 class="group-title">Datos generales</h2>
+
+                <div class="form-grid">
+                    <!-- Nombre -->
+                    <div class="field">
+                        <label>Nombre*</label>
+                        <input class="input" type="text" formControlName="nombre" placeholder="Ej: Locker #12" />
+                        <small class="error" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.invalid">
+                            Debe tener al menos 3 caracteres.
+                        </small>
+                    </div>
+
+                    <!-- Empresa  -->
+                    <div class="field">
+                        <label>Empresa*</label>
+                        <input class="input" type="text" formControlName="empresaId" placeholder="Ej: Empresa ABC" />
+                        <small class="error" *ngIf="form.get('empresaId')?.touched && form.get('empresaId')?.invalid">
+                            Ingresa el nombre de la empresa.
+                        </small>
+                    </div>
+
+                    <!-- Sede -->
+                    <div class="field">
+                        <label>Sede*</label>
+                        <select class="input" formControlName="sede">
+                            <option value="" disabled>Selecciona una sede…</option>
+                            <option *ngFor="let s of sedes" [value]="s">{{ s }}</option>
+                        </select>
+                        <small class="error" *ngIf="form.get('sede')?.touched && form.get('sede')?.invalid">
+                            Selecciona una sede.
+                        </small>
+                    </div>
+
+                    <!-- Estado -->
+                    <div class="field">
+                        <label>Estado</label>
+                        <select class="input" formControlName="estado">
+                            <option value="Activo">Activo</option>
+                            <option value="Ocupado">Ocupado</option>
+                            <option value="En revisión">En revisión</option>
+                            <option value="Bloqueado">Bloqueado</option>
+                        </select>
+                    </div>
+
+                    <!-- Motivo bloqueo -->
+                    <div class="field" *ngIf="form.get('estado')?.value === 'Bloqueado'">
+                        <label>Motivo de bloqueo</label>
+                        <input class="input" type="text" formControlName="motivoBloqueo"
+                            placeholder="Describe el motivo…" />
+                    </div>
+                </div>
+            </section>
+
+            <!-- Operación -->
+            <section class="group-card">
+                <h2 class="group-title">Operación</h2>
+
+                <div class="form-grid">
+                    <div class="field">
+                        <label>Modos de acceso</label>
+                        <div class="chips-row" formGroupName="operacion">
+                            <label class="checkbox-chip">
+                                <input type="checkbox" formControlName="modoQR" />
+                                <span>QR</span>
+                            </label>
+                            <label class="checkbox-chip">
+                                <input type="checkbox" formControlName="modoCodigo" />
+                                <span>Código</span>
+                            </label>
+
+                        </div>
+                    </div>
+
+                    <div class="field" formGroupName="operacion">
+                        <label>Tiempo de apertura (seg)</label>
+                        <input class="input" type="number" formControlName="tiempoAperturaSeg" min="1" max="30" />
+                    </div>
+
+                    <div class="field" formGroupName="operacion">
+                        <label>Reintentos</label>
+                        <input class="input" type="number" formControlName="reintentos" min="1" max="5" />
+                    </div>
+
+                    <div class="field" formGroupName="operacion">
+                        <label>Timeout de cierre (seg)</label>
+                        <input class="input" type="number" formControlName="timeoutCierreSeg" min="5" max="120" />
+                    </div>
+
+                    <div class="field" formGroupName="operacion">
+                        <label>Horario</label>
+                        <div class="row-2">
+                            <div>
+                                <small>Desde</small>
+                                <input class="input" type="time" formControlName="horaDesde" />
+                            </div>
+                            <div>
+                                <small>Hasta</small>
+                                <input class="input" type="time" formControlName="horaHasta" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field" [formGroup]="form">
+                        <div class="field-label">Días</div>
+
+                        <div class="days-quick">
+                            <button type="button" class="mini" (click)="setDias('all')">Todos</button>
+                            <button type="button" class="mini" (click)="setDias('weekday')">L–V</button>
+                            <button type="button" class="mini" (click)="setDias('none')">Ninguno</button>
+                        </div>
+
+                        <div formGroupName="operacion">
+                            <div formGroupName="dias" class="days-toggle" role="group" aria-label="Días habilitados">
+                                <label class="day" *ngFor="let d of diasList">
+                                    <input type="checkbox" [formControlName]="d.key" />
+                                    <span class="chip">{{ d.label }}</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Capacidad -->
+            <section class="group-card">
+                <h2 class="group-title">Capacidad</h2>
+                <div class="form-grid" formGroupName="capacidad">
+                    <div class="field">
+                        <label>Casilleros*</label>
+                        <input class="input" type="number" formControlName="casilleros" min="1" />
+                        <small class="error"
+                            *ngIf="form.get('capacidad.casilleros')?.touched && form.get('capacidad.casilleros')?.invalid">
+                            Debe ser un número mayor a 0.
+                        </small>
+                    </div>
+
+                    <div class="field">
+                        <label>Política</label>
+                        <select class="input" formControlName="politica">
+                            <option *ngFor="let p of politicas" [value]="p">{{ p }}</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Mantenimiento -->
+            <section class="group-card">
+                <h2 class="group-title">Mantenimiento</h2>
+                <div class="form-grid" formGroupName="mantenimiento">
+                    <div class="field">
+                        <label>Próxima fecha</label>
+                        <input class="input" type="date" formControlName="proximaFecha" />
+                    </div>
+                    <div class="field">
+                        <label>Responsable</label>
+                        <input class="input" type="text" formControlName="responsable"
+                            placeholder="Nombre del responsable" />
+                    </div>
+                </div>
+            </section>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-light" (click)="cancelar()">Cancelar</button>
+                <button type="submit" class="btn btn-success">Guardar</button>
+            </div>
+
+        </form>
+    </div>
+</main>
