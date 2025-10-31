@@ -58,7 +58,7 @@ export class HeaderAdmin {
     irEmpresas() {
         this.vistaActual = 'empresas';
         console.log('Ir a /admin/empresas');
-        // this.router.navigate(['/admin/empresas']);
+        this.router.navigate(['/admin/empresa']);
         this.cerrarMenuMobile();
     }
 

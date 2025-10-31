@@ -1,0 +1,112 @@
+<app-header-admin></app-header-admin>
+
+<main class="empresas-wrap">
+  <div class="container">
+
+    <div class="toolbar">
+      <h1 class="page-title">Gestión de Empresas</h1>
+      <div class="toolbar-actions">
+        <button class="btn btn-success" (click)="nuevaEmpresa()">+ Nueva Empresa</button>
+        <button class="btn btn-outline" (click)="limpiarFiltros()">Limpiar filtros</button>
+      </div>
+    </div>
+
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Total de empresas</div>
+        <div class="kpi-value">{{ kpiTotal() }}</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Empresas activas</div>
+        <div class="kpi-value">{{ kpiActivas() }}</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Empresas inactivas</div>
+        <div class="kpi-value">{{ kpiInactivas() }}</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Nuevas (últimos 7 días)</div>
+        <div class="kpi-value">{{ kpiNuevas7d() }}</div>
+      </div>
+    </section>
+
+    <section class="filters">
+      <input
+        class="input"
+        type="text"
+        placeholder="Buscar por nombre, RUT, correo o ubicación..."
+        (input)="onBuscar($event)"
+      />
+
+      <select class="input" (change)="onEstadoChange($event)">
+        <option value="Todos">Todos</option>
+        <option value="Activa">Activa</option>
+        <option value="Inactiva">Inactiva</option>
+      </select>
+    </section>
+
+    <div class="table-card">
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>RUT</th>
+              <th>Correo</th>
+              <th>Ubicación</th>
+              <th>Estado</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <ng-container *ngIf="filtradas().length; else vacio">
+              <tr *ngFor="let e of filtradas(); trackBy: trackById">
+                <td>#{{ e.id }}</td>
+                <td>{{ e.nombre }}</td>
+                <td>{{ e.rut || '—' }}</td>
+                <td>{{ e.correo }}</td>
+                <td>{{ e.ubicacion || '—' }}</td>
+                <td>
+                  <span
+                    class="badge"
+                    [class.badge-success]="e.estado === 'Activa'"
+                    [class.badge-danger]="e.estado === 'Inactiva'"
+                  >
+                    {{ e.estado }}
+                  </span>
+                </td>
+                <td class="text-end">
+                  <div class="btns-row">
+                    <button class="btn btn-light" (click)="verDetalle()">Detalle</button>
+                    <button class="btn btn-outline" (click)="editar()">Editar</button>
+                    <button
+                      class="btn btn-success"
+                      *ngIf="e.estado === 'Inactiva'"
+                      (click)="activar(e)"
+                    >Activar</button>
+                    <button
+                      class="btn btn-warning"
+                      *ngIf="e.estado === 'Activa'"
+                      (click)="desactivar(e)"
+                    >Desactivar</button>
+                  </div>
+                </td>
+              </tr>
+            </ng-container>
+
+            <ng-template #vacio>
+              <tr>
+                <td colspan="7" class="empty text-center">No hay empresas registradas</td>
+              </tr>
+            </ng-template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>

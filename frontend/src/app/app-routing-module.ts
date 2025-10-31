@@ -28,7 +28,10 @@ import { AdminLockers } from './features/admin/adminLockers/adminLockers'
 import { LockerDetalle } from "./features/admin/detalleLockers/detalleLockers";
 import { EditarLockers } from "./features/admin/editarLockers/editarLockers";
 import { CrearLockers } from "./features/admin/crearLockers/crearLockers";
-
+import { AdminEmpresas } from "./features/admin/adminEmpresas/adminEmpresas";
+import { EmpresaForm } from "./features/admin/empresaForm/empresaForm";
+import { DetalleEmpresa } from "./features/admin/detalleEmpresa/detalleEmpresa";
+import { EditarEmpresa } from "./features/admin/editarEmpresa/editarEmpresa";
 
 
 const routes: Routes = [
@@ -95,12 +98,17 @@ const routes: Routes = [
       { path: 'detalle', component: LockerDetalle },
       { path: 'editar', component: EditarLockers },
       { path: 'crear', component: CrearLockers },
+      { path: 'empresa', component: AdminEmpresas },
+      { path: 'empresaForm', component: EmpresaForm },
+      { path: 'detalleEmpresa', component: DetalleEmpresa },
+      { path: 'editarEmpresa', component: EditarEmpresa },
+
     ]
   },
 
 
-  { path: '', pathMatch: 'full', redirectTo: 'admin' }, //login
-  { path: '**', redirectTo: 'admin' }, //login
+  { path: '', pathMatch: 'full', redirectTo: 'login' }, //login
+  { path: '**', redirectTo: 'login' }, //login
 ];
 
 @NgModule({

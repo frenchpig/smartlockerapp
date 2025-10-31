@@ -18,34 +18,38 @@ export class CrearLockers {
     private fb = inject(FormBuilder);
     private router = inject(Router);
 
-    empresas = [{ id: 1, nombre: 'Empresa A' }, { id: 2, nombre: 'Empresa B' }];
+    empresas = [
+        { id: 1, nombre: 'ejemplo1' },
+        { id: 2, nombre: 'ejemplo2' },
+        { id: 3, nombre: 'ejemplo3' }
+    ];
     sedes: string[] = ['Metro Ñuñoa', 'Metro Ñuble'];
     politicas: PoliticaCapacidad[] = ['Libre', 'Exclusiva', 'Mixta'];
 
 
-    
-  // Lista de días
-diasList = [
-  { key: 'lu', label: 'Lu' },
-  { key: 'ma', label: 'Ma' },
-  { key: 'mi', label: 'Mi' },
-  { key: 'ju', label: 'Ju' },
-  { key: 'vi', label: 'Vi' },
-  { key: 'sa', label: 'Sa' },
-  { key: 'do', label: 'Do' },
-];
 
-// días
-setDias(mode: 'all' | 'weekday' | 'none') {
-  const dias = this.form.get('operacion.dias');
-  if (!dias) return;
-  const set = (k: string, v: boolean) => dias.get(k)?.setValue(v);
-  const keys = this.diasList.map(d => d.key);
+    // Lista de días
+    diasList = [
+        { key: 'lu', label: 'Lu' },
+        { key: 'ma', label: 'Ma' },
+        { key: 'mi', label: 'Mi' },
+        { key: 'ju', label: 'Ju' },
+        { key: 'vi', label: 'Vi' },
+        { key: 'sa', label: 'Sa' },
+        { key: 'do', label: 'Do' },
+    ];
 
-  if (mode === 'all') keys.forEach(k => set(k, true));
-  if (mode === 'weekday') keys.forEach(k => set(k, ['lu', 'ma', 'mi', 'ju', 'vi'].includes(k)));
-  if (mode === 'none') keys.forEach(k => set(k, false));
-}
+    // días
+    setDias(mode: 'all' | 'weekday' | 'none') {
+        const dias = this.form.get('operacion.dias');
+        if (!dias) return;
+        const set = (k: string, v: boolean) => dias.get(k)?.setValue(v);
+        const keys = this.diasList.map(d => d.key);
+
+        if (mode === 'all') keys.forEach(k => set(k, true));
+        if (mode === 'weekday') keys.forEach(k => set(k, ['lu', 'ma', 'mi', 'ju', 'vi'].includes(k)));
+        if (mode === 'none') keys.forEach(k => set(k, false));
+    }
 
     form = this.fb.group({
         nombre: ['', [Validators.required, Validators.minLength(3)]],
@@ -63,10 +67,10 @@ setDias(mode: 'all' | 'weekday' | 'none') {
             horaDesde: ['08:00'],
             horaHasta: ['20:00']
         }),
-        capacidad: this.fb.group({
-            casilleros: [12, [Validators.required, Validators.min(1)]],
-            politica: ['Libre' as PoliticaCapacidad]
-        }),
+        // capacidad: this.fb.group({
+        //     casilleros: [12, [Validators.required, Validators.min(1)]],
+        //     politica: ['Libre' as PoliticaCapacidad]
+        // }),
         mantenimiento: this.fb.group({
             proximaFecha: [''],
             responsable: [''],

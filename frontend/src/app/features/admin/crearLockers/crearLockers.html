@@ -17,7 +17,6 @@
                 <h2 class="group-title">Datos generales</h2>
 
                 <div class="form-grid">
-                    <!-- Nombre -->
                     <div class="field">
                         <label>Nombre*</label>
                         <input class="input" type="text" formControlName="nombre" placeholder="Ej: Locker #12" />
@@ -29,11 +28,17 @@
                     <!-- Empresa  -->
                     <div class="field">
                         <label>Empresa*</label>
-                        <input class="input" type="text" formControlName="empresaId" placeholder="Ej: Empresa ABC" />
+                        <select class="input" formControlName="empresaId">
+                            <option value="" disabled>Selecciona una empresa…</option>
+                            <option *ngFor="let e of empresas" [value]="e.id">
+                                {{ e.nombre }}
+                            </option>
+                        </select>
                         <small class="error" *ngIf="form.get('empresaId')?.touched && form.get('empresaId')?.invalid">
-                            Ingresa el nombre de la empresa.
+                            Selecciona una empresa.
                         </small>
                     </div>
+
 
                     <!-- Sede -->
                     <div class="field">
@@ -58,7 +63,6 @@
                         </select>
                     </div>
 
-                    <!-- Motivo bloqueo -->
                     <div class="field" *ngIf="form.get('estado')?.value === 'Bloqueado'">
                         <label>Motivo de bloqueo</label>
                         <input class="input" type="text" formControlName="motivoBloqueo"
@@ -121,7 +125,7 @@
 
                         <div class="days-quick">
                             <button type="button" class="mini" (click)="setDias('all')">Todos</button>
-                            <button type="button" class="mini" (click)="setDias('weekday')">L–V</button>
+                            <button type="button" class="mini" (click)="setDias('weekday')">L – V</button>
                             <button type="button" class="mini" (click)="setDias('none')">Ninguno</button>
                         </div>
 
@@ -133,28 +137,6 @@
                                 </label>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Capacidad -->
-            <section class="group-card">
-                <h2 class="group-title">Capacidad</h2>
-                <div class="form-grid" formGroupName="capacidad">
-                    <div class="field">
-                        <label>Casilleros*</label>
-                        <input class="input" type="number" formControlName="casilleros" min="1" />
-                        <small class="error"
-                            *ngIf="form.get('capacidad.casilleros')?.touched && form.get('capacidad.casilleros')?.invalid">
-                            Debe ser un número mayor a 0.
-                        </small>
-                    </div>
-
-                    <div class="field">
-                        <label>Política</label>
-                        <select class="input" formControlName="politica">
-                            <option *ngFor="let p of politicas" [value]="p">{{ p }}</option>
-                        </select>
                     </div>
                 </div>
             </section>

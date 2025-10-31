@@ -1,0 +1,134 @@
+<app-header-admin></app-header-admin>
+
+<main class="empresas-wrap">
+    <div class="container">
+        <div class="toolbar">
+            <h1 class="page-title">Empresa · {{ empresa?.nombre }}</h1>
+
+            <div class="toolbar-actions">
+                <button class="btn btn-light" (click)="volver()">Volver</button>
+                <button class="btn btn-success" (click)="editar()">Editar</button>
+            </div>
+        </div>
+
+        <!-- KPIs -->
+        <section class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">Lockers asignados</div>
+                <div class="kpi-value">{{ empresa?.lockersAsignados }}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Casilleros totales</div>
+                <div class="kpi-value">{{ empresa?.casillerosTotales }}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Pedidos (últ. 7 días)</div>
+                <div class="kpi-value">{{ empresa?.creadosUlt7d ?? 0 }}</div>
+            </div>
+            <div class="kpi-card kpi-estado">
+                <div class="kpi-label">Estado</div>
+                <div class="kpi-badge">
+                    <span class="badge" [class.badge-success]="empresa?.estado==='Activa'"
+                        [class.badge-danger]="empresa?.estado==='Inactiva'">
+                        {{ empresa?.estado }}
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <section class="grid-two">
+            <!-- Ficha completa -->
+            <article class="card ficha-card">
+                <h2 class="card-title">Ficha</h2>
+
+                <div class="ficha-table">
+                    <div class="row">
+                        <div class="label">Nombre</div>
+                        <div class="value">{{ empresa?.nombre }}</div>
+                    </div>
+
+                    <div class="row" *ngIf="empresa?.razonSocial">
+                        <div class="label">Razón social</div>
+                        <div class="value">{{ empresa?.razonSocial }}</div>
+                    </div>
+
+                    <div class="row" *ngIf="empresa?.rut">
+                        <div class="label">RUT</div>
+                        <div class="value">{{ empresa?.rut }}</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="label">Correo</div>
+                        <div class="value">{{ empresa?.correo }}</div>
+                    </div>
+
+                    <div class="row" *ngIf="empresa?.telefono">
+                        <div class="label">Teléfono</div>
+                        <div class="value">{{ empresa?.telefono }}</div>
+                    </div>
+
+                    <div class="row" *ngIf="empresa?.direccion">
+                        <div class="label">Dirección</div>
+                        <div class="value">
+                            {{ empresa?.direccion }}
+                            <span *ngIf="empresa?.comuna">, {{ empresa?.comuna }}</span>
+                            <span *ngIf="empresa?.region">, {{ empresa?.region }}</span>
+                        </div>
+                    </div>
+
+                    <div class="row" *ngIf="empresa?.plan">
+                        <div class="label">Plan</div>
+                        <div class="value">{{ empresa?.plan }}</div>
+                    </div>
+
+                    <div class="row" *ngIf="empresa?.fechaAlta">
+                        <div class="label">Fecha alta</div>
+                        <div class="value">{{ empresa?.fechaAlta | date:'longDate' }}</div>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Sedes -->
+            <aside class="card side-card">
+                <h2 class="card-title">Sedes</h2>
+                <div class="chips">
+                    <span class="chip" *ngFor="let s of empresa?.sedes">{{ s }}</span>
+                </div>
+            </aside>
+        </section>
+
+        <!-- (mock) -->
+        <section class="card table-card">
+            <h2 class="card-title">Actividad reciente</h2>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Detalle</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>10/24/2025</td>
+                            <td>Inicio</td>
+                            <td>Se registró la empresa en el sistema.</td>
+                        </tr>
+                        <tr>
+                            <td>10/28/2025</td>
+                            <td>Asignación</td>
+                            <td>Asignados 6 lockers a sede “Ñuñoa”.</td>
+                        </tr>
+                        <tr>
+                            <td>10/31/2025</td>
+                            <td>Actualización</td>
+                            <td>Modificado correo de contacto.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </div>
+</main>
