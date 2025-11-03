@@ -19,7 +19,7 @@ export class EditarLockers implements OnInit {
   private router = inject(Router);
 
   // (mock)
-  empresas = [{ id: 1, nombre: 'Empresa A' }, { id: 2, nombre: 'Empresa B' }];
+  // empresas = [{ id: 1, nombre: 'Empresa A' }, { id: 2, nombre: 'Empresa B' }];
   sedes: string[] = ['Metro Ñuñoa', 'Ñuble'];
   politicas: PoliticaCapacidad[] = ['Libre', 'Exclusiva', 'Mixta'];
 

@@ -18,11 +18,11 @@ export class CrearLockers {
     private fb = inject(FormBuilder);
     private router = inject(Router);
 
-    empresas = [
-        { id: 1, nombre: 'ejemplo1' },
-        { id: 2, nombre: 'ejemplo2' },
-        { id: 3, nombre: 'ejemplo3' }
-    ];
+    // empresas = [
+    //     { id: 1, nombre: 'ejemplo1' },
+    //     { id: 2, nombre: 'ejemplo2' },
+    //     { id: 3, nombre: 'ejemplo3' }
+    // ];
     sedes: string[] = ['Metro Ñuñoa', 'Metro Ñuble'];
     politicas: PoliticaCapacidad[] = ['Libre', 'Exclusiva', 'Mixta'];
 
