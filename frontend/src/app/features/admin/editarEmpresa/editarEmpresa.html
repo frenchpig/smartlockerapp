@@ -1,0 +1,165 @@
+<app-header-admin></app-header-admin>
+
+<main class="empresas-wrap">
+    <div class="container">
+        <div class="toolbar">
+            <h1 class="page-title">Editar empresa</h1>
+            <div class="toolbar-actions">
+                <button class="btn btn-light" type="button" (click)="volver()">Cancelar</button>
+                <button class="btn btn-success" type="button" (click)="guardar()">Guardar</button>
+            </div>
+        </div>
+
+        <!-- KPIs -->
+        <section class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">Lockers asignados</div>
+                <div class="kpi-value">{{ form.get('lockersAsignados')?.value || 0 }}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Casilleros totales</div>
+                <div class="kpi-value">{{ form.get('casillerosTotales')?.value || 0 }}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Fecha alta</div>
+                <div class="kpi-value">{{ form.get('fechaAlta')?.value || '—' }}</div>
+            </div>
+            <div class="kpi-card kpi-estado">
+                <div class="kpi-label">Estado</div>
+                <div class="kpi-badge">
+                    <span class="badge" [class.badge-success]="form.get('estado')?.value==='Activa'"
+                        [class.badge-danger]="form.get('estado')?.value==='Inactiva'">
+                        {{ form.get('estado')?.value }}
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <section class="grid-two">
+            <!-- Ficha -->
+            <form class="card ficha-card" [formGroup]="form" (ngSubmit)="guardar()">
+                <h2 class="card-title">Ficha</h2>
+
+                <div class="ficha-table">
+                    <div class="row">
+                        <div class="label">ID</div>
+                        <div class="value"><input class="input" type="text" [value]="form.get('id')?.value" disabled>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="label">Nombre*</div>
+                        <div class="value">
+                            <input class="input" type="text" formControlName="nombre"
+                                placeholder="Nombre de la empresa" />
+                            <small class="error" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.invalid">
+                                Mínimo 3 caracteres.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="label">Razón social</div>
+                        <div class="value"><input class="input" type="text" formControlName="razonSocial" /></div>
+                    </div>
+
+                    <div class="row">
+                        <div class="label">RUT</div>
+                        <div class="value"><input class="input" type="text" formControlName="rut"
+                                placeholder="76.123.456-7" /></div>
+                    </div>
+
+                    <div class="row">
+                        <div class="label">Correo*</div>
+                        <div class="value">
+                            <input class="input" type="email" formControlName="correo"
+                                placeholder="correo@dominio.cl" />
+                            <small class="error" *ngIf="form.get('correo')?.touched && form.get('correo')?.invalid">
+                                Ingresa un correo válido.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="label">Teléfono</div>
+                        <div class="value"><input class="input" type="text" formControlName="telefono" /></div>
+                    </div>
+
+                    <div class="row">
+                        <div class="label">Dirección</div>
+                        <div class="value"><input class="input" type="text" formControlName="direccion" /></div>
+                    </div>
+
+                    <div class="row">
+                        <div class="label">Comuna</div>
+                        <div class="value"><input class="input" type="text" formControlName="comuna" /></div>
+                    </div>
+
+                    <div class="row">
+                        <div class="label">Región</div>
+                        <div class="value"><input class="input" type="text" formControlName="region" /></div>
+                    </div>
+
+                    <div class="row">
+                        <div class="label">Estado</div>
+                        <div class="value">
+                            <select class="input" formControlName="estado">
+                                <option *ngFor="let e of estados" [value]="e">{{ e }}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="label">Plan</div>
+                        <div class="value">
+                            <select class="input" formControlName="plan">
+                                <option *ngFor="let p of planes" [value]="p">{{ p }}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="label">Fecha Inicio</div>
+                        <div class="value"><input class="input" type="date" formControlName="fechaAlta" /></div>
+                    </div>
+
+                    <div class="row">
+                        <div class="label">Lockers asignados</div>
+                        <div class="value"><input class="input" type="number" min="0"
+                                formControlName="lockersAsignados" /></div>
+                    </div>
+
+                    <div class="row">
+                        <div class="label">Casilleros totales</div>
+                        <div class="value"><input class="input" type="number" min="0"
+                                formControlName="casillerosTotales" /></div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-light" (click)="volver()">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                </div>
+            </form>
+
+            <aside class="card side-card" [formGroup]="form">
+                <h2 class="card-title">Sedes</h2>
+
+                <div class="chips-edit">
+                    <div class="row-add">
+                        <input class="input" type="text" #sedeInput placeholder="Nueva sede…"
+                            (keydown.enter)="agregarSede(sedeInput)" />
+                        <button class="btn btn-success" type="button" (click)="agregarSede(sedeInput)">Agregar</button>
+                    </div>
+
+                    <div class="chips">
+                        <span class="chip" *ngFor="let s of sedesArr.controls; let i = index">
+                            {{ s.value }}
+                            <button class="chip-x" type="button" (click)="eliminarSede(i)">✕</button>
+                        </span>
+                    </div>
+                </div>
+            </aside>
+        </section>
+    </div>
+</main>

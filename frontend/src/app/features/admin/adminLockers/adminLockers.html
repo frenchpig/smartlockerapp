@@ -1,0 +1,117 @@
+<app-header-admin></app-header-admin>
+
+
+<main class="lockers-wrap">
+    <div class="container">
+
+        <div class="toolbar">
+            <h1 class="page-title">Gestionar lockers</h1>
+
+            <div class="toolbar-actions">
+                <button class="btn btn-outline" (click)="limpiarFiltros()">Limpiar filtros</button>
+                <!-- <button class="btn btn-success">Nuevo locker</button> -->
+                <button class="btn btn-success" [routerLink]="['/admin/crear']">Nuevo locker</button>
+
+            </div>
+        </div>
+
+        <!-- KPIs mock -->
+        <section class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">Totales</div>
+                <div class="kpi-value">{{ countTotales }}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Activos</div>
+                <div class="kpi-value">{{ countActivos }}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Ocupados</div>
+                <div class="kpi-value">{{ countOcupados }}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">En revisión</div>
+                <div class="kpi-value">{{ countRevision }}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Bloqueados</div>
+                <div class="kpi-value">{{ countBloqueados }}</div>
+            </div>
+        </section>
+
+
+        <!-- Filtros -->
+        <section class="filters">
+            <input class="input" type="text" placeholder="Buscar por código, ubicación, empresa o estado…"
+                [(ngModel)]="q" />
+
+            <select class="input" [(ngModel)]="fEstado">
+                <option>Todos</option>
+                <option>Activo</option>
+                <option>Ocupado</option>
+                <option>En revisión</option>
+                <option>Bloqueado</option>
+            </select>
+
+            <select class="input" [(ngModel)]="fUbicacion">
+                <option>Todas</option>
+                <option *ngFor="let u of ubicaciones" [value]="u">{{ u }}</option>
+            </select>
+        </section>
+
+        <!-- Tabla -->
+        <div class="table-card">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Código</th>
+                            <th>Ubicación</th>
+                            <th>Empresa</th>
+                            <th>Estado</th>
+                            <th>Actualizado</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let r of filtrados">
+                            <td>#{{ r.id }}</td>
+                            <td>{{ r.codigo }}</td>
+                            <td>{{ r.ubicacion }}</td>
+                            <td>{{ r.empresa || '—' }}</td>
+                            <td>
+                                <span class="badge" [class.badge-success]="r.estado==='Activo'"
+                                    [class.badge-warning]="r.estado==='Ocupado'"
+                                    [class.badge-info]="r.estado==='En revisión'"
+                                    [class.badge-danger]="r.estado==='Bloqueado'">
+                                    {{ r.estado }}
+                                </span>
+                            </td>
+                            <td>{{ r.actualizadoEl | date:'short' }}</td>
+                            <td class="text-end">
+                                <div class="btns-row">
+                                    <!-- <button class="btn btn-light" (click)="irDetalle()">Detalle</button> -->
+                                     <button class="btn btn-light" (click)="irDetalle()">Detalle</button>
+
+
+                                    <button class="btn btn-outline" (click)="irEditar()">Editar</button>
+                                    <button class="btn btn-warning" (click)="marcarRevision(r)">Revisión</button>
+                                    <button class="btn btn-danger" *ngIf="r.estado!=='Bloqueado'"
+                                        (click)="bloquear(r)">Bloquear</button>
+                                    <button class="btn btn-success" *ngIf="r.estado==='Bloqueado'"
+                                        (click)="activar(r)">Activar</button>
+                                </div>
+                            </td>
+
+                        </tr>
+                        <tr *ngIf="!filtrados.length">
+                            <td colspan="7" class="empty">Sin resultados</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</main>

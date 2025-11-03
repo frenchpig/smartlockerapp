@@ -1,0 +1,152 @@
+<header class="admin-header bg-main text-white">
+  <div class="admin-header-inner container-admin">
+
+    <div class="left-col">
+      <div class="title-row">
+        <h1 class="panel-title" (click)="irHome()">Panel Admin</h1>
+
+        <button
+          class="btn-hamburger"
+          (click)="toggleMenuMobile()"
+          [attr.aria-expanded]="menuMobileAbierto"
+          aria-label="Menú"
+        >
+          <span class="bar"></span>
+          <span class="bar"></span>
+          <span class="bar"></span>
+        </button>
+      </div>
+
+      <nav class="header-actions-desktop">
+        <button
+          class="nav-link-custom"
+          [class.active]="vistaActual === 'home'"
+          (click)="irHome()"
+        >
+          <span>Dashboard</span>
+        </button>
+
+        <button
+          class="nav-link-custom"
+          [class.active]="vistaActual === 'lockers'"
+          (click)="irLockers()"
+        >
+          <span>Gestionar lockers</span>
+        </button>
+
+        <button
+          class="nav-link-custom"
+          [class.active]="vistaActual === 'incidencias'"
+          (click)="irIncidencias()"
+        >
+          <span>Incidencias</span>
+        </button>
+
+        <button
+          class="nav-link-custom"
+          [class.active]="vistaActual === 'tarifas'"
+          (click)="irTarifas()"
+        >
+          <span>Tarifas / Políticas</span>
+        </button>
+
+        <button
+          class="nav-link-custom"
+          [class.active]="vistaActual === 'empresas'"
+          (click)="irEmpresas()"
+        >
+          <span>Empresas</span>
+        </button>
+      </nav>
+    </div>
+
+    <div class="right-col">
+      <button
+        class="btn-user-menu"
+        (click)="toggleUserMenu()"
+        [attr.aria-expanded]="menuAbiertoUser"
+        aria-haspopup="true"
+      >
+        <div class="user-avatar">
+          <div class="avatar-circle">A</div>
+        </div>
+
+        <div class="user-info">
+          <div class="user-name">{{ adminNombre }}</div>
+          <div class="user-role">{{ adminRol }}</div>
+        </div>
+
+        <div class="chevron-icon">▾</div>
+      </button>
+
+      <div
+        class="dropdown-menu-animated"
+        *ngIf="menuAbiertoUser"
+      >
+        <div class="dropdown-header">
+          <div class="fw-semibold">{{ adminNombre }}</div>
+          <div class="text-muted small">{{ adminRol }}</div>
+        </div>
+
+        <button class="dropdown-item" (click)="irPerfil()">
+          <span>Mi perfil</span>
+        </button>
+
+        <button class="dropdown-item text-danger" (click)="logout()">
+          <span>Cerrar sesión</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <aside
+    class="mobile-menu-panel"
+    *ngIf="menuMobileAbierto"
+  >
+    <div class="mobile-menu-inner">
+      <button class="mobile-close" (click)="cerrarMenuMobile()" aria-label="Cerrar menú">✕</button>
+
+      <nav class="mobile-nav-list">
+        <button
+          class="mobile-nav-item"
+          [class.active]="vistaActual === 'home'"
+          (click)="irHome()"
+        >
+          <span>Dashboard</span>
+        </button>
+
+        <button
+          class="mobile-nav-item"
+          [class.active]="vistaActual === 'lockers'"
+          (click)="irLockers()"
+        >
+          <span>Gestionar lockers</span>
+        </button>
+
+        <button
+          class="mobile-nav-item"
+          [class.active]="vistaActual === 'incidencias'"
+          (click)="irIncidencias()"
+        >
+          <span>Incidencias</span>
+        </button>
+
+        <button
+          class="mobile-nav-item"
+          [class.active]="vistaActual === 'tarifas'"
+          (click)="irTarifas()"
+        >
+          <span>Tarifas / Políticas</span>
+        </button>
+
+        <button
+          class="mobile-nav-item"
+          [class.active]="vistaActual === 'empresas'"
+          (click)="irEmpresas()"
+        >
+          <span>Empresas</span>
+        </button>
+      </nav>
+    </div>
+  </aside>
+</header>
