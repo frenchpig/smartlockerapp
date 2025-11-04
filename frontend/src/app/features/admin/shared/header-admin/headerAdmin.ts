@@ -51,7 +51,7 @@ export class HeaderAdmin {
     irTarifas() {
         this.vistaActual = 'tarifas';
         console.log('Ir a /admin/tarifas');
-        // this.router.navigate(['/admin/tarifas']);
+        this.router.navigate(['/admin/tarifas']);
         this.cerrarMenuMobile();
     }
 

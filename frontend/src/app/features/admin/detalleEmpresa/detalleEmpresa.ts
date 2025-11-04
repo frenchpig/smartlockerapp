@@ -22,7 +22,7 @@ interface EmpresaDetalle {
     lockersAsignados: number;
     casillerosTotales: number;
     fechaAlta?: string;
-    plan?: 'Standard' | 'Pro' | 'Enterprise';
+    plan?: 'Smart Basic' | 'Smart Pro' | 'Smart Max';
 }
 
 @Component({
@@ -59,7 +59,7 @@ export class DetalleEmpresa implements OnInit {
             lockersAsignados: 18,
             casillerosTotales: 216,
             fechaAlta: '2025-08-10',
-            plan: 'Pro'
+            plan: 'Smart Basic'
         };
     }
 

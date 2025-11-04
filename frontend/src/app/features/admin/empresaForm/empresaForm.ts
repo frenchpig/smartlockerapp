@@ -5,7 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { HeaderAdmin } from '../../admin/shared/header-admin/headerAdmin';
 
 type EmpresaEstado = 'Activa' | 'Inactiva';
-type Plan = 'Standard' | 'Pro' | 'Enterprise';
+type Plan = 'Smart Basic' | 'Smart Pro' | 'Smart Max';
 
 @Component({
     standalone: true,
@@ -19,7 +19,7 @@ export class EmpresaForm {
     private router = inject(Router);
 
     estados: EmpresaEstado[] = ['Activa', 'Inactiva'];
-    planes: Plan[] = ['Standard', 'Pro', 'Enterprise'];
+    planes: Plan[] = ['Smart Basic', 'Smart Pro', 'Smart Max'];
 
     form = this.fb.group({
         nombre: ['', [Validators.required, Validators.minLength(3)]],
@@ -31,7 +31,7 @@ export class EmpresaForm {
         comuna: [''],
         region: [''],
         estado: ['Activa' as EmpresaEstado, Validators.required],
-        plan: ['Pro' as Plan],
+        plan: ['Smart Basic' as Plan],
         fechaAlta: [new Date().toISOString().substring(0, 10)],
         lockersAsignados: [0, [Validators.min(0)]],
         casillerosTotales: [0, [Validators.min(0)]],
