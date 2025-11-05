@@ -33,8 +33,8 @@ import { EmpresaForm } from "./features/admin/empresaForm/empresaForm";
 import { DetalleEmpresa } from "./features/admin/detalleEmpresa/detalleEmpresa";
 import { EditarEmpresa } from "./features/admin/editarEmpresa/editarEmpresa";
 import { AdminTarifas } from "./features/admin/tarifasAdmin/tarifasAdmin";
-// import { editarTarifas } from "./features/admin/editarTarifas/editarTarifas";
-// import { crearTarifas } from "./features/admin/crearTarifas/crearTarifas";
+import { EditarTarifa } from "./features/admin/editarTarifa/editarTarifa";
+import { CrearTarifa } from "./features/admin/crearTarifa/crearTarifa";
 
 
 const routes: Routes = [
@@ -106,14 +106,14 @@ const routes: Routes = [
       { path: 'detalleEmpresa', component: DetalleEmpresa },
       { path: 'editarEmpresa', component: EditarEmpresa },
       { path: 'tarifas', component: AdminTarifas },
-      // { path: 'crearTarifas', component: crearTarifas },
-      // { path: 'editarTarifas', component: editarTarifas },
+      { path: 'crearTarifas', component: CrearTarifa },
+      { path: 'editarTarifas', component: EditarTarifa },
     ]
   },
 
 
-  { path: '', pathMatch: 'full', redirectTo: 'login' }, //login
-  { path: '**', redirectTo: 'login' }, //login
+  { path: '', pathMatch: 'full', redirectTo: 'admin' }, //login
+  { path: '**', redirectTo: 'admin' }, //login
 ];
 
 @NgModule({

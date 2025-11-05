@@ -150,13 +150,11 @@ export class AdminTarifas {
     }
 
     editar(plan: PlanTarifa) {
-        // this.router.navigate(['/admin/tarifas', plan.id, 'editar']);
-        console.log('Editar plan', plan);
+        this.router.navigate(['/admin/editarTarifas']);
     }
 
     nuevaTarifa() {
-        // this.router.navigate(['/admin/tarifas/nueva']);
-        console.log('Crear nueva tarifa');
+        this.router.navigate(['/admin/crearTarifas']);
     }
 
     formatoPrecio(valor: number) {
