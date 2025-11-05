@@ -1,11 +1,18 @@
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, OnInit } from '@angular/core';
+import { CommonModule, Location } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { HeaderAdmin } from '../../admin/shared/header-admin/headerAdmin';
+import { AuthService } from '../../../core/auth/auth';
+import { environment } from '../../../../environments/environment';
 
-type LockerEstado = 'Activo' | 'Ocupado' | 'En revisión' | 'Bloqueado';
-type PoliticaCapacidad = 'Libre' | 'Exclusiva' | 'Mixta';
+type LockerEstado = 'activo' | 'bloqueado' | 'mantenimiento';
+
+interface Ubicacion {
+    id: number;
+    nombre: string;
+}
 
 @Component({
     standalone: true,
@@ -14,80 +21,175 @@ type PoliticaCapacidad = 'Libre' | 'Exclusiva' | 'Mixta';
     templateUrl: './crearLockers.html',
     styleUrls: ['./crearLockers.scss']
 })
-export class CrearLockers {
+export class CrearLockers implements OnInit {
     private fb = inject(FormBuilder);
     private router = inject(Router);
+    private location = inject(Location);
+    private http = inject(HttpClient);
+    private auth = inject(AuthService);
 
-    // empresas = [
-    //     { id: 1, nombre: 'ejemplo1' },
-    //     { id: 2, nombre: 'ejemplo2' },
-    //     { id: 3, nombre: 'ejemplo3' }
-    // ];
-    sedes: string[] = ['Metro Ñuñoa', 'Metro Ñuble'];
-    politicas: PoliticaCapacidad[] = ['Libre', 'Exclusiva', 'Mixta'];
-
-
-
-    // Lista de días
-    diasList = [
-        { key: 'lu', label: 'Lu' },
-        { key: 'ma', label: 'Ma' },
-        { key: 'mi', label: 'Mi' },
-        { key: 'ju', label: 'Ju' },
-        { key: 'vi', label: 'Vi' },
-        { key: 'sa', label: 'Sa' },
-        { key: 'do', label: 'Do' },
-    ];
-
-    // días
-    setDias(mode: 'all' | 'weekday' | 'none') {
-        const dias = this.form.get('operacion.dias');
-        if (!dias) return;
-        const set = (k: string, v: boolean) => dias.get(k)?.setValue(v);
-        const keys = this.diasList.map(d => d.key);
-
-        if (mode === 'all') keys.forEach(k => set(k, true));
-        if (mode === 'weekday') keys.forEach(k => set(k, ['lu', 'ma', 'mi', 'ju', 'vi'].includes(k)));
-        if (mode === 'none') keys.forEach(k => set(k, false));
-    }
+    ubicaciones: Ubicacion[] = [];
+    loading = false;
+    loadingUbicaciones = false;
+    siguienteNumero: number | null = null;
+    cantidad = 1;
 
     form = this.fb.group({
-        nombre: ['', [Validators.required, Validators.minLength(3)]],
-        empresaId: [null, Validators.required],
-        sede: ['', Validators.required],
-        estado: ['Activo' as LockerEstado],
-        operacion: this.fb.group({
-            modoQR: [true],
-            modoCodigo: [true],
-            modoRemoto: [false],
-            tiempoAperturaSeg: [8, [Validators.min(1), Validators.max(30)]],
-            reintentos: [3, [Validators.min(1), Validators.max(5)]],
-            timeoutCierreSeg: [15, [Validators.min(5), Validators.max(120)]],
-            dias: this.fb.group({ lu: true, ma: true, mi: true, ju: true, vi: true, sa: false, do: false }),
-            horaDesde: ['08:00'],
-            horaHasta: ['20:00']
-        }),
-        // capacidad: this.fb.group({
-        //     casilleros: [12, [Validators.required, Validators.min(1)]],
-        //     politica: ['Libre' as PoliticaCapacidad]
-        // }),
+        numero: [null as number | null, [Validators.required, Validators.min(1)]],
+        ubicacion_id: [null, Validators.required],
+        estado: ['activo' as LockerEstado],
+        tamano: ['', Validators.required],
+        cantidad: [1, [Validators.required, Validators.min(1), Validators.max(50)]],
         mantenimiento: this.fb.group({
-            proximaFecha: [''],
-            responsable: [''],
-            notas: ['']
+            fecha_programada: [''],
+            descripcion: ['']
         })
     });
 
-    guardar() {
+    async ngOnInit(): Promise<void> {
+        await this.cargarUbicaciones();
+        
+        // Suscribirse a cambios en ubicacion_id para calcular siguiente número
+        this.form.get('ubicacion_id')?.valueChanges.subscribe(async (ubicacionId) => {
+            if (ubicacionId) {
+                await this.calcularSiguienteNumero(ubicacionId);
+            } else {
+                this.siguienteNumero = null;
+            }
+        });
+
+        // Suscribirse a cambios en cantidad
+        this.form.get('cantidad')?.valueChanges.subscribe((cantidad) => {
+            this.cantidad = cantidad || 1;
+        });
+    }
+
+    private async cargarUbicaciones(): Promise<void> {
+        this.loadingUbicaciones = true;
+        try {
+            const response: any = await this.http
+                .get<any>(`${environment.apiUrl}/ubicaciones`, { params: { per_page: 1000 } })
+                .toPromise();
+
+            this.ubicaciones = (response?.data || response || []).map((u: any) => ({
+                id: u.id,
+                nombre: u.nombre
+            }));
+        } catch (error) {
+            console.error('Error cargando ubicaciones:', error);
+            alert('No se pudieron cargar las ubicaciones');
+        } finally {
+            this.loadingUbicaciones = false;
+        }
+    }
+
+    private async calcularSiguienteNumero(ubicacionId: number): Promise<void> {
+        try {
+            const response: any = await this.http
+                .get<any>(`${environment.apiUrl}/lockers`, { 
+                    params: { 
+                        ubicacion_id: ubicacionId.toString(),
+                        per_page: 1000 
+                    } 
+                })
+                .toPromise();
+
+            const lockers = response?.data || response || [];
+            const numerosExistentes = lockers
+                .map((l: any) => l.numero)
+                .filter((n: number) => n != null && !isNaN(n));
+
+            // Encontrar el siguiente número disponible (máximo + 1, o 1 si no hay lockers)
+            const siguiente = numerosExistentes.length > 0
+                ? Math.max(...numerosExistentes) + 1
+                : 1;
+
+            this.siguienteNumero = siguiente;
+            
+            // Actualizar el valor del formulario si no tiene valor
+            if (!this.form.get('numero')?.value) {
+                this.form.patchValue({ numero: siguiente as number });
+            }
+        } catch (error) {
+            console.error('Error calculando siguiente número:', error);
+            this.siguienteNumero = 1;
+        }
+    }
+
+    async guardar() {
         if (this.form.invalid) {
             this.form.markAllAsTouched();
             return;
         }
-        console.log('Nuevo locker:', this.form.value);
-        this.router.navigate(['/admin/lockers']);
+
+        const formValue = this.form.value;
+        const user = this.auth.user();
+
+        if (!user) {
+            alert('No hay usuario autenticado');
+            this.router.navigate(['/login']);
+            return;
+        }
+
+        this.loading = true;
+        try {
+            const cantidad = formValue.cantidad || 1;
+            const numeroInicial = formValue.numero || 1;
+
+            const lockersCreados: any[] = [];
+
+            // Crear múltiples lockers
+            for (let i = 0; i < cantidad; i++) {
+                const numeroActual = numeroInicial + i;
+                
+                const lockerData = {
+                    numero: numeroActual,
+                    ubicacion_id: formValue.ubicacion_id,
+                    estado: formValue.estado,
+                    tamano: formValue.tamano
+                };
+
+                const locker: any = await this.http
+                    .post<any>(`${environment.apiUrl}/lockers`, lockerData)
+                    .toPromise();
+
+                lockersCreados.push(locker);
+
+                // Si hay datos de mantenimiento, crear el registro para cada locker
+                if (formValue.mantenimiento?.fecha_programada || formValue.mantenimiento?.descripcion) {
+                    const mantenimientoData = {
+                        locker_id: locker.id,
+                        usuario_id: user.id,
+                        fecha_programada: formValue.mantenimiento.fecha_programada || null,
+                        descripcion: formValue.mantenimiento.descripcion || 'Mantenimiento programado',
+                        estado: 'programado'
+                    };
+
+                    await this.http
+                        .post<any>(`${environment.apiUrl}/mantenimientos`, mantenimientoData)
+                        .toPromise();
+                }
+            }
+
+            const mensaje = cantidad > 1 
+                ? `Se crearon ${cantidad} lockers exitosamente (números ${numeroInicial} a ${numeroInicial + cantidad - 1})`
+                : `Se creó el locker #${numeroInicial} exitosamente`;
+            
+            alert(mensaje);
+            this.router.navigate(['/admin/lockers']);
+        } catch (error: any) {
+            console.error('Error creando lockers:', error);
+            alert(error?.error?.message || 'No se pudieron crear los lockers. Intenta nuevamente.');
+        } finally {
+            this.loading = false;
+        }
     }
 
     cancelar() {
         this.router.navigate(['/admin/lockers']);
+    }
+
+    volver() {
+        this.location.back();
     }
 }

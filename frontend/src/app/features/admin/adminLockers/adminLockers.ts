@@ -38,11 +38,13 @@ export class AdminLockers implements OnInit {
 
     get ubicaciones(): string[] {
         const set = new Set(this.rows.map(r => r.ubicacion));
-        return [...set];
+        const ubicacionesList = [...set];
+        // Ordenar ubicaciones alfabéticamente
+        return ubicacionesList.sort((a, b) => a.localeCompare(b));
     }
 
     get filtrados(): LockerRow[] {
-        return this.rows.filter(r => {
+        const filtrados = this.rows.filter(r => {
             const matchQ = this.q.trim()
                 ? [r.numero.toString(), r.ubicacion, r.empresa ?? '', r.estado].some(t =>
                     t.toLowerCase().includes(this.q.trim().toLowerCase()))
@@ -50,6 +52,15 @@ export class AdminLockers implements OnInit {
             const matchE = this.fEstado === 'Todos' ? true : r.estado === this.fEstado;
             const matchU = this.fUbicacion === 'Todas' ? true : r.ubicacion === this.fUbicacion;
             return matchQ && matchE && matchU;
+        });
+
+        // Mantener el ordenamiento por ubicación y número después de filtrar
+        return filtrados.sort((a, b) => {
+            const ubicacionCompare = a.ubicacion.localeCompare(b.ubicacion);
+            if (ubicacionCompare !== 0) {
+                return ubicacionCompare;
+            }
+            return a.numero - b.numero;
         });
     }
 
@@ -145,6 +156,17 @@ export class AdminLockers implements OnInit {
                     empresa: l.empresa_actual?.nombre ?? undefined,
                     actualizadoEl: l.updated_at ?? l.created_at ?? new Date().toISOString(),
                 };
+            });
+
+            // Ordenar por ubicación (alfabético) y luego por número
+            this.rows.sort((a, b) => {
+                // Primero por ubicación
+                const ubicacionCompare = a.ubicacion.localeCompare(b.ubicacion);
+                if (ubicacionCompare !== 0) {
+                    return ubicacionCompare;
+                }
+                // Si la ubicación es igual, ordenar por número
+                return a.numero - b.numero;
             });
         } catch (error) {
             console.error('Error cargando lockers:', error);
