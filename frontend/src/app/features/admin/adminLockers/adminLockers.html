@@ -99,7 +99,9 @@
 
 
                                     <button class="btn btn-outline" (click)="irEditar(r)">Editar</button>
-                                    <button class="btn btn-warning" (click)="marcarRevision(r)">Revisión</button>
+                                    <button class="btn btn-warning" (click)="marcarRevision(r)">
+                                        {{ r.estado === 'En revisión' ? 'Quitar revisión' : 'Revisión' }}
+                                    </button>
                                     <button class="btn btn-danger" *ngIf="r.estado!=='Bloqueado'"
                                         (click)="bloquear(r)">Bloquear</button>
                                     <button class="btn btn-success" *ngIf="r.estado==='Bloqueado'"

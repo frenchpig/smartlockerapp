@@ -79,10 +79,21 @@ export class AdminLockers implements OnInit {
 
     async marcarRevision(row: LockerRow) {
         try {
+            // Si está en revisión (mantenimiento), revertir a activo
+            // Si no está en revisión, cambiar a mantenimiento
+            const nuevoEstado = row.estado === 'En revisión' ? 'activo' : 'mantenimiento';
+            
             await this.http
-                .patch(`${environment.apiUrl}/lockers/${row.id}`, { estado: 'mantenimiento' })
+                .patch(`${environment.apiUrl}/lockers/${row.id}`, { estado: nuevoEstado })
                 .toPromise();
-            row.estado = 'En revisión';
+            
+            // Actualizar el estado localmente
+            if (nuevoEstado === 'activo') {
+                row.estado = 'Activo';
+            } else {
+                row.estado = 'En revisión';
+            }
+            
             row.actualizadoEl = new Date().toISOString();
             this.cargarLockers(); // Recargar para obtener datos actualizados
         } catch (error) {
