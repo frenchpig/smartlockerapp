@@ -119,12 +119,12 @@ export class AdminLockers implements OnInit {
         }
     }
 
-    irDetalle(): void {
-        this.router.navigate(['/admin/detalle']);
+    irDetalle(row: LockerRow): void {
+        this.router.navigate(['/admin/detalle', row.id]);
     }
 
-    irEditar(): void {
-        this.router.navigate(['/admin/editar']);
+    irEditar(row: LockerRow): void {
+        this.router.navigate(['/admin/editar', row.id]);
     }
 
     ngOnInit(): void {

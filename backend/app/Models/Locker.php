@@ -56,4 +56,9 @@ class Locker extends Model
     {
         return $this->hasMany(HistorialEnvio::class, 'locker_destino_id');
     }
+
+    public function historial()
+    {
+        return $this->hasMany(HistorialLocker::class, 'locker_id');
+    }
 }

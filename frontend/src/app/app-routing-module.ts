@@ -97,8 +97,8 @@ const routes: Routes = [
     children: [
       { path: '', component: AdminHomeComponent },
       { path: 'lockers', component: AdminLockers },
-      { path: 'detalle', component: LockerDetalle },
-      { path: 'editar', component: EditarLockers },
+      { path: 'detalle/:id', component: LockerDetalle },
+      { path: 'editar/:id', component: EditarLockers },
       { path: 'crear', component: CrearLockers },
       { path: 'empresa', component: AdminEmpresas },
       { path: 'empresaForm', component: EmpresaForm },

@@ -97,10 +97,22 @@
                 <h2 class="group-title">Mantenimiento (Opcional)</h2>
                 <div class="form-grid" formGroupName="mantenimiento">
                     <div class="field">
+                        <label>Técnico asignado</label>
+                        <select class="input" formControlName="tecnico_id" [disabled]="loadingTecnicos || tecnicos.length === 0">
+                            <option value="" disabled>Selecciona un técnico…</option>
+                            <option *ngIf="loadingTecnicos" disabled>Cargando técnicos...</option>
+                            <option *ngIf="tecnicos.length === 0" disabled>No hay técnicos disponibles</option>
+                            <option *ngFor="let t of tecnicos" [value]="t.id">{{ t.nombre }} {{ t.apellido }}</option>
+                        </select>
+                        <small class="text-muted" *ngIf="tecnicos.length > 0">
+                            Se asigna automáticamente un técnico, pero puedes cambiarlo.
+                        </small>
+                    </div>
+                    <div class="field">
                         <label>Fecha programada</label>
                         <input class="input" type="date" formControlName="fecha_programada" />
                     </div>
-                    <div class="field">
+                    <div class="field" style="grid-column:1 / -1">
                         <label>Descripción</label>
                         <textarea class="input" formControlName="descripcion" rows="3"
                             placeholder="Describe el tipo de mantenimiento a realizar..."></textarea>

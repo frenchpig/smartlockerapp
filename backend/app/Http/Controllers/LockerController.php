@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Locker;
 use App\Models\Reserva;
+use App\Models\HistorialLocker;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 class LockerController extends Controller
@@ -55,7 +57,25 @@ class LockerController extends Controller
 
     public function show(Locker $locker)
     {
-        return $locker->load('ubicacion');
+        $locker->load([
+            'ubicacion',
+            'historial' => function($query) {
+                $query->orderBy('created_at', 'desc')
+                      ->with(['usuario:id,nombre,apellido', 'reserva', 'mantenimiento', 'incidencia']);
+            }
+        ]);
+
+        // Obtener el mantenimiento con fecha programada más cercana
+        $mantenimientoProximo = \App\Models\Mantenimiento::where('locker_id', $locker->id)
+            ->whereNotNull('fecha_programada')
+            ->where('fecha_programada', '>=', now())
+            ->orderBy('fecha_programada', 'asc')
+            ->with('usuario:id,nombre,apellido')
+            ->first();
+
+        $locker->mantenimiento_proximo = $mantenimientoProximo;
+
+        return $locker;
     }
 
     public function store(Request $request)
@@ -69,8 +89,17 @@ class LockerController extends Controller
         ]);
 
         $locker = Locker::create($data);
+        $locker->load('ubicacion');
 
-        return response()->json($locker->load('ubicacion'), 201);
+        // Registrar en historial
+        HistorialLocker::create([
+            'locker_id' => $locker->id,
+            'usuario_id' => Auth::id(),
+            'accion' => 'creado',
+            'descripcion' => "Locker #{$locker->numero} creado en " . ($locker->ubicacion->nombre ?? 'ubicación desconocida'),
+        ]);
+
+        return response()->json($locker, 201);
     }
 
     public function update(Request $request, Locker $locker)
@@ -83,7 +112,21 @@ class LockerController extends Controller
             'codigo_acceso_temporal' => ['sometimes','nullable','string','max:100'],
         ]);
 
+        $datosAnteriores = $locker->only(['estado', 'numero', 'ubicacion_id', 'tamano']);
         $locker->update($data);
+        $datosNuevos = $locker->fresh()->only(['estado', 'numero', 'ubicacion_id', 'tamano']);
+
+        // Registrar cambio de estado si cambió
+        if (isset($data['estado']) && $datosAnteriores['estado'] !== $datosNuevos['estado']) {
+            HistorialLocker::create([
+                'locker_id' => $locker->id,
+                'usuario_id' => Auth::id(),
+                'accion' => 'estado_cambiado',
+                'descripcion' => "Estado cambiado de '{$datosAnteriores['estado']}' a '{$datosNuevos['estado']}'",
+                'datos_anteriores' => ['estado' => $datosAnteriores['estado']],
+                'datos_nuevos' => ['estado' => $datosNuevos['estado']],
+            ]);
+        }
 
         return $locker->load('ubicacion');
     }

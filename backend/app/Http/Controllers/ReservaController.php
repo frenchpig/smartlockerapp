@@ -6,10 +6,12 @@ use App\Models\Reserva;
 use App\Models\Repartidor;
 use App\Models\ArticuloReserva;
 use App\Models\Locker;
+use App\Models\HistorialLocker;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class ReservaController extends Controller
 {
@@ -150,6 +152,15 @@ class ReservaController extends Controller
             // Actualizar estado del locker a ocupado
             $this->actualizarEstadoLocker($reserva->locker_id);
             
+            // Registrar en historial
+            HistorialLocker::create([
+                'locker_id' => $reserva->locker_id,
+                'usuario_id' => Auth::id(),
+                'accion' => 'reserva_creada',
+                'descripcion' => "Reserva #{$reserva->id} creada - Locker ocupado",
+                'reserva_id' => $reserva->id,
+            ]);
+            
             $this->asignarRepartidorDisponible($reserva);
             return $reserva->load(['usuario','locker.ubicacion','repartidor.usuario','articulos']);
         });
@@ -249,6 +260,15 @@ class ReservaController extends Controller
             // Actualizar estado del locker a ocupado si la reserva está pendiente
             if ($reserva->estado === 'pendiente') {
                 $this->actualizarEstadoLocker($reserva->locker_id);
+                
+                // Registrar en historial
+                HistorialLocker::create([
+                    'locker_id' => $reserva->locker_id,
+                    'usuario_id' => Auth::id(),
+                    'accion' => 'reserva_creada',
+                    'descripcion' => "Reserva #{$reserva->id} creada - Locker ocupado",
+                    'reserva_id' => $reserva->id,
+                ]);
             }
 
             if (empty($data['repartidor_id'])) {
@@ -289,7 +309,41 @@ class ReservaController extends Controller
         } 
         // Si cambió el estado, actualizar el locker
         elseif (isset($data['estado']) && $data['estado'] !== $estadoAnterior) {
+            $reserva->load(['usuario', 'locker']);
+            $lockerEstadoAnterior = $reserva->locker->estado;
             $this->actualizarEstadoLocker($reserva->locker_id);
+            $locker = Locker::find($reserva->locker_id);
+            $lockerEstadoNuevo = $locker ? $locker->estado : $lockerEstadoAnterior;
+            
+            // Registrar cambio de estado en historial
+            if ($data['estado'] === 'completado' && $estadoAnterior === 'pendiente') {
+                $usuarioNombre = $reserva->usuario ? trim($reserva->usuario->nombre . ' ' . $reserva->usuario->apellido) : 'Usuario';
+                $descripcion = "Usuario {$usuarioNombre} retiró sus productos de la Reserva #{$reserva->id}. ";
+                
+                if ($lockerEstadoAnterior === 'ocupado' && $lockerEstadoNuevo === 'activo') {
+                    $descripcion .= "Locker #{$locker->numero} desocupado y disponible nuevamente.";
+                } else {
+                    $descripcion .= "Locker #{$locker->numero} actualizado.";
+                }
+
+                HistorialLocker::create([
+                    'locker_id' => $reserva->locker_id,
+                    'usuario_id' => $reserva->usuario_id,
+                    'accion' => 'reserva_completada',
+                    'descripcion' => $descripcion,
+                    'reserva_id' => $reserva->id,
+                    'datos_anteriores' => ['estado_locker' => $lockerEstadoAnterior],
+                    'datos_nuevos' => ['estado_locker' => $lockerEstadoNuevo],
+                ]);
+            } elseif ($data['estado'] === 'anulado' && $estadoAnterior === 'pendiente') {
+                HistorialLocker::create([
+                    'locker_id' => $reserva->locker_id,
+                    'usuario_id' => Auth::id(),
+                    'accion' => 'reserva_anulada',
+                    'descripcion' => "Reserva #{$reserva->id} anulada",
+                    'reserva_id' => $reserva->id,
+                ]);
+            }
         }
 
         return $reserva->load(['usuario','locker.ubicacion','repartidor.usuario']);
@@ -359,10 +413,23 @@ class ReservaController extends Controller
     public function destroy(Reserva $reserva)
     {
         $lockerId = $reserva->locker_id;
+        $reservaId = $reserva->id;
+        $estadoReserva = $reserva->estado;
         
         $this->liberarRepartidor($reserva);
 
         $reserva->delete();
+        
+        // Registrar en historial si la reserva estaba pendiente
+        if ($estadoReserva === 'pendiente') {
+            HistorialLocker::create([
+                'locker_id' => $lockerId,
+                'usuario_id' => Auth::id(),
+                'accion' => 'reserva_anulada',
+                'descripcion' => "Reserva #{$reservaId} eliminada",
+                'reserva_id' => $reservaId,
+            ]);
+        }
         
         // Actualizar estado del locker después de eliminar la reserva
         $this->actualizarEstadoLocker($lockerId);
@@ -542,6 +609,9 @@ class ReservaController extends Controller
 
     private function finalizarReserva(Reserva $reserva): Reserva
     {
+        // Cargar relaciones necesarias antes de usarlas
+        $reserva->load(['usuario', 'locker']);
+        
         $reserva->estado = 'completado';
         $reserva->hora_fin = now();
         $reserva->codigo_acceso = null;
@@ -549,13 +619,36 @@ class ReservaController extends Controller
         $reserva->save();
 
         // Actualizar estado del locker (puede volver a activo si no hay más reservas pendientes)
+        $lockerEstadoAnterior = $reserva->locker->estado;
         $this->actualizarEstadoLocker($reserva->locker_id);
+        $locker = Locker::find($reserva->locker_id);
+        $lockerEstadoNuevo = $locker ? $locker->estado : $lockerEstadoAnterior;
+
+        // Registrar en historial con mensaje más descriptivo
+        $usuarioNombre = $reserva->usuario ? trim($reserva->usuario->nombre . ' ' . $reserva->usuario->apellido) : 'Usuario';
+        $descripcion = "Usuario {$usuarioNombre} retiró sus productos de la Reserva #{$reserva->id}. ";
+        
+        if ($lockerEstadoAnterior === 'ocupado' && $lockerEstadoNuevo === 'activo') {
+            $descripcion .= "Locker #{$locker->numero} desocupado y disponible nuevamente.";
+        } else {
+            $descripcion .= "Locker #{$locker->numero} actualizado.";
+        }
+
+        HistorialLocker::create([
+            'locker_id' => $reserva->locker_id,
+            'usuario_id' => $reserva->usuario_id, // Usuario que retiró los productos
+            'accion' => 'reserva_completada',
+            'descripcion' => $descripcion,
+            'reserva_id' => $reserva->id,
+            'datos_anteriores' => ['estado_locker' => $lockerEstadoAnterior],
+            'datos_nuevos' => ['estado_locker' => $lockerEstadoNuevo],
+        ]);
 
         $this->liberarRepartidor($reserva);
 
         Cache::forget('reserva_code_'.$reserva->id);
 
-        return $reserva->load(['locker.ubicacion','repartidor.usuario']);
+        return $reserva->load(['locker.ubicacion','repartidor.usuario','usuario']);
     }
 
     private function asignarRepartidorDisponible(Reserva $reserva): void

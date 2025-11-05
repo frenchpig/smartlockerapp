@@ -2,71 +2,70 @@
 
 <main class="detalle-wrap">
     <div class="container">
-
-        <div class="toolbar">
-            <h1 class="page-title">
-                Locker <span class="code">#{{ locker.id }} · {{ locker.codigo }}</span>
-            </h1>
-            <div class="toolbar-actions">
-                <span class="badge" [class.badge-success]="locker.estado==='Activo'"
-                    [class.badge-warning]="locker.estado==='Ocupado'" [class.badge-info]="locker.estado==='En revisión'"
-                    [class.badge-danger]="locker.estado==='Bloqueado'">
-                    {{ locker.estado }}
-                </span>
-
-                <button class="btn btn-outline" (click)="volver()">Volver</button>
-                <button class="btn btn-success" (click)="irEditar()">Editar</button>
-            </div>
+        <div *ngIf="loading" class="text-center py-5">
+            <p>Cargando información del locker...</p>
         </div>
 
-        <section class="grid-2">
-            <article class="card">
-                <h2 class="card-title">Información general</h2>
-                <div class="kv">
-                    <div class="row"><span>Nombre</span><strong>{{ locker.nombre }}</strong></div>
-                    <!-- <div class="row"><span>Empresa</span><strong>{{ locker.empresa }}</strong></div> -->
-                    <div class="row"><span>Sede</span><strong>{{ locker.sede }}</strong></div>
-                    <div class="row" *ngIf="locker.zona"><span>Zona</span><strong>{{ locker.zona }}</strong></div>
-                    <div class="row"><span>Última actualización</span><strong>{{ locker.actualizadoEl | date:'short'
-                            }}</strong></div>
-                </div>
-            </article>
+        <div *ngIf="error" class="alert alert-danger">
+            {{ error }}
+        </div>
 
-            <article class="card">
-                <h2 class="card-title">Conectividad / HW</h2>
-                <div class="kv">
-                    <div class="row"><span>IP</span><strong>{{ locker.ip || '—' }}</strong></div>
-                    <div class="row"><span>Firmware</span><strong>{{ locker.firmware || '—' }}</strong></div>
-                    <div class="row"><span>Serie</span><strong>{{ locker.serie || '—' }}</strong></div>
-                </div>
-                <div class="actions-inline">
-                    <!-- <button class="btn btn-light">Probar apertura</button>
-                    <button class="btn btn-warning">Marcar en revisión</button> -->
-                </div>
-            </article>
-        </section>
+        <div *ngIf="!loading && !error && locker">
+            <div class="toolbar">
+                <h1 class="page-title">
+                    {{ nombreLocker }}
+                </h1>
+                <div class="toolbar-actions">
+                    <span class="badge" [class.badge-success]="estadoDisplay==='Activo'"
+                        [class.badge-warning]="estadoDisplay==='Ocupado'"
+                        [class.badge-info]="estadoDisplay==='En revisión'"
+                        [class.badge-danger]="estadoDisplay==='Bloqueado'">
+                        {{ estadoDisplay }}
+                    </span>
 
-        <section class="card">
-            <h2 class="card-title">Historial</h2>
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Evento</th>
-                            <th>Detalle</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>{{ locker.actualizadoEl | date:'short' }}</td>
-                            <td>Actualización</td>
-                            <td>Sincronización OK</td>
-                        </tr>
-                    </tbody>
-                </table>
+                    <button class="btn btn-outline" (click)="volver()">Volver</button>
+                    <button class="btn btn-success" (click)="irEditar()">Editar</button>
+                </div>
             </div>
-        </section>
 
+            <section class="grid-2">
+                <article class="card">
+                    <h2 class="card-title">Información general</h2>
+                    <div class="kv">
+                        <div class="row"><span>Nombre</span><strong>{{ nombreLocker }}</strong></div>
+                        <div class="row"><span>Sede</span><strong>{{ locker.ubicacion?.nombre || 'Sin ubicación' }}</strong></div>
+                        <div class="row" *ngIf="locker.tamano"><span>Tamaño</span><strong>{{ locker.tamano }}</strong></div>
+                        <div class="row"><span>Última actualización</span><strong>{{ locker.updated_at || locker.created_at | date:'short' }}</strong></div>
+                    </div>
+                </article>
+            </section>
+
+            <section class="card">
+                <h2 class="card-title">Historial</h2>
+                <div class="table-responsive" *ngIf="locker.historial && locker.historial.length > 0">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Acción</th>
+                                <th>Descripción</th>
+                                <th>Usuario</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of locker.historial">
+                                <td>{{ item.created_at | date:'short' }}</td>
+                                <td><strong>{{ getAccionDisplay(item.accion) }}</strong></td>
+                                <td>{{ item.descripcion }}</td>
+                                <td>{{ getUsuarioDisplay(item) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div *ngIf="!locker.historial || locker.historial.length === 0" class="text-center py-4">
+                    <p class="text-muted">No hay historial registrado para este locker.</p>
+                </div>
+            </section>
+        </div>
     </div>
 </main>

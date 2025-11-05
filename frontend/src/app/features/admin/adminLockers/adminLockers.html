@@ -95,10 +95,10 @@
                             <td class="text-end">
                                 <div class="btns-row">
                                     <!-- <button class="btn btn-light" (click)="irDetalle()">Detalle</button> -->
-                                     <button class="btn btn-light" (click)="irDetalle()">Detalle</button>
+                                     <button class="btn btn-light" (click)="irDetalle(r)">Detalle</button>
 
 
-                                    <button class="btn btn-outline" (click)="irEditar()">Editar</button>
+                                    <button class="btn btn-outline" (click)="irEditar(r)">Editar</button>
                                     <button class="btn btn-warning" (click)="marcarRevision(r)">Revisión</button>
                                     <button class="btn btn-danger" *ngIf="r.estado!=='Bloqueado'"
                                         (click)="bloquear(r)">Bloquear</button>

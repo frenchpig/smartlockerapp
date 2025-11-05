@@ -1,11 +1,31 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { HeaderAdmin } from '../../admin/shared/header-admin/headerAdmin';
+import { environment } from '../../../../environments/environment';
 
-type LockerEstado = 'Activo' | 'Ocupado' | 'En revisión' | 'Bloqueado';
-type PoliticaCapacidad = 'Libre' | 'Exclusiva' | 'Mixta';
+type LockerEstado = 'activo' | 'bloqueado' | 'mantenimiento' | 'ocupado';
+
+interface Ubicacion {
+  id: number;
+  nombre: string;
+}
+
+interface Mantenimiento {
+  id: number;
+  fecha_programada: string;
+  descripcion: string;
+  usuario?: { id: number; nombre: string; apellido: string };
+}
+
+interface Tecnico {
+  id: number;
+  nombre: string;
+  apellido: string;
+  email: string;
+}
 
 @Component({
   standalone: true,
@@ -17,92 +37,196 @@ type PoliticaCapacidad = 'Libre' | 'Exclusiva' | 'Mixta';
 export class EditarLockers implements OnInit {
   private fb = inject(FormBuilder);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private location = inject(Location);
+  private http = inject(HttpClient);
 
-  // (mock)
-  // empresas = [{ id: 1, nombre: 'Empresa A' }, { id: 2, nombre: 'Empresa B' }];
-  sedes: string[] = ['Metro Ñuñoa', 'Ñuble'];
-  politicas: PoliticaCapacidad[] = ['Libre', 'Exclusiva', 'Mixta'];
-
-  // Lista de días
-diasList = [
-  { key: 'lu', label: 'Lu' },
-  { key: 'ma', label: 'Ma' },
-  { key: 'mi', label: 'Mi' },
-  { key: 'ju', label: 'Ju' },
-  { key: 'vi', label: 'Vi' },
-  { key: 'sa', label: 'Sa' },
-  { key: 'do', label: 'Do' },
-];
-
-// días
-setDias(mode: 'all' | 'weekday' | 'none') {
-  const dias = this.form.get('operacion.dias');
-  if (!dias) return;
-  const set = (k: string, v: boolean) => dias.get(k)?.setValue(v);
-  const keys = this.diasList.map(d => d.key);
-
-  if (mode === 'all') keys.forEach(k => set(k, true));
-  if (mode === 'weekday') keys.forEach(k => set(k, ['lu', 'ma', 'mi', 'ju', 'vi'].includes(k)));
-  if (mode === 'none') keys.forEach(k => set(k, false));
-}
-
+  ubicaciones: Ubicacion[] = [];
+  tecnicos: Tecnico[] = [];
+  loading = false;
+  loadingUbicaciones = false;
+  loadingTecnicos = false;
+  locker: any = null;
 
   form = this.fb.group({
-    // Datos generales
-    id: this.fb.control<number | null>({ value: 12, disabled: true }),
-    codigo: this.fb.control<string | null>({ value: 'LK-012', disabled: true }),
-    nombre: this.fb.control<string>('Locker #12', {
-      validators: [Validators.required, Validators.minLength(3)]
-    }),
-    empresaId: this.fb.control<number>(1, { validators: [Validators.required] }),
-    sede: this.fb.control<string>('Metro Ñuñoa', { validators: [Validators.required] }),
-    estado: this.fb.control<LockerEstado>('Activo', { validators: [Validators.required] }),
-    motivoBloqueo: this.fb.control<string>(''),
-
-    // Operación
-    operacion: this.fb.group({
-      modoQR: this.fb.control<boolean>(true),
-      modoCodigo: this.fb.control<boolean>(true),
-      modoRemoto: this.fb.control<boolean>(false),
-      tiempoAperturaSeg: this.fb.control<number>(8, { validators: [Validators.min(1), Validators.max(30)] }),
-      reintentos: this.fb.control<number>(3, { validators: [Validators.min(1), Validators.max(5)] }),
-      timeoutCierreSeg: this.fb.control<number>(15, { validators: [Validators.min(5), Validators.max(120)] }),
-      dias: this.fb.group({
-        lu: true, ma: true, mi: true, ju: true, vi: true, sa: false, do: false
-      }),
-      horaDesde: this.fb.control<string>('08:00'),
-      horaHasta: this.fb.control<string>('20:00'),
-    }),
-
-    // Capacidad
-    capacidad: this.fb.group({
-      casilleros: this.fb.control<number>(12, { validators: [Validators.required, Validators.min(1)] }),
-      politica: this.fb.control<PoliticaCapacidad>('Libre')
-    }),
-
-    // Mantenimiento
+    numero: [null as number | null, [Validators.required, Validators.min(1)]],
+    ubicacion_id: [null as number | null, Validators.required],
+    estado: ['activo' as LockerEstado, Validators.required],
+    tamano: ['', Validators.required],
     mantenimiento: this.fb.group({
-      proximaFecha: this.fb.control<string>(''),
-      responsable: this.fb.control<string>(''),
-      notas: this.fb.control<string>(''),
+      fecha_programada: [''],
+      descripcion: [''],
+      tecnico_id: [null as number | null]
     })
   });
 
-  ngOnInit(): void {
+    async ngOnInit(): Promise<void> {
+      const id = this.route.snapshot.paramMap.get('id');
+      if (id) {
+        await Promise.all([
+          this.cargarUbicaciones(),
+          this.cargarTecnicos(),
+          this.cargarLocker(parseInt(id))
+        ]);
+      }
+    }
+
+  private async cargarUbicaciones(): Promise<void> {
+    this.loadingUbicaciones = true;
+    try {
+      const response: any = await this.http
+        .get<any>(`${environment.apiUrl}/ubicaciones`, { params: { per_page: 1000 } })
+        .toPromise();
+
+      this.ubicaciones = (response?.data || response || []).map((u: any) => ({
+        id: u.id,
+        nombre: u.nombre
+      }));
+    } catch (error) {
+      console.error('Error cargando ubicaciones:', error);
+    } finally {
+      this.loadingUbicaciones = false;
+    }
   }
 
-  guardar(): void {
+  private async cargarTecnicos(): Promise<void> {
+    this.loadingTecnicos = true;
+    try {
+      const response: any = await this.http
+        .get<any>(`${environment.apiUrl}/usuarios`, { params: { rol: 'tecnico', per_page: 1000 } })
+        .toPromise();
+
+      this.tecnicos = (response?.data || response || []).map((u: any) => ({
+        id: u.id,
+        nombre: u.nombre,
+        apellido: u.apellido,
+        email: u.email
+      }));
+    } catch (error) {
+      console.error('Error cargando técnicos:', error);
+    } finally {
+      this.loadingTecnicos = false;
+    }
+  }
+
+  private async cargarLocker(id: number): Promise<void> {
+    this.loading = true;
+    try {
+      const response: any = await this.http
+        .get<any>(`${environment.apiUrl}/lockers/${id}`)
+        .toPromise();
+
+      this.locker = response;
+
+      // Cargar datos en el formulario
+      const fechaMantenimiento = response.mantenimiento_proximo?.fecha_programada 
+        ? new Date(response.mantenimiento_proximo.fecha_programada).toISOString().split('T')[0]
+        : '';
+
+      // Asignar técnico automáticamente si no hay mantenimiento próximo
+      const tecnicoIdDefault = response.mantenimiento_proximo?.usuario_id || 
+        (this.tecnicos.length > 0 ? this.tecnicos[0].id : null);
+
+      this.form.patchValue({
+        numero: response.numero,
+        ubicacion_id: response.ubicacion_id,
+        estado: response.estado,
+        tamano: response.tamano || '',
+        mantenimiento: {
+          fecha_programada: fechaMantenimiento,
+          descripcion: response.mantenimiento_proximo?.descripcion || '',
+          tecnico_id: tecnicoIdDefault
+        }
+      });
+    } catch (error) {
+      console.error('Error cargando locker:', error);
+      alert('No se pudo cargar la información del locker');
+      this.volver();
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  get nombreLocker(): string {
+    return this.locker ? `Locker #${this.locker.numero}` : 'Locker';
+  }
+
+  get mantenimientoProximo(): Mantenimiento | null {
+    return this.locker?.mantenimiento_proximo || null;
+  }
+
+  async guardar(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
-    const payload = this.form.getRawValue();
-    console.log('Guardar', payload);
-    // TODO: call API → toast → volver
-    this.router.navigate(['/admin/lockers']);
+
+    if (!this.locker) return;
+
+    this.loading = true;
+    try {
+      const formValue = this.form.value;
+
+      // Actualizar el locker
+      const lockerData = {
+        numero: formValue.numero,
+        ubicacion_id: formValue.ubicacion_id,
+        estado: formValue.estado,
+        tamano: formValue.tamano
+      };
+
+      await this.http
+        .patch(`${environment.apiUrl}/lockers/${this.locker.id}`, lockerData)
+        .toPromise();
+
+      // Si hay datos de mantenimiento, crear o actualizar
+      if (formValue.mantenimiento?.fecha_programada || formValue.mantenimiento?.descripcion) {
+        const tecnicoId = formValue.mantenimiento.tecnico_id || this.tecnicos[0]?.id;
+        if (!tecnicoId) {
+          alert('No hay técnicos disponibles. Por favor, crea al menos un técnico.');
+          return;
+        }
+        
+        const descripcion = formValue.mantenimiento.descripcion?.trim() || 'Mantenimiento programado';
+        const mantenimientoData: any = {
+          locker_id: this.locker.id,
+          usuario_id: tecnicoId,
+          descripcion: descripcion,
+          estado: 'programado'
+        };
+        
+        if (formValue.mantenimiento.fecha_programada) {
+          mantenimientoData.fecha_programada = formValue.mantenimiento.fecha_programada;
+        }
+
+        if (this.mantenimientoProximo) {
+          // Actualizar mantenimiento existente
+          await this.http
+            .patch(`${environment.apiUrl}/mantenimientos/${this.mantenimientoProximo.id}`, mantenimientoData)
+            .toPromise();
+        } else {
+          // Crear nuevo mantenimiento
+          await this.http
+            .post(`${environment.apiUrl}/mantenimientos`, mantenimientoData)
+            .toPromise();
+        }
+      }
+
+      alert('Locker actualizado exitosamente');
+      this.router.navigate(['/admin/lockers']);
+    } catch (error: any) {
+      console.error('Error actualizando locker:', error);
+      alert(error?.error?.message || 'No se pudo actualizar el locker');
+    } finally {
+      this.loading = false;
+    }
   }
 
   cancelar(): void {
-    this.router.navigate(['/admin/lockers']);
+    this.volver();
+  }
+
+  volver(): void {
+    this.location.back();
   }
 }

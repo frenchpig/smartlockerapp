@@ -9,6 +9,8 @@ use App\Models\Ubicacion;
 use App\Models\Reserva;
 use App\Models\Repartidor;
 use App\Models\ArticuloReserva;
+use App\Models\Mantenimiento;
+use App\Models\HistorialLocker;
 use Carbon\Carbon;
 
 class DemoDataSeeder extends Seeder
@@ -86,6 +88,26 @@ class DemoDataSeeder extends Seeder
             'telefono' => '56930000000',
             'rol' => 'administrador',
         ]);
+
+        $tecnico1 = Usuario::create([
+            'nombre' => 'Carlos',
+            'apellido' => 'Mendez',
+            'email' => 'tecnico1@example.com',
+            'contrasena' => '123456',
+            'telefono' => '56931111111',
+            'rol' => 'tecnico',
+        ]);
+
+        $tecnico2 = Usuario::create([
+            'nombre' => 'Ana',
+            'apellido' => 'Rodriguez',
+            'email' => 'tecnico2@example.com',
+            'contrasena' => '123456',
+            'telefono' => '56932222222',
+            'rol' => 'tecnico',
+        ]);
+
+        $tecnicos = [$tecnico1, $tecnico2];
 
         $repartidores = [
             Repartidor::create(['usuario_id' => $repUser1->id]),
@@ -279,6 +301,80 @@ class DemoDataSeeder extends Seeder
         }
 
         Repartidor::query()->update(['disponible' => true]);
+
+        // Crear historiales para los lockers existentes
+        $lockers = Locker::all();
+        foreach ($lockers as $locker) {
+            // Historial de creación
+            HistorialLocker::create([
+                'locker_id' => $locker->id,
+                'usuario_id' => $admin->id,
+                'accion' => 'creado',
+                'descripcion' => "Locker #{$locker->numero} creado en {$locker->ubicacion->nombre}",
+                'created_at' => $locker->created_at,
+                'updated_at' => $locker->created_at,
+            ]);
+
+            // Crear mantenimiento programado para TODOS los lockers
+            $tecnico = $tecnicos[array_rand($tecnicos)];
+            $fechaProgramada = $now->copy()->addDays(rand(7, 30));
+            
+            $mantenimiento = Mantenimiento::create([
+                'locker_id' => $locker->id,
+                'usuario_id' => $tecnico->id,
+                'fecha_programada' => $fechaProgramada,
+                'descripcion' => 'Mantenimiento preventivo programado',
+                'estado' => 'programado',
+            ]);
+
+            // Historial de mantenimiento programado
+            HistorialLocker::create([
+                'locker_id' => $locker->id,
+                'usuario_id' => $admin->id,
+                'accion' => 'mantenimiento_programado',
+                'descripcion' => "Mantenimiento programado para el {$fechaProgramada->format('d/m/Y')}",
+                'mantenimiento_id' => $mantenimiento->id,
+                'created_at' => $now->copy()->subDays(rand(1, 5)),
+                'updated_at' => $now->copy()->subDays(rand(1, 5)),
+            ]);
+
+            // Crear historiales de reservas para los lockers
+            $reservasLocker = Reserva::where('locker_id', $locker->id)
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            foreach ($reservasLocker as $reserva) {
+                $reserva->load('usuario');
+                $usuarioNombre = $reserva->usuario ? trim($reserva->usuario->nombre . ' ' . $reserva->usuario->apellido) : 'Usuario';
+                
+                if ($reserva->estado === 'pendiente') {
+                    HistorialLocker::create([
+                        'locker_id' => $locker->id,
+                        'usuario_id' => $reserva->empresa_id ?? $reserva->usuario_id,
+                        'accion' => 'reserva_creada',
+                        'descripcion' => "Reserva #{$reserva->id} creada - Locker ocupado",
+                        'reserva_id' => $reserva->id,
+                        'created_at' => $reserva->created_at,
+                        'updated_at' => $reserva->created_at,
+                    ]);
+                } elseif ($reserva->estado === 'completado') {
+                    $descripcion = "Usuario {$usuarioNombre} retiró sus productos de la Reserva #{$reserva->id}. ";
+                    $descripcion .= "Locker #{$locker->numero} desocupado y disponible nuevamente.";
+                    
+                    HistorialLocker::create([
+                        'locker_id' => $locker->id,
+                        'usuario_id' => $reserva->usuario_id, // Usuario que retiró los productos
+                        'accion' => 'reserva_completada',
+                        'descripcion' => $descripcion,
+                        'reserva_id' => $reserva->id,
+                        'datos_anteriores' => ['estado_locker' => 'ocupado'],
+                        'datos_nuevos' => ['estado_locker' => 'activo'],
+                        'created_at' => $reserva->hora_fin ?? $reserva->updated_at,
+                        'updated_at' => $reserva->hora_fin ?? $reserva->updated_at,
+                    ]);
+                }
+            }
+        }
 
         // Actualizar estados de lockers según reservas pendientes
         $lockers = Locker::all();

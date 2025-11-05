@@ -3,145 +3,109 @@
 <main class="edit-wrap">
     <div class="container">
         <div class="toolbar">
-            <h1 class="page-title">Editar locker</h1>
+            <h1 class="page-title">Editar {{ nombreLocker }}</h1>
             <div class="toolbar-actions">
-                <button class="btn btn-outline" (click)="cancelar()">Cancelar</button>
-                <button class="btn btn-success" (click)="guardar()">Guardar</button>
+                <button class="btn btn-outline" (click)="cancelar()" [disabled]="loading">Cancelar</button>
+                <button class="btn btn-success" (click)="guardar()" [disabled]="loading || loadingUbicaciones">
+                    <span *ngIf="loading">Guardando...</span>
+                    <span *ngIf="!loading">Guardar</span>
+                </button>
             </div>
         </div>
 
-        <form [formGroup]="form" class="edit-grid">
+        <div *ngIf="loading" class="text-center py-5">
+            <p>Cargando información del locker...</p>
+        </div>
+
+        <form [formGroup]="form" class="edit-grid" *ngIf="!loading && locker">
             <section class="card">
                 <h2 class="card-title">Datos generales</h2>
 
                 <div class="form-row">
                     <label>ID</label>
-                    <input class="input" [value]="form.get('id')?.value" disabled>
+                    <input class="input" [value]="locker.id" disabled>
                 </div>
 
                 <div class="form-row">
-                    <label>Código</label>
-                    <input class="input" [value]="form.get('codigo')?.value" disabled>
+                    <label>Número*</label>
+                    <input class="input" type="number" formControlName="numero" min="1" placeholder="Número del locker">
+                    <small class="error" *ngIf="form.get('numero')?.touched && form.get('numero')?.invalid">
+                        El número es requerido y debe ser mayor a 0.
+                    </small>
                 </div>
 
                 <div class="form-row">
-                    <label>Nombre</label>
-                    <input class="input" formControlName="nombre" placeholder="Nombre del locker">
-                </div>
-
-                <!-- <div class="form-row">
-                    <label>Empresa</label>
-                    <select class="input" formControlName="empresaId">
-                        <option *ngFor="let e of empresas" [value]="e.id">{{ e.nombre }}</option>
+                    <label>Sede (Ubicación)*</label>
+                    <select class="input" formControlName="ubicacion_id" [disabled]="loadingUbicaciones">
+                        <option value="" disabled>Selecciona una ubicación…</option>
+                        <option *ngIf="loadingUbicaciones" disabled>Cargando ubicaciones...</option>
+                        <option *ngFor="let u of ubicaciones" [value]="u.id">{{ u.nombre }}</option>
                     </select>
-                </div> -->
-
-                <div class="form-row">
-                    <label for="sede">Sede</label>
-                    <select id="sede" class="input" formControlName="sede">
-                        <option *ngFor="let s of sedes" [value]="s">{{ s }}</option>
-                    </select>
+                    <small class="error" *ngIf="form.get('ubicacion_id')?.touched && form.get('ubicacion_id')?.invalid">
+                        Selecciona una ubicación.
+                    </small>
                 </div>
 
                 <div class="form-row">
-                    <label>Estado</label>
+                    <label>Estado*</label>
                     <select class="input" formControlName="estado">
-                        <option>Activo</option>
-                        <option>Ocupado</option>
-                        <option>En revisión</option>
-                        <option>Bloqueado</option>
+                        <option value="activo">Activo</option>
+                        <option value="bloqueado">Bloqueado</option>
+                        <option value="mantenimiento">Mantenimiento</option>
                     </select>
+                    <small class="text-muted">Nota: El estado "Ocupado" se asigna automáticamente cuando hay reservas pendientes.</small>
                 </div>
 
-                <div class="form-row" *ngIf="form.value.estado === 'Bloqueado'">
-                    <label>Motivo bloqueo</label>
-                    <textarea class="input" rows="3" formControlName="motivoBloqueo"></textarea>
+                <div class="form-row">
+                    <label>Tamaño*</label>
+                    <select class="input" formControlName="tamano">
+                        <option value="">Selecciona un tamaño…</option>
+                        <option value="S">Pequeño (S)</option>
+                        <option value="M">Mediano (M)</option>
+                        <option value="L">Grande (L)</option>
+                        <option value="XL">Extra Grande (XL)</option>
+                    </select>
+                    <small class="error" *ngIf="form.get('tamano')?.touched && form.get('tamano')?.invalid">
+                        Selecciona un tamaño.
+                    </small>
                 </div>
             </section>
 
             <section class="card">
-                <h2 class="card-title">Operación</h2>
-
-                <div formGroupName="operacion" class="grid-2">
-                    <label class="check"><input type="checkbox" formControlName="modoQR"> Modo QR</label>
-                    <label class="check"><input type="checkbox" formControlName="modoCodigo"> Código</label>
-                    <!-- <label class="check"><input type="checkbox" formControlName="modoRemoto"> Apertura remota</label> -->
-
-                    <div class="form-row">
-                        <label>Tiempo apertura (seg)</label>
-                        <input class="input" type="number" formControlName="tiempoAperturaSeg">
-                    </div>
-
-                    <div class="form-row">
-                        <label>Reintentos</label>
-                        <input class="input" type="number" formControlName="reintentos">
-                    </div>
-
-                    <div class="form-row">
-                        <label>Timeout cierre (seg)</label>
-                        <input class="input" type="number" formControlName="timeoutCierreSeg">
-                    </div>
-
-                    <div class="form-row">
-                        <label>Horario</label>
-                        <div class="row-inline">
-                            <input class="input" type="time" formControlName="horaDesde">
-                            <span class="to">a</span>
-                            <input class="input" type="time" formControlName="horaHasta">
-                        </div>
-                    </div>
-
-                    <div class="field" [formGroup]="form">
-                        <div class="field-label">Días</div>
-
-                        <div class="days-quick">
-                            <button type="button" class="mini" (click)="setDias('all')">Todos</button>
-                            <button type="button" class="mini" (click)="setDias('weekday')">L–V</button>
-                            <button type="button" class="mini" (click)="setDias('none')">Ninguno</button>
-                        </div>
-
-                        <div formGroupName="operacion">
-                            <div formGroupName="dias" class="days-toggle" role="group" aria-label="Días habilitados">
-                                <label class="day" *ngFor="let d of diasList">
-                                    <input type="checkbox" [formControlName]="d.key" />
-                                    <span class="chip">{{ d.label }}</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
+                <h2 class="card-title">Mantenimiento</h2>
+                <div *ngIf="mantenimientoProximo" class="mb-3 p-3 bg-light rounded">
+                    <p class="mb-2"><strong>Mantenimiento programado más cercano:</strong></p>
+                    <p class="mb-1"><small>Fecha: {{ mantenimientoProximo.fecha_programada | date:'short' }}</small></p>
+                    <p class="mb-1" *ngIf="mantenimientoProximo.usuario">
+                        <small>Responsable: {{ mantenimientoProximo.usuario.nombre }} {{ mantenimientoProximo.usuario.apellido }}</small>
+                    </p>
                 </div>
-
-                <h2 class="card-title mt">Capacidad</h2>
-                <div formGroupName="capacidad" class="grid-2">
-                    <div class="form-row">
-                        <label>Cantidad de casilleros</label>
-                        <input class="input" type="number" formControlName="casilleros" min="1">
-                    </div>
-
-                    <div class="form-row">
-                        <label>Política</label>
-                        <select class="input" formControlName="politica">
-                            <option *ngFor="let p of politicas" [value]="p">{{ p }}</option>
-                        </select>
-                        <!-- <select class="input" formControlName="politica" disabled> … </select> -->
-                    </div>
-                </div>
-
-                <h2 class="card-title mt">Mantenimiento</h2>
                 <div formGroupName="mantenimiento" class="grid-2">
                     <div class="form-row">
-                        <label>Próxima fecha</label>
-                        <input class="input" type="date" formControlName="proximaFecha">
+                        <label>Técnico asignado</label>
+                        <select class="input" formControlName="tecnico_id" [disabled]="loadingTecnicos || tecnicos.length === 0">
+                            <option value="" disabled>Selecciona un técnico…</option>
+                            <option *ngIf="loadingTecnicos" disabled>Cargando técnicos...</option>
+                            <option *ngIf="tecnicos.length === 0" disabled>No hay técnicos disponibles</option>
+                            <option *ngFor="let t of tecnicos" [value]="t.id">{{ t.nombre }} {{ t.apellido }}</option>
+                        </select>
+                        <small class="text-muted" *ngIf="tecnicos.length > 0">
+                            Puedes cambiar el técnico asignado.
+                        </small>
                     </div>
                     <div class="form-row">
-                        <label>Responsable</label>
-                        <input class="input" formControlName="responsable">
+                        <label>Fecha programada</label>
+                        <input class="input" type="date" formControlName="fecha_programada">
                     </div>
                     <div class="form-row" style="grid-column:1 / -1">
-                        <label>Notas</label>
-                        <textarea class="input" rows="3" formControlName="notas"></textarea>
+                        <label>Descripción</label>
+                        <textarea class="input" rows="3" formControlName="descripcion" 
+                            placeholder="Describe el tipo de mantenimiento..."></textarea>
                     </div>
                 </div>
+                <small class="text-muted" *ngIf="!mantenimientoProximo">
+                    No hay mantenimientos programados para este locker.
+                </small>
             </section>
         </form>
     </div>

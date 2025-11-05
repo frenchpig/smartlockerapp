@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Mantenimiento;
+use App\Models\HistorialLocker;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class MantenimientoController extends Controller
 {
@@ -29,6 +31,15 @@ class MantenimientoController extends Controller
         ]);
 
         $mantenimiento = Mantenimiento::create($data);
+
+        // Registrar en historial del locker
+        HistorialLocker::create([
+            'locker_id' => $mantenimiento->locker_id,
+            'usuario_id' => Auth::id(),
+            'accion' => 'mantenimiento_programado',
+            'descripcion' => "Mantenimiento programado para el " . ($mantenimiento->fecha_programada ? $mantenimiento->fecha_programada->format('d/m/Y') : 'fecha por definir'),
+            'mantenimiento_id' => $mantenimiento->id,
+        ]);
 
         return response()->json($mantenimiento->load(['locker','usuario']), 201);
     }

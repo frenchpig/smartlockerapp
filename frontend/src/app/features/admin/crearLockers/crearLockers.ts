@@ -14,6 +14,13 @@ interface Ubicacion {
     nombre: string;
 }
 
+interface Tecnico {
+    id: number;
+    nombre: string;
+    apellido: string;
+    email: string;
+}
+
 @Component({
     standalone: true,
     selector: 'app-crear-lockers',
@@ -29,8 +36,10 @@ export class CrearLockers implements OnInit {
     private auth = inject(AuthService);
 
     ubicaciones: Ubicacion[] = [];
+    tecnicos: Tecnico[] = [];
     loading = false;
     loadingUbicaciones = false;
+    loadingTecnicos = false;
     siguienteNumero: number | null = null;
     cantidad = 1;
 
@@ -42,12 +51,16 @@ export class CrearLockers implements OnInit {
         cantidad: [1, [Validators.required, Validators.min(1), Validators.max(50)]],
         mantenimiento: this.fb.group({
             fecha_programada: [''],
-            descripcion: ['']
+            descripcion: [''],
+            tecnico_id: [null as number | null]
         })
     });
 
     async ngOnInit(): Promise<void> {
-        await this.cargarUbicaciones();
+        await Promise.all([
+            this.cargarUbicaciones(),
+            this.cargarTecnicos()
+        ]);
         
         // Suscribirse a cambios en ubicacion_id para calcular siguiente número
         this.form.get('ubicacion_id')?.valueChanges.subscribe(async (ubicacionId) => {
@@ -62,6 +75,17 @@ export class CrearLockers implements OnInit {
         this.form.get('cantidad')?.valueChanges.subscribe((cantidad) => {
             this.cantidad = cantidad || 1;
         });
+
+        // Asignar técnico automáticamente si hay técnicos disponibles (después de cargar)
+        setTimeout(() => {
+            if (this.tecnicos.length > 0 && !this.form.get('mantenimiento.tecnico_id')?.value) {
+                this.form.patchValue({
+                    mantenimiento: {
+                        tecnico_id: this.tecnicos[0].id
+                    }
+                });
+            }
+        }, 100);
     }
 
     private async cargarUbicaciones(): Promise<void> {
@@ -80,6 +104,26 @@ export class CrearLockers implements OnInit {
             alert('No se pudieron cargar las ubicaciones');
         } finally {
             this.loadingUbicaciones = false;
+        }
+    }
+
+    private async cargarTecnicos(): Promise<void> {
+        this.loadingTecnicos = true;
+        try {
+            const response: any = await this.http
+                .get<any>(`${environment.apiUrl}/usuarios`, { params: { rol: 'tecnico', per_page: 1000 } })
+                .toPromise();
+
+            this.tecnicos = (response?.data || response || []).map((u: any) => ({
+                id: u.id,
+                nombre: u.nombre,
+                apellido: u.apellido,
+                email: u.email
+            }));
+        } catch (error) {
+            console.error('Error cargando técnicos:', error);
+        } finally {
+            this.loadingTecnicos = false;
         }
     }
 
@@ -157,11 +201,20 @@ export class CrearLockers implements OnInit {
 
                 // Si hay datos de mantenimiento, crear el registro para cada locker
                 if (formValue.mantenimiento?.fecha_programada || formValue.mantenimiento?.descripcion) {
+                    const tecnicoId = formValue.mantenimiento.tecnico_id || this.tecnicos[0]?.id;
+                    if (!tecnicoId) {
+                        alert('No hay técnicos disponibles. Por favor, crea al menos un técnico.');
+                        return;
+                    }
+
+                    // Asegurar que siempre haya una descripción
+                    const descripcion = formValue.mantenimiento.descripcion?.trim() || 'Mantenimiento programado';
+
                     const mantenimientoData = {
                         locker_id: locker.id,
-                        usuario_id: user.id,
+                        usuario_id: tecnicoId,
                         fecha_programada: formValue.mantenimiento.fecha_programada || null,
-                        descripcion: formValue.mantenimiento.descripcion || 'Mantenimiento programado',
+                        descripcion: descripcion,
                         estado: 'programado'
                     };
 
