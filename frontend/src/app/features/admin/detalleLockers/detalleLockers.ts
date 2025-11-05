@@ -7,7 +7,8 @@ import { HeaderAdmin } from '../../admin/shared/header-admin/headerAdmin';
 type LockerEstado = 'Activo' | 'Ocupado' | 'En revisión' | 'Bloqueado';
 
 interface Locker {
-    id: number; codigo: string; nombre: string; empresa: string;
+    id: number; codigo: string; nombre: string; 
+    // empresa: string;
     sede: string; zona?: string; estado: LockerEstado;
     ip?: string; firmware?: string; serie?: string;
     actualizadoEl?: string;
@@ -28,7 +29,7 @@ export class LockerDetalle {
         id: 12,
         codigo: 'LK-012',
         nombre: 'Locker #12',
-        empresa: 'Empresa A',
+        // empresa: 'Empresa A',
         sede: 'Metro Ñuñoa',
         zona: 'Nivel -1',
         estado: 'Activo',

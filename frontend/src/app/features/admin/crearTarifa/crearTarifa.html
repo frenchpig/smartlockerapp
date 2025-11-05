@@ -1,0 +1,144 @@
+<app-header-admin></app-header-admin>
+
+<main class="tarifa-form-wrap">
+    <div class="container">
+
+        <div class="toolbar">
+            <h1 class="page-title">Nueva tarifa</h1>
+            <div class="toolbar-actions">
+                <button class="btn btn-light" (click)="cancelar()">Cancelar</button>
+                <button class="btn btn-success" type="submit" form="form-tarifa">Guardar</button>
+            </div>
+        </div>
+
+        <form [formGroup]="form" (ngSubmit)="guardar()" id="form-tarifa" class="form-shell">
+
+            <section class="form-main">
+                <!-- FICHA -->
+                <div class="card-block">
+                    <h2 class="block-title">Datos del plan</h2>
+
+                    <div class="grid-2">
+                        <div class="field">
+                            <label>Nombre del plan</label>
+                            <input class="input" type="text" formControlName="nombre" placeholder="Ej: Smart Pro" />
+                            <small class="error" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.invalid">
+                                Ingresa un nombre.
+                            </small>
+                        </div>
+
+                        <div class="field">
+                            <label>Código interno</label>
+                            <input class="input" type="text" formControlName="codigo" placeholder="Ej: PLAN_PRO_01" />
+                        </div>
+
+                        <div class="field">
+                            <label>Precio mensual (CLP)</label>
+                            <input class="input" type="number" formControlName="precio" min="0"
+                                placeholder="Ej: 49000" />
+                            <small class="hint">Este valor lo verá la empresa.</small>
+                        </div>
+
+                        <!-- <div class="field">
+                            <label> Periodo </label>
+                            <select class="input" formControlName="periodo">
+                                <option value="mensual">Mensual</option>
+                                <option value="anual">Trimestral</option>
+                                <option value="anual">Anual</option>
+                            </select>
+                        </div> -->
+
+                        <div class="field">
+                            <label>Estado</label>
+                            <select class="input" formControlName="estado">
+                                <option value="Activo">Activo</option>
+                                <option value="Inactivo">Inactivo</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label>Descripción corta</label>
+                            <input class="input" type="text" formControlName="descripcion"
+                                placeholder="Ej: Para sedes dentro del metro" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LIMITES -->
+                <div class="card-block">
+                    <h2 class="block-title">Límites y alcance</h2>
+
+                    <div class="grid-3">
+                        <div class="field">
+                            <label>Sedes permitidas</label>
+                            <input class="input" type="number" formControlName="sedes" min="0" placeholder="Ej: 2" />
+                            <small class="hint">0 o vacío = ilimitado.</small>
+                        </div>
+                        <div class="field">
+                            <label>Lockers por sede</label>
+                            <input class="input" type="number" formControlName="lockersPorSede" min="0"
+                                placeholder="Ej: 10" />
+                            <small class="hint">0 o vacío = ilimitado.</small>
+                        </div>
+                        <div class="field">
+                            <label>Prioridad de soporte</label>
+                            <select class="input" formControlName="soporte">
+                                <option value="normal">Normal</option>
+                                <option value="prioritario">Prioritario</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INCLUYE / NO INCLUYE -->
+                <div class="card-block">
+                    <h2 class="block-title">Incluye / No incluye</h2>
+
+                    <div class="grid-2">
+                        <div class="field">
+                            <label>Incluye</label>
+                            <div class="pill-list">
+                                <div class="pill" *ngFor="let item of incluye.controls; let i = index">
+                                    <input class="pill-input" [formControl]="item" />
+                                    <button type="button" class="pill-remove" (click)="removeIncluye(i)">✕</button>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-light btn-sm" (click)="addIncluye()">+ Agregar</button>
+                        </div>
+
+                        <div class="field">
+                            <label>No incluye</label>
+                            <div class="pill-list">
+                                <div class="pill pill-muted" *ngFor="let item of noIncluye.controls; let i = index">
+                                    <input class="pill-input" [formControl]="item" />
+                                    <button type="button" class="pill-remove" (click)="removeNoIncluye(i)">✕</button>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-light btn-sm" (click)="addNoIncluye()">+
+                                Agregar</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ASIDE -->
+            <aside class="form-side">
+                <div class="card-block sticky">
+                    <h3 class="block-title-sm">Resumen</h3>
+                    <p class="resume-name">{{ form.value.nombre || 'Nuevo plan' }}</p>
+                    <p class="resume-hint">Define aquí las condiciones generales del plan. Lo verán las empresas.</p>
+
+                    <div class="mini-meta">
+                        <div><strong>Sedes:</strong> {{ form.value.sedes || 'ilimitado' }}</div>
+                        <div><strong>Lockers/sede:</strong> {{ form.value.lockersPorSede || 'ilimitado' }}</div>
+                        <div><strong>Estado:</strong> {{ form.value.estado }}</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100">Guardar tarifa</button>
+                    <button type="button" class="btn btn-light w-100 mt-05" (click)="cancelar()">Cancelar</button>
+                </div>
+            </aside>
+
+        </form>
+    </div>
+</main>

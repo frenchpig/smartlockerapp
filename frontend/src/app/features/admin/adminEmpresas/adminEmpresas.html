@@ -6,8 +6,8 @@
     <div class="toolbar">
       <h1 class="page-title">Gestión de Empresas</h1>
       <div class="toolbar-actions">
-        <button class="btn btn-success" (click)="nuevaEmpresa()">+ Nueva Empresa</button>
         <button class="btn btn-outline" (click)="limpiarFiltros()">Limpiar filtros</button>
+        <button class="btn btn-success" (click)="nuevaEmpresa()">Nueva Empresa</button>
       </div>
     </div>
 
@@ -34,12 +34,8 @@
     </section>
 
     <section class="filters">
-      <input
-        class="input"
-        type="text"
-        placeholder="Buscar por nombre, RUT, correo o ubicación..."
-        (input)="onBuscar($event)"
-      />
+      <input class="input" type="text" placeholder="Buscar por nombre, RUT, correo o ubicación..."
+        (input)="onBuscar($event)" />
 
       <select class="input" (change)="onEstadoChange($event)">
         <option value="Todos">Todos</option>
@@ -72,11 +68,8 @@
                 <td>{{ e.correo }}</td>
                 <td>{{ e.ubicacion || '—' }}</td>
                 <td>
-                  <span
-                    class="badge"
-                    [class.badge-success]="e.estado === 'Activa'"
-                    [class.badge-danger]="e.estado === 'Inactiva'"
-                  >
+                  <span class="badge" [class.badge-success]="e.estado === 'Activa'"
+                    [class.badge-danger]="e.estado === 'Inactiva'">
                     {{ e.estado }}
                   </span>
                 </td>
@@ -84,16 +77,10 @@
                   <div class="btns-row">
                     <button class="btn btn-light" (click)="verDetalle()">Detalle</button>
                     <button class="btn btn-outline" (click)="editar()">Editar</button>
-                    <button
-                      class="btn btn-success"
-                      *ngIf="e.estado === 'Inactiva'"
-                      (click)="activar(e)"
-                    >Activar</button>
-                    <button
-                      class="btn btn-warning"
-                      *ngIf="e.estado === 'Activa'"
-                      (click)="desactivar(e)"
-                    >Desactivar</button>
+                    <button class="btn btn-success" *ngIf="e.estado === 'Inactiva'"
+                      (click)="activar(e)">Activar</button>
+                    <button class="btn btn-warning" *ngIf="e.estado === 'Activa'"
+                      (click)="desactivar(e)">Desactivar</button>
                   </div>
                 </td>
               </tr>

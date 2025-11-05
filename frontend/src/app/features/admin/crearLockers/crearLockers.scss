@@ -1,7 +1,8 @@
+@use "sass:color";
+
 $brand-green: #18884b;
 $brand-green-600: #157344;
 $brand-green-700: #115c38;
-
 $bg-soft: #f7faf7;
 $card-bg: #ffffff;
 $ink: #111827;
@@ -74,8 +75,12 @@ $ring: rgba(24, 136, 75, 0.35);
         border-color: $border;
         color: $ink;
 
+
         &:hover {
-            border-color: darken($border, 5%);
+            border-color: color.adjust(#e5e7eb, $lightness: -5%);
+
+
+            // border-color: darken(#e5e7eb, 5%);
             box-shadow: 0 2px 12px rgba(0, 0, 0, .06);
             transform: translateY(-1px);
         }

@@ -5,7 +5,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { HeaderAdmin } from '../../admin/shared/header-admin/headerAdmin';
 
 type EmpresaEstado = 'Activa' | 'Inactiva';
-type Plan = 'Standard' | 'Pro' | 'Enterprise';
+type Plan = 'Smart Basic' | 'Smart Pro' | 'Smart Max';
 
 @Component({
     standalone: true,
@@ -20,7 +20,7 @@ export class EditarEmpresa implements OnInit {
     private router = inject(Router);
 
     estados: EmpresaEstado[] = ['Activa', 'Inactiva'];
-    planes: Plan[] = ['Standard', 'Pro', 'Enterprise'];
+    planes: Plan[] = ['Smart Basic', 'Smart Pro', 'Smart Max'];
 
     form = this.fb.group({
         id: [{ value: 0, disabled: true }],
@@ -33,7 +33,7 @@ export class EditarEmpresa implements OnInit {
         comuna: [''],
         region: [''],
         estado: ['Activa' as EmpresaEstado, Validators.required],
-        plan: ['Pro' as Plan],
+        plan: ['Smart Basic' as Plan],
         fechaAlta: [''],
         lockersAsignados: [0, [Validators.min(0)]],
         casillerosTotales: [0, [Validators.min(0)]],
@@ -59,7 +59,7 @@ export class EditarEmpresa implements OnInit {
             comuna: 'Ñuñoa',
             region: 'Región Metropolitana',
             estado: 'Activa' as EmpresaEstado,
-            plan: 'Pro' as Plan,
+            plan: 'Smart Basic' as Plan,
             fechaAlta: '2025-08-10',
             lockersAsignados: 18,
             casillerosTotales: 216,
