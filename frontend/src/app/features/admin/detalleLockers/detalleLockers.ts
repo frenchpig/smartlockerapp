@@ -2,6 +2,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
 import { HeaderAdmin } from '../../admin/shared/header-admin/headerAdmin';
 import { environment } from '../../../../environments/environment';
 
@@ -32,7 +33,7 @@ interface HistorialItem {
 @Component({
     standalone: true,
     selector: 'app-detalle-lockers',
-    imports: [CommonModule, RouterModule, HeaderAdmin],
+    imports: [CommonModule, RouterModule, HeaderAdmin, FormsModule],
     templateUrl: './detalleLockers.html',
     styleUrl: './detalleLockers.scss'
 })
@@ -45,6 +46,28 @@ export class LockerDetalle implements OnInit {
     locker: Locker | null = null;
     loading = false;
     error: string | null = null;
+    
+    // Historial
+    historial: HistorialItem[] = [];
+    loadingHistorial = false;
+    historialPage = 1;
+    historialLastPage = 1;
+    historialTotal = 0;
+    filtroAccion: string = 'Todas';
+    
+    accionesDisponibles = [
+        { value: 'Todas', label: 'Todas las acciones' },
+        { value: 'creado', label: 'Creado' },
+        { value: 'estado_cambiado', label: 'Estado cambiado' },
+        { value: 'reserva_creada', label: 'Reserva creada' },
+        { value: 'reserva_completada', label: 'Reserva completada' },
+        { value: 'reserva_anulada', label: 'Reserva anulada' },
+        { value: 'mantenimiento_programado', label: 'Mantenimiento programado' },
+        { value: 'mantenimiento_realizado', label: 'Mantenimiento realizado' },
+        { value: 'mantenimiento_cancelado', label: 'Mantenimiento cancelado' },
+        { value: 'incidencia_reportada', label: 'Incidencia reportada' },
+        { value: 'incidencia_resuelta', label: 'Incidencia resuelta' },
+    ];
 
     get estadoDisplay(): LockerEstado {
         if (!this.locker) return 'Activo';
@@ -63,7 +86,10 @@ export class LockerDetalle implements OnInit {
     async ngOnInit(): Promise<void> {
         const id = this.route.snapshot.paramMap.get('id');
         if (id) {
-            await this.cargarLocker(parseInt(id));
+            await Promise.all([
+                this.cargarLocker(parseInt(id)),
+                this.cargarHistorial(parseInt(id))
+            ]);
         }
     }
 
@@ -81,6 +107,48 @@ export class LockerDetalle implements OnInit {
             this.error = 'No se pudo cargar la información del locker';
         } finally {
             this.loading = false;
+        }
+    }
+
+    async cargarHistorial(id: number, page: number = 1): Promise<void> {
+        this.loadingHistorial = true;
+        try {
+            const params: any = {
+                page,
+                per_page: 5
+            };
+
+            if (this.filtroAccion && this.filtroAccion !== 'Todas') {
+                params.accion = this.filtroAccion;
+            }
+
+            const response: any = await this.http
+                .get<any>(`${environment.apiUrl}/lockers/${id}/historial`, { params })
+                .toPromise();
+
+            this.historial = response.data || [];
+            this.historialPage = response.current_page || 1;
+            this.historialLastPage = response.last_page || 1;
+            this.historialTotal = response.total || 0;
+        } catch (error: any) {
+            console.error('Error cargando historial:', error);
+            this.historial = [];
+        } finally {
+            this.loadingHistorial = false;
+        }
+    }
+
+    onFiltroAccionChange(): void {
+        if (this.locker) {
+            this.historialPage = 1;
+            this.cargarHistorial(this.locker.id, 1);
+        }
+    }
+
+    cambiarPagina(page: number): void {
+        if (this.locker && page >= 1 && page <= this.historialLastPage) {
+            this.historialPage = page;
+            this.cargarHistorial(this.locker.id, page);
         }
     }
 

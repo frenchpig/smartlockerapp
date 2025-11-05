@@ -57,13 +57,7 @@ class LockerController extends Controller
 
     public function show(Locker $locker)
     {
-        $locker->load([
-            'ubicacion',
-            'historial' => function($query) {
-                $query->orderBy('created_at', 'desc')
-                      ->with(['usuario:id,nombre,apellido', 'reserva', 'mantenimiento', 'incidencia']);
-            }
-        ]);
+        $locker->load('ubicacion');
 
         // Obtener el mantenimiento con fecha programada más cercana
         $mantenimientoProximo = \App\Models\Mantenimiento::where('locker_id', $locker->id)
@@ -76,6 +70,25 @@ class LockerController extends Controller
         $locker->mantenimiento_proximo = $mantenimientoProximo;
 
         return $locker;
+    }
+
+    public function historial(Request $request, Locker $locker)
+    {
+        $perPage = (int) $request->query('per_page', 5);
+        $perPage = max(1, min(50, $perPage));
+
+        $query = HistorialLocker::where('locker_id', $locker->id)
+            ->with(['usuario:id,nombre,apellido', 'reserva', 'mantenimiento', 'incidencia']);
+
+        // Filtro por acción
+        if ($accion = $request->query('accion')) {
+            $query->where('accion', $accion);
+        }
+
+        $historial = $query->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+
+        return response()->json($historial);
     }
 
     public function store(Request $request)

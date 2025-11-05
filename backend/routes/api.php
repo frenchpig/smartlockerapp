@@ -66,4 +66,7 @@ Route::apiResources([
     'historial-envios'  => HistorialEnvioController::class,
 ]);
 
+// Ruta adicional para historial de lockers con paginación
+Route::get('/lockers/{locker}/historial', [LockerController::class, 'historial']);
+
 Route::get('/ping', fn() => response()->json(['ok' => true, 'time' => now()]));
