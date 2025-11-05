@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Reserva;
 use App\Models\Repartidor;
 use App\Models\ArticuloReserva;
+use App\Models\Locker;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Cache;
@@ -146,6 +147,9 @@ class ReservaController extends Controller
                 }
             }
             
+            // Actualizar estado del locker a ocupado
+            $this->actualizarEstadoLocker($reserva->locker_id);
+            
             $this->asignarRepartidorDisponible($reserva);
             return $reserva->load(['usuario','locker.ubicacion','repartidor.usuario','articulos']);
         });
@@ -242,6 +246,11 @@ class ReservaController extends Controller
                 }
             }
 
+            // Actualizar estado del locker a ocupado si la reserva está pendiente
+            if ($reserva->estado === 'pendiente') {
+                $this->actualizarEstadoLocker($reserva->locker_id);
+            }
+
             if (empty($data['repartidor_id'])) {
                 $this->asignarRepartidorDisponible($reserva);
             }
@@ -266,7 +275,22 @@ class ReservaController extends Controller
             'codigo_acceso'=> ['sometimes','nullable','string','max:120'],
         ]);
 
+        $lockerIdAnterior = $reserva->locker_id;
+        $estadoAnterior = $reserva->estado;
+
         $reserva->update($data);
+
+        // Si cambió el locker, actualizar ambos lockers
+        if (isset($data['locker_id']) && $data['locker_id'] !== $lockerIdAnterior) {
+            $this->actualizarEstadoLocker($lockerIdAnterior);
+            if ($reserva->estado === 'pendiente') {
+                $this->actualizarEstadoLocker($reserva->locker_id);
+            }
+        } 
+        // Si cambió el estado, actualizar el locker
+        elseif (isset($data['estado']) && $data['estado'] !== $estadoAnterior) {
+            $this->actualizarEstadoLocker($reserva->locker_id);
+        }
 
         return $reserva->load(['usuario','locker.ubicacion','repartidor.usuario']);
     }
@@ -334,9 +358,15 @@ class ReservaController extends Controller
 
     public function destroy(Reserva $reserva)
     {
+        $lockerId = $reserva->locker_id;
+        
         $this->liberarRepartidor($reserva);
 
         $reserva->delete();
+        
+        // Actualizar estado del locker después de eliminar la reserva
+        $this->actualizarEstadoLocker($lockerId);
+        
         return response()->noContent();
     }
 
@@ -518,6 +548,9 @@ class ReservaController extends Controller
         $reserva->logistica_estado = 'completado';
         $reserva->save();
 
+        // Actualizar estado del locker (puede volver a activo si no hay más reservas pendientes)
+        $this->actualizarEstadoLocker($reserva->locker_id);
+
         $this->liberarRepartidor($reserva);
 
         Cache::forget('reserva_code_'.$reserva->id);
@@ -548,5 +581,37 @@ class ReservaController extends Controller
         if ($reserva->repartidor_id) {
             Repartidor::where('id', $reserva->repartidor_id)->update(['disponible' => true]);
         }
+    }
+
+    /**
+     * Actualiza el estado del locker basado en las reservas pendientes.
+     * Si hay reservas pendientes, el locker se marca como "ocupado".
+     * Si no hay reservas pendientes y el locker no está bloqueado o en mantenimiento, se marca como "activo".
+     */
+    private function actualizarEstadoLocker(int $lockerId): void
+    {
+        $locker = Locker::find($lockerId);
+        if (!$locker) {
+            return;
+        }
+
+        // Si el locker está bloqueado o en mantenimiento, no cambiar su estado
+        if (in_array($locker->estado, ['bloqueado', 'mantenimiento'], true)) {
+            return;
+        }
+
+        // Verificar si hay reservas pendientes para este locker
+        $tieneReservasPendientes = Reserva::where('locker_id', $lockerId)
+            ->where('estado', 'pendiente')
+            ->exists();
+
+        // Actualizar el estado según si hay reservas pendientes
+        if ($tieneReservasPendientes) {
+            $locker->estado = 'ocupado';
+        } else {
+            $locker->estado = 'activo';
+        }
+
+        $locker->save();
     }
 }

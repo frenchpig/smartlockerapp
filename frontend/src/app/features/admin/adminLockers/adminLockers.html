@@ -42,7 +42,7 @@
 
         <!-- Filtros -->
         <section class="filters">
-            <input class="input" type="text" placeholder="Buscar por código, ubicación, empresa o estado…"
+            <input class="input" type="text" placeholder="Buscar por número, ubicación, empresa o estado…"
                 [(ngModel)]="q" />
 
             <select class="input" [(ngModel)]="fEstado">
@@ -61,12 +61,15 @@
 
         <!-- Tabla -->
         <div class="table-card">
-            <div class="table-responsive">
+            <div *ngIf="loading" class="text-center py-4">
+                <p>Cargando lockers...</p>
+            </div>
+            <div class="table-responsive" *ngIf="!loading">
                 <table class="table">
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Código</th>
+                            <th>Numero</th>
                             <th>Ubicación</th>
                             <th>Empresa</th>
                             <th>Estado</th>
@@ -77,7 +80,7 @@
                     <tbody>
                         <tr *ngFor="let r of filtrados">
                             <td>#{{ r.id }}</td>
-                            <td>{{ r.codigo }}</td>
+                            <td>{{ r.numero }}</td>
                             <td>{{ r.ubicacion }}</td>
                             <td>{{ r.empresa || '—' }}</td>
                             <td>

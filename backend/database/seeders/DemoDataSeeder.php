@@ -109,6 +109,7 @@ class DemoDataSeeder extends Seeder
         ]);
 
         // Lockers (dos ubicaciones con numeros repetibles)
+        // Inicialmente todos activos, se actualizarán después según las reservas
         $l1 = Locker::create([
             'numero' => 1,
             'ubicacion_id' => $metroNunoa->id,
@@ -278,5 +279,21 @@ class DemoDataSeeder extends Seeder
         }
 
         Repartidor::query()->update(['disponible' => true]);
+
+        // Actualizar estados de lockers según reservas pendientes
+        $lockers = Locker::all();
+        foreach ($lockers as $locker) {
+            $tieneReservasPendientes = Reserva::where('locker_id', $locker->id)
+                ->where('estado', 'pendiente')
+                ->exists();
+
+            if ($tieneReservasPendientes && $locker->estado !== 'bloqueado' && $locker->estado !== 'mantenimiento') {
+                $locker->estado = 'ocupado';
+                $locker->save();
+            } elseif (!$tieneReservasPendientes && $locker->estado !== 'bloqueado' && $locker->estado !== 'mantenimiento') {
+                $locker->estado = 'activo';
+                $locker->save();
+            }
+        }
     }
 }

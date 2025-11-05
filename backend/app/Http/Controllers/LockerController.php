@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Locker;
+use App\Models\Reserva;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -19,7 +20,37 @@ class LockerController extends Controller
             $query->where('ubicacion_id', $ubicacionId);
         }
 
-        return $query->paginate($perPage);
+        $lockers = $query->get();
+
+        // Agregar información de empresa activa a cada locker
+        $lockers->transform(function ($locker) {
+            // Buscar la reserva activa más reciente
+            $reservaActiva = Reserva::where('locker_id', $locker->id)
+                ->where('estado', 'pendiente')
+                ->with('empresa:id,nombre,apellido')
+                ->orderBy('created_at', 'desc')
+                ->first();
+            
+            $locker->empresa_actual = $reservaActiva && $reservaActiva->empresa ? [
+                'id' => $reservaActiva->empresa->id ?? null,
+                'nombre' => trim(($reservaActiva->empresa->nombre ?? '') . ' ' . ($reservaActiva->empresa->apellido ?? ''))
+            ] : null;
+            return $locker;
+        });
+
+        // Paginar manualmente
+        $total = $lockers->count();
+        $page = (int) $request->query('page', 1);
+        $offset = ($page - 1) * $perPage;
+        $items = $lockers->slice($offset, $perPage)->values();
+
+        return response()->json([
+            'data' => $items,
+            'current_page' => $page,
+            'per_page' => $perPage,
+            'total' => $total,
+            'last_page' => ceil($total / $perPage),
+        ]);
     }
 
     public function show(Locker $locker)

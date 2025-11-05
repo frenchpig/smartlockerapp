@@ -2,14 +2,15 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { HeaderAdmin } from '../shared/header-admin/headerAdmin';
-
+import { environment } from '../../../../environments/environment';
 
 type LockerEstado = 'Activo' | 'Ocupado' | 'En revisión' | 'Bloqueado';
 
 interface LockerRow {
     id: number;
-    codigo: string;
+    numero: number;
     ubicacion: string;
     estado: LockerEstado;
     empresa?: string;
@@ -23,18 +24,12 @@ interface LockerRow {
     templateUrl: './adminLockers.html',
     styleUrls: ['./adminLockers.scss']
 })
-export class AdminLockers {
+export class AdminLockers implements OnInit {
+    private router = inject(Router);
+    private http = inject(HttpClient);
 
-    constructor(private router: Router) { }
-
-    // ====== MOCK ======
-    rows: LockerRow[] = [
-        { id: 1, codigo: '#01', ubicacion: 'Metro Ñuñoa', estado: 'Activo', empresa: 'Empresa.cl', actualizadoEl: '2025-10-12T13:20:00Z' },
-        { id: 2, codigo: '#02', ubicacion: 'Plaza Egaña', estado: 'Ocupado', empresa: 'Acme S.A.', actualizadoEl: '2025-10-12T12:45:00Z' },
-        { id: 3, codigo: '#07', ubicacion: 'Costanera', estado: 'En revisión', actualizadoEl: '2025-10-11T09:10:00Z' },
-        { id: 4, codigo: '#12', ubicacion: 'Metro Ñuñoa', estado: 'Bloqueado', actualizadoEl: '2025-10-10T18:05:00Z' },
-        { id: 5, codigo: '#19', ubicacion: 'Mall Florida', estado: 'Activo', empresa: 'Empresa.cl', actualizadoEl: '2025-10-12T08:10:00Z' },
-    ];
+    rows: LockerRow[] = [];
+    loading = false;
 
     // ====== FILTROS ======
     q = '';
@@ -49,7 +44,7 @@ export class AdminLockers {
     get filtrados(): LockerRow[] {
         return this.rows.filter(r => {
             const matchQ = this.q.trim()
-                ? [r.codigo, r.ubicacion, r.empresa ?? '', r.estado].some(t =>
+                ? [r.numero.toString(), r.ubicacion, r.empresa ?? '', r.estado].some(t =>
                     t.toLowerCase().includes(this.q.trim().toLowerCase()))
                 : true;
             const matchE = this.fEstado === 'Todos' ? true : r.estado === this.fEstado;
@@ -71,19 +66,46 @@ export class AdminLockers {
         this.fUbicacion = 'Todas';
     }
 
-    marcarRevision(row: LockerRow) {
-        row.estado = 'En revisión';
-        row.actualizadoEl = new Date().toISOString();
+    async marcarRevision(row: LockerRow) {
+        try {
+            await this.http
+                .patch(`${environment.apiUrl}/lockers/${row.id}`, { estado: 'mantenimiento' })
+                .toPromise();
+            row.estado = 'En revisión';
+            row.actualizadoEl = new Date().toISOString();
+            this.cargarLockers(); // Recargar para obtener datos actualizados
+        } catch (error) {
+            console.error('Error marcando revisión:', error);
+            alert('No se pudo actualizar el estado del locker');
+        }
     }
 
-    bloquear(row: LockerRow) {
-        row.estado = 'Bloqueado';
-        row.actualizadoEl = new Date().toISOString();
+    async bloquear(row: LockerRow) {
+        try {
+            await this.http
+                .patch(`${environment.apiUrl}/lockers/${row.id}`, { estado: 'bloqueado' })
+                .toPromise();
+            row.estado = 'Bloqueado';
+            row.actualizadoEl = new Date().toISOString();
+            this.cargarLockers(); // Recargar para obtener datos actualizados
+        } catch (error) {
+            console.error('Error bloqueando locker:', error);
+            alert('No se pudo bloquear el locker');
+        }
     }
 
-    activar(row: LockerRow) {
-        row.estado = 'Activo';
-        row.actualizadoEl = new Date().toISOString();
+    async activar(row: LockerRow) {
+        try {
+            await this.http
+                .patch(`${environment.apiUrl}/lockers/${row.id}`, { estado: 'activo' })
+                .toPromise();
+            row.estado = 'Activo';
+            row.actualizadoEl = new Date().toISOString();
+            this.cargarLockers(); // Recargar para obtener datos actualizados
+        } catch (error) {
+            console.error('Error activando locker:', error);
+            alert('No se pudo activar el locker');
+        }
     }
 
     irDetalle(): void {
@@ -92,5 +114,42 @@ export class AdminLockers {
 
     irEditar(): void {
         this.router.navigate(['/admin/editar']);
+    }
+
+    ngOnInit(): void {
+        this.cargarLockers();
+    }
+
+    private async cargarLockers(): Promise<void> {
+        this.loading = true;
+        try {
+            const response: any = await this.http
+                .get<any>(`${environment.apiUrl}/lockers`, { params: { per_page: 1000 } })
+                .toPromise();
+
+            const lockers = response?.data || response || [];
+
+            this.rows = lockers.map((l: any) => {
+                // Mapear estado del backend al frontend
+                let estado: LockerEstado = 'Activo';
+                if (l.estado === 'activo') estado = 'Activo';
+                else if (l.estado === 'ocupado') estado = 'Ocupado';
+                else if (l.estado === 'mantenimiento') estado = 'En revisión';
+                else if (l.estado === 'bloqueado') estado = 'Bloqueado';
+
+                return {
+                    id: l.id,
+                    numero: l.numero ?? l.id,
+                    ubicacion: l.ubicacion?.nombre ?? 'Sin ubicación',
+                    estado: estado,
+                    empresa: l.empresa_actual?.nombre ?? undefined,
+                    actualizadoEl: l.updated_at ?? l.created_at ?? new Date().toISOString(),
+                };
+            });
+        } catch (error) {
+            console.error('Error cargando lockers:', error);
+        } finally {
+            this.loading = false;
+        }
     }
 }
