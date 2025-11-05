@@ -78,6 +78,15 @@ class DemoDataSeeder extends Seeder
             'rol' => 'repartidor',
         ]);
 
+        $admin = Usuario::create([
+            'nombre' => 'Admin',
+            'apellido' => 'Sistema',
+            'email' => 'admin@example.com',
+            'contrasena' => '123456',
+            'telefono' => '56930000000',
+            'rol' => 'administrador',
+        ]);
+
         $repartidores = [
             Repartidor::create(['usuario_id' => $repUser1->id]),
             Repartidor::create(['usuario_id' => $repUser2->id]),

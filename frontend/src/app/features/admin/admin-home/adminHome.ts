@@ -15,23 +15,20 @@ export class AdminHomeComponent {
     constructor(private router: Router) { }
 
     irLockers() {
-        console.log('ir a /admin/lockers');
-        // this.router.navigate(['/admin/lockers']);
+        this.router.navigate(['/admin/lockers']);
     }
 
     irEmpresas() {
-        console.log('ir a /admin/empresas');
-        // this.router.navigate(['/admin/empresas']);
+        this.router.navigate(['/admin/empresa']);
     }
 
     irIncidencias() {
-        console.log('ir a /admin/incidencias');
+        console.log('Ir a /admin/incidencias');
         // this.router.navigate(['/admin/incidencias']);
     }
 
     irTarifas() {
-        console.log('ir a /admin/tarifas');
-        // this.router.navigate(['/admin/tarifas']);
+        this.router.navigate(['/admin/tarifas']);
     }
 }
 

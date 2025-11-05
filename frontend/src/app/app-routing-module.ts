@@ -91,6 +91,9 @@ const routes: Routes = [
 
   {
     path: 'admin',
+    canActivate: [authGuard],
+    canActivateChild: [authGuard],
+    data: { roles: ['administrador'] },
     children: [
       { path: '', component: AdminHomeComponent },
       { path: 'lockers', component: AdminLockers },

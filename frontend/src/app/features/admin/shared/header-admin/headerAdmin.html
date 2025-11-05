@@ -68,12 +68,12 @@
         aria-haspopup="true"
       >
         <div class="user-avatar">
-          <div class="avatar-circle">A</div>
+          <div class="avatar-circle">{{ inicialAvatar }}</div>
         </div>
 
         <div class="user-info">
-          <div class="user-name">{{ adminNombre }}</div>
-          <div class="user-role">{{ adminRol }}</div>
+          <div class="user-name">{{ nombreCompleto }}</div>
+          <div class="user-role">Administrador</div>
         </div>
 
         <div class="chevron-icon">▾</div>
@@ -84,12 +84,24 @@
         *ngIf="menuAbiertoUser"
       >
         <div class="dropdown-header">
-          <div class="fw-semibold">{{ adminNombre }}</div>
-          <div class="text-muted small">{{ adminRol }}</div>
+          <div class="fw-semibold">{{ nombreCompleto }}</div>
+          <div class="text-muted small">{{ user()?.email || 'admin@email.com' }}</div>
         </div>
 
-        <button class="dropdown-item" (click)="irPerfil()">
-          <span>Mi perfil</span>
+        <button class="dropdown-item" (click)="irHome()">
+          <span>Dashboard</span>
+        </button>
+
+        <button class="dropdown-item" (click)="irLockers()">
+          <span>Gestionar Lockers</span>
+        </button>
+
+        <button class="dropdown-item" (click)="irEmpresas()">
+          <span>Empresas</span>
+        </button>
+
+        <button class="dropdown-item" (click)="irTarifas()">
+          <span>Tarifas</span>
         </button>
 
         <button class="dropdown-item text-danger" (click)="logout()">

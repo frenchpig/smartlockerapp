@@ -18,6 +18,14 @@ export class HeaderEmpresaComponent {
 
   user = this.auth.user;
 
+  get nombreCompleto(): string {
+    const u = this.user();
+    if (!u) return 'Usuario';
+    const nombre = u.nombre || '';
+    const apellido = u.apellido || '';
+    return (nombre + ' ' + apellido).trim() || 'Usuario';
+  }
+
   async onLogout() {
     try {
       await this.auth.logout();

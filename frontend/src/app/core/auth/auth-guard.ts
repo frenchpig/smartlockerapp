@@ -5,7 +5,7 @@ import { AuthService } from './auth';
 const fallbackRoutes: Record<string, string> = {
   empresa: 'empresa',
   usuario: 'cliente',
-  administrador: 'dashboard',
+  administrador: 'admin',
   tecnico: 'dashboard',
   repartidor: 'repartidor',
 };
