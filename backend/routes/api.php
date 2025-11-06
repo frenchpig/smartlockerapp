@@ -66,6 +66,14 @@ Route::apiResources([
     'historial-envios'  => HistorialEnvioController::class,
 ]);
 
+// Rutas para empresas
+Route::prefix('empresas')->group(function () {
+    Route::get('/regiones', [App\Http\Controllers\EmpresaController::class, 'getRegiones']);
+    Route::get('/regiones/{regionId}/comunas', [App\Http\Controllers\EmpresaController::class, 'getComunasPorRegion']);
+    Route::post('/', [App\Http\Controllers\EmpresaController::class, 'store']);
+    Route::put('/{usuario}', [App\Http\Controllers\EmpresaController::class, 'update']);
+});
+
 // Ruta adicional para historial de lockers con paginación
 Route::get('/lockers/{locker}/historial', [LockerController::class, 'historial']);
 

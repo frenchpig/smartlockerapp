@@ -61,6 +61,15 @@ $white: #fff;
         background: $green;
         color: #fff;
         border-color: transparent;
+        
+        &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            
+            &:hover {
+                transform: none;
+            }
+        }
     }
 }
 
@@ -144,13 +153,9 @@ $white: #fff;
 
 .grid-two {
     display: grid;
-    grid-template-columns: 1fr 320px;
+    grid-template-columns: 1fr;
     gap: .9rem;
     margin-bottom: 1rem;
-
-    @media (max-width: 992px) {
-        grid-template-columns: 1fr;
-    }
 }
 
 .card {

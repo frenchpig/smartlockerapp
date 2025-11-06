@@ -1,19 +1,28 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { HeaderAdmin } from '../shared/header-admin/headerAdmin';
+import { environment } from '../../../../environments/environment';
 
 type EmpresaEstado = 'Activa' | 'Inactiva';
 
 interface Empresa {
   id: number;
   nombre: string;
-  rut?: string;
   correo: string;
   telefono?: string;
   ubicacion?: string;
   estado: EmpresaEstado;
   creadaEl?: string;
+}
+
+interface PaginatedResponse<T> {
+  data: T[];
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
 }
 
 @Component({
@@ -23,31 +32,85 @@ interface Empresa {
   templateUrl: './adminEmpresas.html',
   styleUrls: ['./adminEmpresas.scss']
 })
-export class AdminEmpresas {
+export class AdminEmpresas implements OnInit {
   private router = inject(Router);
+  private http = inject(HttpClient);
 
-  empresas = signal<Empresa[]>([
-    { id: 1, nombre: 'ejemplo1', rut: '76.123.456-7', correo: 'contacto@acme.cl', ubicacion: 'Centro', estado: 'Activa', creadaEl: '2025-10-28' },
-    { id: 2, nombre: 'ejemplo2', correo: 'hola@beta.cl', ubicacion: 'Ñuñoa', estado: 'Inactiva', creadaEl: '2025-10-15' },
-    { id: 3, nombre: 'ejemplo3', correo: 'admin@smart.com', ubicacion: 'Las Condes', estado: 'Activa', creadaEl: '2025-10-25' },
-  ]);
+  empresas = signal<Empresa[]>([]);
+  empresasFiltradas = signal<Empresa[]>([]);
+  loading = signal<boolean>(true);
+
+  page = signal<number>(1);
+  perPage = 8;
+  totalEmpresas = signal<number>(0);
 
   private q = signal<string>('');
   private estado = signal<'Todos' | EmpresaEstado>('Todos');
 
-  filtradas = computed(() => {
+  async ngOnInit(): Promise<void> {
+    await this.cargarEmpresas();
+  }
+
+  private async cargarEmpresas(): Promise<void> {
+    this.loading.set(true);
+    try {
+      const response = await this.http
+        .get<PaginatedResponse<any>>(`${environment.apiUrl}/usuarios`, {
+          params: { rol: 'empresa', per_page: 1000 }
+        })
+        .toPromise();
+
+      const empresasMapeadas: Empresa[] = (response?.data ?? []).map((usuario: any) => ({
+        id: usuario.id,
+        nombre: [usuario.nombre, usuario.apellido].filter(Boolean).join(' ').trim() || usuario.email || `Empresa #${usuario.id}`,
+        correo: usuario.email ?? '',
+        telefono: usuario.telefono ?? undefined,
+        ubicacion: undefined, // No hay campo de ubicación en el modelo Usuario
+        estado: 'Activa' as EmpresaEstado, // Por defecto todas activas
+        creadaEl: usuario.created_at ? new Date(usuario.created_at).toISOString().split('T')[0] : undefined,
+      }));
+
+      this.empresas.set(empresasMapeadas);
+      this.totalEmpresas.set(empresasMapeadas.length);
+      this.aplicarFiltros();
+    } catch (error) {
+      console.error('Error cargando empresas:', error);
+      this.empresas.set([]);
+      this.empresasFiltradas.set([]);
+      this.totalEmpresas.set(0);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  private aplicarFiltros(): void {
     const q = this.q().toLowerCase().trim();
     const estado = this.estado();
 
-    return this.empresas().filter(e => {
+    const filtradas = this.empresas().filter(e => {
       const matchTexto =
         e.nombre.toLowerCase().includes(q) ||
-        (e.rut ?? '').toLowerCase().includes(q) ||
         e.correo.toLowerCase().includes(q) ||
+        (e.telefono ?? '').toLowerCase().includes(q) ||
         (e.ubicacion ?? '').toLowerCase().includes(q);
       const matchEstado = estado === 'Todos' ? true : e.estado === estado;
       return matchTexto && matchEstado;
     });
+
+    this.empresasFiltradas.set(filtradas);
+    this.totalEmpresas.set(filtradas.length);
+    // Resetear a página 1 cuando cambian los filtros
+    this.page.set(1);
+  }
+
+  filtradas = computed(() => {
+    const inicio = (this.page() - 1) * this.perPage;
+    const fin = inicio + this.perPage;
+    return this.empresasFiltradas().slice(inicio, fin);
+  });
+
+  lastPage = computed(() => {
+    return Math.max(1, Math.ceil(this.totalEmpresas() / this.perPage));
   });
 
   kpiTotal = computed(() => this.empresas().length);
@@ -65,16 +128,32 @@ export class AdminEmpresas {
   onBuscar(event: Event) {
     const input = event.target as HTMLInputElement;
     this.q.set(input.value);
+    this.aplicarFiltros();
   }
 
   onEstadoChange(event: Event) {
     const select = event.target as HTMLSelectElement;
     this.estado.set(select.value as 'Todos' | EmpresaEstado);
+    this.aplicarFiltros();
   }
 
   limpiarFiltros() {
     this.q.set('');
     this.estado.set('Todos');
+    this.page.set(1);
+    this.aplicarFiltros();
+  }
+
+  anterior() {
+    if (this.page() > 1) {
+      this.page.set(this.page() - 1);
+    }
+  }
+
+  siguiente() {
+    if (this.page() < this.lastPage()) {
+      this.page.set(this.page() + 1);
+    }
   }
 
   nuevaEmpresa() {

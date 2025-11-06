@@ -50,4 +50,5 @@ class Usuario extends Authenticatable
     public function mantenimientos() { return $this->hasMany(Mantenimiento::class, 'usuario_id'); }
     public function incidencias()    { return $this->hasMany(Incidencia::class, 'usuario_id'); }
     public function historialEnvios(){ return $this->hasMany(HistorialEnvio::class, 'usuario_id'); }
+    public function datosEmpresa()   { return $this->hasOne(DatosEmpresa::class, 'usuario_id'); }
 }

@@ -126,6 +126,16 @@ $info: #2563eb;
       border-color: #a7f3d0;
       color: green;
     }
+    &.btn-outline-secondary {
+      background: transparent;
+      border-color: #d1d5db;
+      color: #374151;
+      
+      &:hover {
+        background: #f9fafb;
+        border-color: #9ca3af;
+      }
+    }
     &.btn-success {
       background: green;
       color: #fff;
@@ -298,6 +308,35 @@ $info: #2563eb;
 
 // ---------- acciones de fila ----------
 .btns-row { display: inline-flex; gap: .5rem; flex-wrap: wrap; }
+
+// ---------- paginación ----------
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+
+.pagination-controls .btn {
+  min-width: 9rem;
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
+.page-indicator {
+  font-weight: 600;
+  color: $muted;
+  font-size: .9rem;
+}
 
 // ---------- utilidades ----------
 .bg-main { background: $brand-green; color: $white; }

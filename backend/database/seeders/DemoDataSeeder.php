@@ -11,6 +11,9 @@ use App\Models\Repartidor;
 use App\Models\ArticuloReserva;
 use App\Models\Mantenimiento;
 use App\Models\HistorialLocker;
+use App\Models\DatosEmpresa;
+use App\Models\Comuna;
+use App\Models\Region;
 use Carbon\Carbon;
 
 class DemoDataSeeder extends Seeder
@@ -60,6 +63,38 @@ class DemoDataSeeder extends Seeder
             'contrasena' => '123456',
             'telefono' => '56925556666',
             'rol' => 'empresa',
+        ]);
+
+        // Crear datos_empresa para las empresas existentes
+        // Asegurar que existan regiones y comunas (crear si no existen)
+        $regionRM = Region::firstOrCreate(
+            ['nombre' => 'Región Metropolitana de Santiago'],
+            ['nombre' => 'Región Metropolitana de Santiago']
+        );
+        
+        $comunaSantiago = Comuna::firstOrCreate(
+            ['nombre' => 'Santiago', 'region_id' => $regionRM->id],
+            ['nombre' => 'Santiago', 'region_id' => $regionRM->id]
+        );
+        
+        // Datos empresa 1: Locker Solutions
+        DatosEmpresa::create([
+            'usuario_id' => $empresa1->id,
+            'nombre' => 'Locker Solutions S.A.',
+            'razon_social' => 'Locker Solutions Sociedad Anónima',
+            'rut' => '76.123.456-7',
+            'direccion' => 'Av. Providencia 1234, Oficina 501',
+            'comuna_id' => $comunaSantiago->id,
+        ]);
+
+        // Datos empresa 2: Smart Logistics
+        DatosEmpresa::create([
+            'usuario_id' => $empresa2->id,
+            'nombre' => 'Smart Logistics SpA',
+            'razon_social' => 'Smart Logistics SpA',
+            'rut' => '77.234.567-8',
+            'direccion' => 'Av. Las Condes 5678, Piso 12',
+            'comuna_id' => $comunaSantiago->id,
         ]);
 
         $repUser1 = Usuario::create([

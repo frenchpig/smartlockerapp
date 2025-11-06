@@ -34,7 +34,7 @@
     </section>
 
     <section class="filters">
-      <input class="input" type="text" placeholder="Buscar por nombre, RUT, correo o ubicación..."
+      <input class="input" type="text" placeholder="Buscar por nombre, correo o ubicación..."
         (input)="onBuscar($event)" />
 
       <select class="input" (change)="onEstadoChange($event)">
@@ -51,7 +51,6 @@
             <tr>
               <th>ID</th>
               <th>Nombre</th>
-              <th>RUT</th>
               <th>Correo</th>
               <th>Ubicación</th>
               <th>Estado</th>
@@ -60,40 +59,59 @@
           </thead>
 
           <tbody>
-            <ng-container *ngIf="filtradas().length; else vacio">
-              <tr *ngFor="let e of filtradas(); trackBy: trackById">
-                <td>#{{ e.id }}</td>
-                <td>{{ e.nombre }}</td>
-                <td>{{ e.rut || '—' }}</td>
-                <td>{{ e.correo }}</td>
-                <td>{{ e.ubicacion || '—' }}</td>
-                <td>
-                  <span class="badge" [class.badge-success]="e.estado === 'Activa'"
-                    [class.badge-danger]="e.estado === 'Inactiva'">
-                    {{ e.estado }}
-                  </span>
-                </td>
-                <td class="text-end">
-                  <div class="btns-row">
-                    <button class="btn btn-light" (click)="verDetalle()">Detalle</button>
-                    <button class="btn btn-outline" (click)="editar()">Editar</button>
-                    <button class="btn btn-success" *ngIf="e.estado === 'Inactiva'"
-                      (click)="activar(e)">Activar</button>
-                    <button class="btn btn-warning" *ngIf="e.estado === 'Activa'"
-                      (click)="desactivar(e)">Desactivar</button>
-                  </div>
-                </td>
-              </tr>
-            </ng-container>
+            <ng-container *ngIf="loading(); then cargando; else contenido"></ng-container>
 
-            <ng-template #vacio>
+            <ng-template #cargando>
               <tr>
-                <td colspan="7" class="empty text-center">No hay empresas registradas</td>
+                <td colspan="6" class="empty text-center">Cargando empresas...</td>
               </tr>
+            </ng-template>
+
+            <ng-template #contenido>
+              <ng-container *ngIf="filtradas().length; else vacio">
+                <tr *ngFor="let e of filtradas(); trackBy: trackById">
+                  <td>#{{ e.id }}</td>
+                  <td>{{ e.nombre }}</td>
+                  <td>{{ e.correo }}</td>
+                  <td>{{ e.ubicacion || '—' }}</td>
+                  <td>
+                    <span class="badge" [class.badge-success]="e.estado === 'Activa'"
+                      [class.badge-danger]="e.estado === 'Inactiva'">
+                      {{ e.estado }}
+                    </span>
+                  </td>
+                  <td class="text-end">
+                    <div class="btns-row">
+                      <button class="btn btn-light" (click)="verDetalle()">Detalle</button>
+                      <button class="btn btn-outline" (click)="editar()">Editar</button>
+                      <button class="btn btn-success" *ngIf="e.estado === 'Inactiva'"
+                        (click)="activar(e)">Activar</button>
+                      <button class="btn btn-warning" *ngIf="e.estado === 'Activa'"
+                        (click)="desactivar(e)">Desactivar</button>
+                    </div>
+                  </td>
+                </tr>
+              </ng-container>
+
+              <ng-template #vacio>
+                <tr>
+                  <td colspan="6" class="empty text-center">No hay empresas registradas</td>
+                </tr>
+              </ng-template>
             </ng-template>
           </tbody>
         </table>
       </div>
     </div>
+
+    <nav class="pagination-controls mt-4" aria-label="Paginación empresas" *ngIf="!loading() && lastPage() > 1">
+      <button class="btn btn-outline-secondary" type="button" (click)="anterior()" [disabled]="page() <= 1">
+        <i class="bi bi-chevron-left me-1"></i> Anterior
+      </button>
+      <span class="page-indicator">Página {{ page() }} de {{ lastPage() }}</span>
+      <button class="btn btn-outline-secondary" type="button" (click)="siguiente()" [disabled]="page() >= lastPage()">
+        Siguiente <i class="bi bi-chevron-right ms-1"></i>
+      </button>
+    </nav>
   </div>
 </main>
