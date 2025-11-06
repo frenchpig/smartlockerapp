@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
 import { HeaderAdmin } from '../shared/header-admin/headerAdmin';
 import { environment } from '../../../../environments/environment';
 
@@ -42,7 +43,7 @@ interface PaginatedResponse<T> {
 @Component({
     standalone: true,
     selector: 'app-detalle-empresa',
-    imports: [CommonModule, RouterModule, HeaderAdmin, DatePipe],
+    imports: [CommonModule, RouterModule, HeaderAdmin, DatePipe, FormsModule],
     templateUrl: './detalleEmpresa.html',
     styleUrls: ['./detalleEmpresa.scss']
 })
@@ -56,6 +57,14 @@ export class DetalleEmpresa implements OnInit {
     loading = true;
     loadingHistorial = true;
     error?: string;
+
+    // Paginación y filtros del historial
+    historialPage = 1;
+    historialLastPage = 1;
+    historialPerPage = 10;
+    historialTotal = 0;
+    filtroTipo = '';
+    empresaId?: number;
 
     /**
      * Formatea un RUT para mostrarlo (ej: 761234567 -> 76.123.456-7, 76123456K -> 76.123.456-K)
@@ -87,6 +96,20 @@ export class DetalleEmpresa implements OnInit {
         return map[tipo] || tipo;
     }
 
+    getTiposDisponibles(): Array<{ value: string; label: string }> {
+        return [
+            { value: '', label: 'Todos los tipos' },
+            { value: 'creacion_cuenta', label: 'Inicio' },
+            { value: 'reserva_creada', label: 'Reserva' },
+            { value: 'reserva_cancelada', label: 'Cancelación' },
+            { value: 'reserva_completada', label: 'Completado' },
+            { value: 'datos_actualizados', label: 'Actualización' },
+            { value: 'locker_asignado', label: 'Asignación' },
+            { value: 'locker_liberado', label: 'Liberación' },
+            { value: 'estado_cambiado', label: 'Cambio de Estado' }
+        ];
+    }
+
     async ngOnInit(): Promise<void> {
         const idParam = this.route.snapshot.paramMap.get('id');
         if (!idParam) {
@@ -100,6 +123,7 @@ export class DetalleEmpresa implements OnInit {
             this.loading = false;
             return;
         }
+        this.empresaId = id;
         await Promise.all([
             this.cargarEmpresa(id),
             this.cargarHistorial(id)
@@ -161,22 +185,96 @@ export class DetalleEmpresa implements OnInit {
         }
     }
 
-    private async cargarHistorial(usuarioId: number): Promise<void> {
+    private async cargarHistorial(usuarioId: number, page: number = 1): Promise<void> {
         this.loadingHistorial = true;
         try {
+            const params: Record<string, string | number> = {
+                page,
+                per_page: this.historialPerPage
+            };
+
+            if (this.filtroTipo && this.filtroTipo.trim()) {
+                params['tipo'] = this.filtroTipo.trim();
+            }
+
             const response = await this.http
                 .get<PaginatedResponse<HistorialItem>>(`${environment.apiUrl}/empresas/${usuarioId}/historial`, {
-                    params: { per_page: 50 }
+                    params
                 })
                 .toPromise();
 
             this.historial = response?.data ?? [];
+            this.historialPage = Number(response?.current_page ?? page) || page;
+            this.historialLastPage = Number(response?.last_page ?? 1) || 1;
+            this.historialTotal = Number(response?.total ?? 0) || 0;
         } catch (error) {
             console.error('Error cargando historial:', error);
             this.historial = [];
+            this.historialPage = 1;
+            this.historialLastPage = 1;
+            this.historialTotal = 0;
         } finally {
             this.loadingHistorial = false;
         }
+    }
+
+    aplicarFiltroTipo(): void {
+        if (this.empresaId) {
+            this.historialPage = 1;
+            this.cargarHistorial(this.empresaId, 1);
+        }
+    }
+
+    anteriorHistorial(): void {
+        if (this.historialPage > 1 && this.empresaId) {
+            this.cargarHistorial(this.empresaId, this.historialPage - 1);
+        }
+    }
+
+    siguienteHistorial(): void {
+        if (this.historialPage < this.historialLastPage && this.empresaId) {
+            this.cargarHistorial(this.empresaId, this.historialPage + 1);
+        }
+    }
+
+    irAPagina(page: number): void {
+        if (this.empresaId && page >= 1 && page <= this.historialLastPage && page !== this.historialPage) {
+            this.cargarHistorial(this.empresaId, page);
+        }
+    }
+
+    getPaginasVisibles(): number[] {
+        const paginas: number[] = [];
+        const totalPaginas = this.historialLastPage;
+        const paginaActual = this.historialPage;
+        const maxVisible = 5; // Máximo de botones de página visibles
+
+        if (totalPaginas <= maxVisible) {
+            // Si hay pocas páginas, mostrar todas
+            for (let i = 1; i <= totalPaginas; i++) {
+                paginas.push(i);
+            }
+        } else {
+            // Lógica para mostrar páginas alrededor de la actual
+            let inicio = Math.max(1, paginaActual - 2);
+            let fin = Math.min(totalPaginas, paginaActual + 2);
+
+            // Ajustar si estamos cerca del inicio
+            if (inicio === 1) {
+                fin = Math.min(totalPaginas, maxVisible);
+            }
+
+            // Ajustar si estamos cerca del fin
+            if (fin === totalPaginas) {
+                inicio = Math.max(1, totalPaginas - maxVisible + 1);
+            }
+
+            for (let i = inicio; i <= fin; i++) {
+                paginas.push(i);
+            }
+        }
+
+        return paginas;
     }
 
     volver(): void {

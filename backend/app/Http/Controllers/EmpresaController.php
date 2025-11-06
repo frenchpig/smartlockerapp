@@ -210,10 +210,19 @@ class EmpresaController extends Controller
         $perPage = (int) $request->query('per_page', 20);
         $perPage = max(1, min(100, $perPage));
 
-        $historial = HistorialEmpresa::where('usuario_id', $usuario->id)
+        $query = HistorialEmpresa::where('usuario_id', $usuario->id)
             ->with('reserva')
-            ->orderByDesc('created_at')
-            ->paginate($perPage);
+            ->orderByDesc('created_at');
+
+        // Filtro por tipo
+        if ($tipo = $request->query('tipo')) {
+            $tipo = trim($tipo);
+            if (in_array($tipo, HistorialEmpresa::TIPOS)) {
+                $query->where('tipo', $tipo);
+            }
+        }
+
+        $historial = $query->paginate($perPage);
 
         return response()->json($historial);
     }

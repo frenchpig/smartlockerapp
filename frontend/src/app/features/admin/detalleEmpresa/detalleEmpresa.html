@@ -82,7 +82,16 @@
 
         <!-- Historial de actividades -->
         <section class="card table-card">
-            <h2 class="card-title">Actividad reciente</h2>
+            <div class="card-header">
+                <h2 class="card-title">Actividad reciente</h2>
+                <div class="historial-filters">
+                    <select class="input" [(ngModel)]="filtroTipo" (change)="aplicarFiltroTipo()">
+                        <option *ngFor="let tipo of getTiposDisponibles()" [value]="tipo.value">
+                            {{ tipo.label }}
+                        </option>
+                    </select>
+                </div>
+            </div>
             <div class="table-responsive">
                 <table class="table">
                     <thead>
@@ -107,6 +116,48 @@
                     </tbody>
                 </table>
             </div>
+            <nav class="pagination-controls mt-4" aria-label="Paginación historial" *ngIf="!loadingHistorial && historialTotal > 0 && historialLastPage > 1">
+                <div class="pagination-info">
+                    <span>Mostrando {{ historial.length }} de {{ historialTotal }} registros</span>
+                </div>
+                <div class="pagination-buttons">
+                    <button class="btn btn-outline-secondary" type="button" (click)="anteriorHistorial()" 
+                        [disabled]="historialPage <= 1">
+                        <i class="bi bi-chevron-left me-1"></i> Anterior
+                    </button>
+                    
+                    <div class="page-numbers">
+                        <button *ngIf="historialPage > 3 && historialLastPage > 5" 
+                            class="btn btn-page" 
+                            type="button" 
+                            (click)="irAPagina(1)">
+                            1
+                        </button>
+                        <span *ngIf="historialPage > 3 && historialLastPage > 5" class="page-ellipsis">...</span>
+                        
+                        <button *ngFor="let page of getPaginasVisibles()" 
+                            class="btn btn-page" 
+                            [class.btn-page-active]="page === historialPage"
+                            type="button" 
+                            (click)="irAPagina(page)">
+                            {{ page }}
+                        </button>
+                        
+                        <span *ngIf="historialPage < historialLastPage - 2 && historialLastPage > 5" class="page-ellipsis">...</span>
+                        <button *ngIf="historialPage < historialLastPage - 2 && historialLastPage > 5" 
+                            class="btn btn-page" 
+                            type="button" 
+                            (click)="irAPagina(historialLastPage)">
+                            {{ historialLastPage }}
+                        </button>
+                    </div>
+                    
+                    <button class="btn btn-outline-secondary" type="button" (click)="siguienteHistorial()" 
+                        [disabled]="historialPage >= historialLastPage">
+                        Siguiente <i class="bi bi-chevron-right ms-1"></i>
+                    </button>
+                </div>
+            </nav>
         </section>
 
     </div>
