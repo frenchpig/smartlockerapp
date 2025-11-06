@@ -14,6 +14,11 @@ class UsuarioController extends Controller
 
         if ($rol = $request->query('rol')) {
             $query->where('rol', $rol);
+            
+            // Si es rol empresa, cargar datos_empresa con comuna y región
+            if ($rol === 'empresa') {
+                $query->with('datosEmpresa.comuna.region');
+            }
         }
 
         $perPage = (int) $request->query('per_page', 20);
@@ -24,6 +29,11 @@ class UsuarioController extends Controller
 
     public function show(Usuario $usuario)
     {
+        // Cargar datos_empresa si es empresa
+        if ($usuario->rol === 'empresa') {
+            $usuario->load('datosEmpresa.comuna.region');
+        }
+        
         return $usuario;
     }
 

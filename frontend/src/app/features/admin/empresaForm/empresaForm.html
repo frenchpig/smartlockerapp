@@ -5,8 +5,9 @@
         <div class="toolbar">
             <h1 class="page-title">Nueva empresa</h1>
             <div class="toolbar-actions">
-                <button class="btn btn-light" type="button" (click)="cancelar()">Cancelar</button>
-                <button class="btn btn-success" type="button" (click)="guardar()" [disabled]="loading">Guardar</button>
+                <button class="btn btn-light" type="button" (click)="volver()">
+                    <i class="bi bi-arrow-left me-1"></i> Volver
+                </button>
             </div>
         </div>
 
@@ -48,8 +49,17 @@
 
                     <div class="row">
                         <div class="label">Teléfono</div>
-                        <div class="value"><input class="input" type="text" formControlName="telefono"
-                                placeholder="+56 9 xxxx xxxx" /></div>
+                        <div class="value">
+                            <div class="telefono-input-group">
+                                <span class="telefono-prefijo">+569</span>
+                                <input class="input telefono-input" type="text" 
+                                    formControlName="telefono"
+                                    placeholder="12345678"
+                                    maxlength="8"
+                                    (input)="onTelefonoInput($event)" />
+                            </div>
+                            <small class="hint">Ingresa los 8 dígitos del teléfono</small>
+                        </div>
                     </div>
 
                     <div class="row">
@@ -85,8 +95,13 @@
 
                     <div class="row">
                         <div class="label">RUT</div>
-                        <div class="value"><input class="input" type="text" formControlName="rut"
-                                placeholder="76.123.456-7" /></div>
+                        <div class="value">
+                            <input class="input" type="text" #rutInput
+                                (input)="formatearRut(rutInput)"
+                                (blur)="formatearRut(rutInput)"
+                                placeholder="76.123.456-7" 
+                                maxlength="12" />
+                        </div>
                     </div>
 
                     <div class="row">

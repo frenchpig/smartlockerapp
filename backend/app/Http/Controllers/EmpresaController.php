@@ -31,6 +31,24 @@ class EmpresaController extends Controller
     }
 
     /**
+     * Limpia el RUT dejando solo números y k/K
+     * Convierte k a K siempre (el dígito verificador debe ser mayúscula)
+     * Ejemplos: "76.123.456-7" -> "761234567", "76.123.456-k" -> "76123456K"
+     */
+    private function limpiarRut(?string $rut): ?string
+    {
+        if (!$rut) {
+            return null;
+        }
+        
+        // Remover todos los caracteres excepto números y k/K
+        $limpio = preg_replace('/[^0-9kK]/', '', $rut);
+        
+        // Convertir k a K siempre y retornar (o null si está vacío)
+        return !empty($limpio) ? strtoupper($limpio) : null;
+    }
+
+    /**
      * Crear una nueva empresa (usuario + datos_empresa)
      */
     public function store(Request $request)
@@ -69,7 +87,7 @@ class EmpresaController extends Controller
                 'usuario_id' => $usuario->id,
                 'nombre' => $data['nombre_empresa'],
                 'razon_social' => $data['razon_social'] ?? null,
-                'rut' => $data['rut'] ?? null,
+                'rut' => $this->limpiarRut($data['rut'] ?? null),
                 'direccion' => $data['direccion'] ?? null,
                 'comuna_id' => $data['comuna_id'] ?? null,
             ]);
@@ -139,7 +157,7 @@ class EmpresaController extends Controller
 
             if (isset($data['nombre_empresa'])) $datosEmpresa->nombre = $data['nombre_empresa'];
             if (isset($data['razon_social'])) $datosEmpresa->razon_social = $data['razon_social'];
-            if (isset($data['rut'])) $datosEmpresa->rut = $data['rut'];
+            if (isset($data['rut'])) $datosEmpresa->rut = $this->limpiarRut($data['rut']);
             if (isset($data['direccion'])) $datosEmpresa->direccion = $data['direccion'];
             if (isset($data['comuna_id'])) $datosEmpresa->comuna_id = $data['comuna_id'];
             $datosEmpresa->save();

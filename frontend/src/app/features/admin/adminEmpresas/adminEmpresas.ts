@@ -15,6 +15,7 @@ interface Empresa {
   ubicacion?: string;
   estado: EmpresaEstado;
   creadaEl?: string;
+  rut?: string;
 }
 
 interface PaginatedResponse<T> {
@@ -60,15 +61,20 @@ export class AdminEmpresas implements OnInit {
         })
         .toPromise();
 
-      const empresasMapeadas: Empresa[] = (response?.data ?? []).map((usuario: any) => ({
-        id: usuario.id,
-        nombre: [usuario.nombre, usuario.apellido].filter(Boolean).join(' ').trim() || usuario.email || `Empresa #${usuario.id}`,
-        correo: usuario.email ?? '',
-        telefono: usuario.telefono ?? undefined,
-        ubicacion: undefined, // No hay campo de ubicación en el modelo Usuario
-        estado: 'Activa' as EmpresaEstado, // Por defecto todas activas
-        creadaEl: usuario.created_at ? new Date(usuario.created_at).toISOString().split('T')[0] : undefined,
-      }));
+      const empresasMapeadas: Empresa[] = (response?.data ?? []).map((usuario: any) => {
+        const datosEmpresa = usuario.datos_empresa;
+        
+        return {
+          id: usuario.id,
+          nombre: datosEmpresa?.nombre || [usuario.nombre, usuario.apellido].filter(Boolean).join(' ').trim() || usuario.email || `Empresa #${usuario.id}`,
+          correo: usuario.email ?? '',
+          telefono: usuario.telefono ?? undefined,
+          ubicacion: datosEmpresa?.comuna?.nombre || undefined,
+          rut: datosEmpresa?.rut || undefined,
+          estado: 'Activa' as EmpresaEstado,
+          creadaEl: usuario.created_at ? new Date(usuario.created_at).toISOString().split('T')[0] : undefined,
+        };
+      });
 
       this.empresas.set(empresasMapeadas);
       this.totalEmpresas.set(empresasMapeadas.length);
@@ -83,16 +89,51 @@ export class AdminEmpresas implements OnInit {
     }
   }
 
+  /**
+   * Formatea un RUT para mostrarlo (ej: 761234567 -> 76.123.456-7, 76123456K -> 76.123.456-K)
+   */
+  formatearRut(rut: string | undefined): string {
+    if (!rut) return '—';
+    
+    // Asegurar que solo tenga números y k/K, convertir k a K
+    const limpio = rut.replace(/[^0-9kK]/g, '').toUpperCase();
+    if (limpio.length === 0) return '—';
+    
+    // Separar el dígito verificador (último carácter, puede ser número o K)
+    const rutSinVerificador = limpio.slice(0, -1);
+    const verificador = limpio.slice(-1); // Ya está en mayúscula
+    
+    if (rutSinVerificador.length === 0) {
+      return verificador;
+    }
+    
+    // Formatear con puntos y guión
+    const formateado = rutSinVerificador.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return `${formateado}-${verificador}`;
+  }
+
+  /**
+   * Limpia el RUT para búsqueda (solo números y k/K en mayúscula)
+   */
+  private limpiarRutParaBusqueda(rut: string): string {
+    return rut.replace(/[^0-9kK]/g, '').toUpperCase();
+  }
+
   private aplicarFiltros(): void {
     const q = this.q().toLowerCase().trim();
     const estado = this.estado();
 
     const filtradas = this.empresas().filter(e => {
+      // Limpiar la query para búsqueda de RUT (solo números y k)
+      const qLimpia = q.replace(/[^0-9k]/g, '');
+      
       const matchTexto =
         e.nombre.toLowerCase().includes(q) ||
         e.correo.toLowerCase().includes(q) ||
         (e.telefono ?? '').toLowerCase().includes(q) ||
-        (e.ubicacion ?? '').toLowerCase().includes(q);
+        (e.ubicacion ?? '').toLowerCase().includes(q) ||
+        (e.rut && qLimpia.length > 0 ? this.limpiarRutParaBusqueda(e.rut).toLowerCase().includes(qLimpia) : false);
+      
       const matchEstado = estado === 'Todos' ? true : e.estado === estado;
       return matchTexto && matchEstado;
     });

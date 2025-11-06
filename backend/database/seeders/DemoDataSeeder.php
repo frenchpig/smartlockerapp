@@ -82,17 +82,17 @@ class DemoDataSeeder extends Seeder
             'usuario_id' => $empresa1->id,
             'nombre' => 'Locker Solutions S.A.',
             'razon_social' => 'Locker Solutions Sociedad Anónima',
-            'rut' => '76.123.456-7',
+            'rut' => '761234567', // Solo números
             'direccion' => 'Av. Providencia 1234, Oficina 501',
             'comuna_id' => $comunaSantiago->id,
         ]);
 
-        // Datos empresa 2: Smart Logistics
+        // Datos empresa 2: Smart Logistics (con RUT que termina en K como ejemplo)
         DatosEmpresa::create([
             'usuario_id' => $empresa2->id,
             'nombre' => 'Smart Logistics SpA',
             'razon_social' => 'Smart Logistics SpA',
-            'rut' => '77.234.567-8',
+            'rut' => '77234567K', // Dígito verificador K
             'direccion' => 'Av. Las Condes 5678, Piso 12',
             'comuna_id' => $comunaSantiago->id,
         ]);

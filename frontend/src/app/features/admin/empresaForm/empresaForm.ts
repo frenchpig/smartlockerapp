@@ -2,6 +2,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule, FormArray } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { Location } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { HeaderAdmin } from '../../admin/shared/header-admin/headerAdmin';
 import { environment } from '../../../../environments/environment';
@@ -27,6 +28,7 @@ interface Comuna {
 export class EmpresaForm implements OnInit {
     private fb = inject(FormBuilder);
     private router = inject(Router);
+    private location = inject(Location);
     private http = inject(HttpClient);
 
     loading = false;
@@ -38,7 +40,7 @@ export class EmpresaForm implements OnInit {
         nombre: ['', [Validators.required, Validators.minLength(3)]],
         apellido: ['', [Validators.required, Validators.minLength(3)]],
         email: ['', [Validators.required, Validators.email]],
-        telefono: [''],
+        telefono: ['', [Validators.pattern(/^\d{0,8}$/)]], // Solo números, máximo 8 dígitos
         contrasena: ['', [Validators.required, Validators.minLength(6)]],
         
         // Datos de la empresa
@@ -49,6 +51,91 @@ export class EmpresaForm implements OnInit {
         regionId: [''],
         comunaId: [''],
     });
+
+    /**
+     * Maneja la entrada del teléfono, solo permite números y máximo 8 dígitos
+     */
+    onTelefonoInput(event: Event): void {
+        const input = event.target as HTMLInputElement;
+        let valor = input.value.replace(/[^0-9]/g, ''); // Solo números
+        
+        // Limitar a 8 dígitos
+        if (valor.length > 8) {
+            valor = valor.slice(0, 8);
+        }
+        
+        input.value = valor;
+        this.form.get('telefono')?.setValue(valor, { emitEvent: false });
+    }
+
+    /**
+     * Preparar el teléfono para enviar al backend: combinar prefijo +569 con los dígitos ingresados
+     */
+    private prepararTelefono(telefono: string | null | undefined): string | null {
+        if (!telefono || telefono.trim().length === 0) {
+            return null;
+        }
+        
+        // Limpiar el teléfono (solo números)
+        const digitos = telefono.replace(/[^0-9]/g, '');
+        
+        // Si tiene 8 dígitos, combinar con prefijo
+        if (digitos.length === 8) {
+            return `569${digitos}`;
+        }
+        
+        // Si tiene menos de 8 dígitos pero tiene algo, también combinar
+        if (digitos.length > 0) {
+            return `569${digitos}`;
+        }
+        
+        return null;
+    }
+
+    /**
+     * Formatea el RUT mientras el usuario escribe (ej: 761234567 -> 76.123.456-7, 76123456K -> 76.123.456-K)
+     */
+    formatearRut(input: HTMLInputElement): void {
+        let valor = input.value.replace(/[^0-9kK]/g, ''); // Solo números y k/K
+        
+        if (valor.length === 0) {
+            this.form.get('rut')?.setValue('', { emitEvent: false });
+            input.value = '';
+            return;
+        }
+
+        // Convertir k a K siempre
+        valor = valor.replace(/k/g, 'K');
+
+        // Separar el dígito verificador (último carácter, puede ser número o K)
+        let rutSinVerificador = valor.slice(0, -1);
+        let verificador = valor.slice(-1).toUpperCase(); // Asegurar K mayúscula
+
+        // Formatear con puntos y guión solo si hay parte numérica
+        if (rutSinVerificador.length > 0) {
+            rutSinVerificador = rutSinVerificador.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            valor = `${rutSinVerificador}-${verificador}`;
+        } else {
+            // Si solo hay K, no formatear
+            valor = verificador;
+        }
+
+        // Actualizar el input con el formato visual
+        input.value = valor;
+        // Guardar solo números y K en mayúscula en el formulario
+        const rutLimpio = valor.replace(/[^0-9K]/g, '');
+        this.form.get('rut')?.setValue(rutLimpio, { emitEvent: false });
+    }
+
+    /**
+     * Limpia el RUT (solo números y k/K) para enviarlo al backend
+     * Convierte k a K siempre
+     */
+    private limpiarRut(rut: string | null | undefined): string | null {
+        if (!rut) return null;
+        const limpio = rut.replace(/[^0-9kK]/g, '').toUpperCase(); // Convertir k a K
+        return limpio.length > 0 ? limpio : null;
+    }
 
     async ngOnInit(): Promise<void> {
         await this.cargarRegiones();
@@ -89,6 +176,10 @@ export class EmpresaForm implements OnInit {
         this.router.navigate(['/admin/empresa']);
     }
 
+    volver(): void {
+        this.location.back();
+    }
+
     async guardar(): Promise<void> {
         if (this.form.invalid) {
             this.form.markAllAsTouched();
@@ -102,11 +193,11 @@ export class EmpresaForm implements OnInit {
                 nombre: formValue.nombre,
                 apellido: formValue.apellido,
                 email: formValue.email,
-                telefono: formValue.telefono || null,
+                telefono: this.prepararTelefono(formValue.telefono),
                 contrasena: formValue.contrasena,
                 nombre_empresa: formValue.nombreEmpresa,
                 razon_social: formValue.razonSocial || null,
-                rut: formValue.rut || null,
+                rut: this.limpiarRut(formValue.rut),
                 direccion: formValue.direccion || null,
                 comuna_id: formValue.comunaId ? parseInt(formValue.comunaId) : null,
             };
