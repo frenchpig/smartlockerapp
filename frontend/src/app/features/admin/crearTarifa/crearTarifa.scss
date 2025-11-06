@@ -202,6 +202,20 @@ $border: #e5e7eb;
     border-color: #e5e7eb;
 }
 
+.pill-auto {
+    position: relative;
+
+    .pill-input {
+        cursor: default;
+    }
+
+    .pill-tag {
+        font-size: .65rem;
+        font-weight: 600;
+        color: #2563eb;
+    }
+}
+
 .sticky {
     position: sticky;
     top: 5rem;

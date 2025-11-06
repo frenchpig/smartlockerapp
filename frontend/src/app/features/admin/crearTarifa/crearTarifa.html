@@ -6,9 +6,13 @@
         <div class="toolbar">
             <h1 class="page-title">Nueva tarifa</h1>
             <div class="toolbar-actions">
-                <button class="btn btn-light" (click)="cancelar()">Cancelar</button>
-                <button class="btn btn-success" type="submit" form="form-tarifa">Guardar</button>
+                <button class="btn btn-light" type="button" (click)="cancelar()" [disabled]="saving()">Cancelar</button>
+                <button class="btn btn-success" type="submit" form="form-tarifa" [disabled]="saving()">Guardar</button>
             </div>
+        </div>
+
+        <div class="alert error" *ngIf="errorMessage()">
+            {{ errorMessage() }}
         </div>
 
         <form [formGroup]="form" (ngSubmit)="guardar()" id="form-tarifa" class="form-shell">
@@ -98,6 +102,10 @@
                         <div class="field">
                             <label>Incluye</label>
                             <div class="pill-list">
+                            <div class="pill pill-auto" *ngFor="let auto of dynamicIncluye()">
+                                <input class="pill-input" [value]="auto" readonly disabled />
+                                <span class="pill-tag">Auto</span>
+                            </div>
                                 <div class="pill" *ngFor="let item of incluye.controls; let i = index">
                                     <input class="pill-input" [formControl]="item" />
                                     <button type="button" class="pill-remove" (click)="removeIncluye(i)">✕</button>
@@ -109,6 +117,10 @@
                         <div class="field">
                             <label>No incluye</label>
                             <div class="pill-list">
+                            <div class="pill pill-muted pill-auto" *ngFor="let auto of dynamicNoIncluye()">
+                                <input class="pill-input" [value]="auto" readonly disabled />
+                                <span class="pill-tag">Auto</span>
+                            </div>
                                 <div class="pill pill-muted" *ngFor="let item of noIncluye.controls; let i = index">
                                     <input class="pill-input" [formControl]="item" />
                                     <button type="button" class="pill-remove" (click)="removeNoIncluye(i)">✕</button>
@@ -134,8 +146,12 @@
                         <div><strong>Estado:</strong> {{ form.value.estado }}</div>
                     </div>
 
-                    <button type="submit" class="btn btn-success w-100">Guardar tarifa</button>
-                    <button type="button" class="btn btn-light w-100 mt-05" (click)="cancelar()">Cancelar</button>
+                    <button type="submit" class="btn btn-success w-100" [disabled]="saving()">
+                        {{ saving() ? 'Guardando…' : 'Guardar tarifa' }}
+                    </button>
+                    <button type="button" class="btn btn-light w-100 mt-05" (click)="cancelar()" [disabled]="saving()">
+                        Cancelar
+                    </button>
                 </div>
             </aside>
 
