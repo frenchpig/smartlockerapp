@@ -103,7 +103,7 @@ const routes: Routes = [
       { path: 'empresa', component: AdminEmpresas },
       { path: 'empresaForm', component: EmpresaForm },
       { path: 'detalleEmpresa/:id', component: DetalleEmpresa },
-      { path: 'editarEmpresa', component: EditarEmpresa },
+      { path: 'editarEmpresa/:id', component: EditarEmpresa },
       { path: 'tarifas', component: AdminTarifas },
       { path: 'crearTarifas', component: CrearTarifa },
       { path: 'editarTarifas', component: EditarTarifa },

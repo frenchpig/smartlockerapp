@@ -5,25 +5,26 @@
         <div class="toolbar">
             <h1 class="page-title">Editar empresa</h1>
             <div class="toolbar-actions">
-                <button class="btn btn-light" type="button" (click)="volver()">Cancelar</button>
-                <button class="btn btn-success" type="button" (click)="guardar()">Guardar</button>
+                <button class="btn btn-light" type="button" (click)="volver()">
+                    <i class="bi bi-arrow-left me-1"></i> Volver
+                </button>
             </div>
         </div>
 
+        <!-- Mensaje de error -->
+        <section class="card" *ngIf="error">
+            <div class="alert alert-danger">
+                <strong>Error:</strong> {{ error }}
+            </div>
+        </section>
+
+        <!-- Loading -->
+        <section class="card" *ngIf="loading">
+            <div class="text-center">Cargando datos de la empresa...</div>
+        </section>
+
         <!-- KPIs -->
-        <section class="kpi-grid">
-            <div class="kpi-card">
-                <div class="kpi-label">Lockers asignados</div>
-                <div class="kpi-value">{{ form.get('lockersAsignados')?.value || 0 }}</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-label">Casilleros totales</div>
-                <div class="kpi-value">{{ form.get('casillerosTotales')?.value || 0 }}</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-label">Fecha alta</div>
-                <div class="kpi-value">{{ form.get('fechaAlta')?.value || '—' }}</div>
-            </div>
+        <section class="kpi-grid" *ngIf="!loading && !error">
             <div class="kpi-card kpi-estado">
                 <div class="kpi-label">Estado</div>
                 <div class="kpi-badge">
@@ -35,15 +36,16 @@
             </div>
         </section>
 
-        <section class="grid-two">
-            <!-- Ficha -->
+        <!-- Formulario -->
+        <section class="grid-two" *ngIf="!loading && !error">
             <form class="card ficha-card" [formGroup]="form" (ngSubmit)="guardar()">
                 <h2 class="card-title">Ficha</h2>
 
                 <div class="ficha-table">
                     <div class="row">
                         <div class="label">ID</div>
-                        <div class="value"><input class="input" type="text" [value]="form.get('id')?.value" disabled>
+                        <div class="value">
+                            <input class="input" type="text" [value]="form.get('id')?.value" disabled>
                         </div>
                     </div>
 
@@ -51,7 +53,7 @@
                         <div class="label">Nombre*</div>
                         <div class="value">
                             <input class="input" type="text" formControlName="nombre"
-                                placeholder="Nombre de la empresa" />
+                                placeholder="Nombre de la persona encargada" />
                             <small class="error" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.invalid">
                                 Mínimo 3 caracteres.
                             </small>
@@ -59,14 +61,31 @@
                     </div>
 
                     <div class="row">
+                        <div class="label">Apellido*</div>
+                        <div class="value">
+                            <input class="input" type="text" formControlName="apellido"
+                                placeholder="Apellido de la persona encargada" />
+                            <small class="error" *ngIf="form.get('apellido')?.touched && form.get('apellido')?.invalid">
+                                Mínimo 3 caracteres.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="row">
                         <div class="label">Razón social</div>
-                        <div class="value"><input class="input" type="text" formControlName="razonSocial" /></div>
+                        <div class="value">
+                            <input class="input" type="text" formControlName="razonSocial" 
+                                placeholder="Razón social de la empresa" />
+                        </div>
                     </div>
 
                     <div class="row">
                         <div class="label">RUT</div>
-                        <div class="value"><input class="input" type="text" formControlName="rut"
-                                placeholder="76.123.456-7" /></div>
+                        <div class="value">
+                            <input class="input" type="text" formControlName="rut" 
+                                placeholder="76.123.456-7"
+                                (input)="formatearRut($event)" />
+                        </div>
                     </div>
 
                     <div class="row">
@@ -82,22 +101,45 @@
 
                     <div class="row">
                         <div class="label">Teléfono</div>
-                        <div class="value"><input class="input" type="text" formControlName="telefono" /></div>
+                        <div class="value">
+                            <div class="telefono-input-group">
+                                <span class="telefono-prefijo">+569</span>
+                                <input class="input telefono-input" type="text" 
+                                    formControlName="telefono"
+                                    placeholder="12345678"
+                                    maxlength="8"
+                                    (input)="onTelefonoInput($event)" />
+                            </div>
+                            <small class="hint">Ingresa los 8 dígitos del teléfono</small>
+                        </div>
                     </div>
 
                     <div class="row">
                         <div class="label">Dirección</div>
-                        <div class="value"><input class="input" type="text" formControlName="direccion" /></div>
-                    </div>
-
-                    <div class="row">
-                        <div class="label">Comuna</div>
-                        <div class="value"><input class="input" type="text" formControlName="comuna" /></div>
+                        <div class="value">
+                            <input class="input" type="text" formControlName="direccion" 
+                                placeholder="Dirección de la empresa" />
+                        </div>
                     </div>
 
                     <div class="row">
                         <div class="label">Región</div>
-                        <div class="value"><input class="input" type="text" formControlName="region" /></div>
+                        <div class="value">
+                            <select class="input" formControlName="regionId" (change)="onRegionChange()">
+                                <option value="">Seleccione una región</option>
+                                <option *ngFor="let r of regiones" [value]="r.id">{{ r.nombre }}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="label">Comuna</div>
+                        <div class="value">
+                            <select class="input" formControlName="comunaId" [disabled]="!form.get('regionId')?.value">
+                                <option value="">Seleccione una comuna</option>
+                                <option *ngFor="let c of comunas" [value]="c.id">{{ c.nombre }}</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="row">
@@ -108,58 +150,16 @@
                             </select>
                         </div>
                     </div>
-
-                    <div class="row">
-                        <div class="label">Plan</div>
-                        <div class="value">
-                            <select class="input" formControlName="plan">
-                                <option *ngFor="let p of planes" [value]="p">{{ p }}</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="label">Fecha Inicio</div>
-                        <div class="value"><input class="input" type="date" formControlName="fechaAlta" /></div>
-                    </div>
-
-                    <div class="row">
-                        <div class="label">Lockers asignados</div>
-                        <div class="value"><input class="input" type="number" min="0"
-                                formControlName="lockersAsignados" /></div>
-                    </div>
-
-                    <div class="row">
-                        <div class="label">Casilleros totales</div>
-                        <div class="value"><input class="input" type="number" min="0"
-                                formControlName="casillerosTotales" /></div>
-                    </div>
                 </div>
 
                 <div class="form-actions">
                     <button type="button" class="btn btn-light" (click)="volver()">Cancelar</button>
-                    <button type="submit" class="btn btn-success">Guardar</button>
+                    <button type="submit" class="btn btn-success" [disabled]="loadingSave">
+                        <span *ngIf="loadingSave">Guardando...</span>
+                        <span *ngIf="!loadingSave">Guardar</span>
+                    </button>
                 </div>
             </form>
-
-            <aside class="card side-card" [formGroup]="form">
-                <h2 class="card-title">Sedes</h2>
-
-                <div class="chips-edit">
-                    <div class="row-add">
-                        <input class="input" type="text" #sedeInput placeholder="Nueva sede…"
-                            (keydown.enter)="agregarSede(sedeInput)" />
-                        <button class="btn btn-success" type="button" (click)="agregarSede(sedeInput)">Agregar</button>
-                    </div>
-
-                    <div class="chips">
-                        <span class="chip" *ngFor="let s of sedesArr.controls; let i = index">
-                            {{ s.value }}
-                            <button class="chip-x" type="button" (click)="eliminarSede(i)">✕</button>
-                        </span>
-                    </div>
-                </div>
-            </aside>
         </section>
     </div>
 </main>

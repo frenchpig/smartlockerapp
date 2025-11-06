@@ -201,8 +201,8 @@ export class AdminEmpresas implements OnInit {
     this.router.navigate(['/admin/empresaForm']);
   }
 
-  editar() {
-    this.router.navigate(['/admin/editarEmpresa']);
+  editar(empresa: Empresa) {
+    this.router.navigate(['/admin/editarEmpresa', empresa.id]);
   }
 
   verDetalle(empresa: Empresa) {

@@ -88,6 +88,53 @@ $white: #fff;
     margin-top: .25rem;
 }
 
+.hint {
+    display: block;
+    color: $muted;
+    font-size: .75rem;
+    margin-top: .25rem;
+}
+
+.telefono-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border: 1px solid $border;
+    border-radius: .55rem;
+    overflow: hidden;
+    background: $white;
+    transition: border-color .2s, box-shadow .2s;
+
+    &:focus-within {
+        border-color: #93c5fd;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, .15);
+    }
+
+    .telefono-prefijo {
+        padding: .6rem .75rem;
+        background: #f3f4f6;
+        color: $text;
+        font-weight: 600;
+        font-size: .95rem;
+        border-right: 1px solid $border;
+        white-space: nowrap;
+        user-select: none;
+    }
+
+    .telefono-input {
+        flex: 1;
+        border: none;
+        border-radius: 0;
+        padding-left: .75rem;
+        padding-right: .75rem;
+
+        &:focus {
+            box-shadow: none;
+            border: none;
+        }
+    }
+}
+
 /* KPIs */
 .kpi-grid {
     display: grid;

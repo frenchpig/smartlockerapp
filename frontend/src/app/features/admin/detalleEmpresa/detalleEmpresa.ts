@@ -282,6 +282,8 @@ export class DetalleEmpresa implements OnInit {
     }
 
     editar(): void {
-        this.router.navigate(['/admin/editarEmpresa']);
+        if (this.empresaId) {
+            this.router.navigate(['/admin/editarEmpresa', this.empresaId]);
+        }
     }
 }
