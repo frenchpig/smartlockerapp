@@ -7,6 +7,8 @@ use App\Models\Repartidor;
 use App\Models\ArticuloReserva;
 use App\Models\Locker;
 use App\Models\HistorialLocker;
+use App\Services\HistorialEmpresaService;
+use App\Services\HistorialLockerService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Cache;
@@ -153,13 +155,21 @@ class ReservaController extends Controller
             $this->actualizarEstadoLocker($reserva->locker_id);
             
             // Registrar en historial
-            HistorialLocker::create([
-                'locker_id' => $reserva->locker_id,
-                'usuario_id' => Auth::id(),
-                'accion' => 'reserva_creada',
-                'descripcion' => "Reserva #{$reserva->id} creada - Locker ocupado",
-                'reserva_id' => $reserva->id,
-            ]);
+            HistorialLockerService::registrarReservaCreada(
+                $reserva->locker_id,
+                $reserva->id,
+                Auth::id()
+            );
+
+            // Registrar en historial de empresa si existe empresa_id
+            if ($reserva->empresa_id) {
+                $lockerUbicacion = $reserva->locker->ubicacion?->nombre ?? null;
+                HistorialEmpresaService::registrarReservaCreada(
+                    $reserva->empresa_id,
+                    $reserva->id,
+                    $lockerUbicacion
+                );
+            }
             
             $this->asignarRepartidorDisponible($reserva);
             return $reserva->load(['usuario','locker.ubicacion','repartidor.usuario','articulos']);
@@ -262,13 +272,22 @@ class ReservaController extends Controller
                 $this->actualizarEstadoLocker($reserva->locker_id);
                 
                 // Registrar en historial
-                HistorialLocker::create([
-                    'locker_id' => $reserva->locker_id,
-                    'usuario_id' => Auth::id(),
-                    'accion' => 'reserva_creada',
-                    'descripcion' => "Reserva #{$reserva->id} creada - Locker ocupado",
-                    'reserva_id' => $reserva->id,
-                ]);
+                HistorialLockerService::registrarReservaCreada(
+                    $reserva->locker_id,
+                    $reserva->id,
+                    Auth::id()
+                );
+
+                // Registrar en historial de empresa si existe empresa_id
+                if ($reserva->empresa_id) {
+                    $reserva->load('locker.ubicacion');
+                    $lockerUbicacion = $reserva->locker->ubicacion?->nombre ?? null;
+                    HistorialEmpresaService::registrarReservaCreada(
+                        $reserva->empresa_id,
+                        $reserva->id,
+                        $lockerUbicacion
+                    );
+                }
             }
 
             if (empty($data['repartidor_id'])) {
@@ -318,31 +337,39 @@ class ReservaController extends Controller
             // Registrar cambio de estado en historial
             if ($data['estado'] === 'completado' && $estadoAnterior === 'pendiente') {
                 $usuarioNombre = $reserva->usuario ? trim($reserva->usuario->nombre . ' ' . $reserva->usuario->apellido) : 'Usuario';
-                $descripcion = "Usuario {$usuarioNombre} retiró sus productos de la Reserva #{$reserva->id}. ";
                 
-                if ($lockerEstadoAnterior === 'ocupado' && $lockerEstadoNuevo === 'activo') {
-                    $descripcion .= "Locker #{$locker->numero} desocupado y disponible nuevamente.";
-                } else {
-                    $descripcion .= "Locker #{$locker->numero} actualizado.";
-                }
+                HistorialLockerService::registrarReservaCompletada(
+                    $reserva->locker_id,
+                    $reserva->id,
+                    $locker->numero,
+                    $usuarioNombre,
+                    $lockerEstadoAnterior,
+                    $lockerEstadoNuevo,
+                    $reserva->usuario_id
+                );
 
-                HistorialLocker::create([
-                    'locker_id' => $reserva->locker_id,
-                    'usuario_id' => $reserva->usuario_id,
-                    'accion' => 'reserva_completada',
-                    'descripcion' => $descripcion,
-                    'reserva_id' => $reserva->id,
-                    'datos_anteriores' => ['estado_locker' => $lockerEstadoAnterior],
-                    'datos_nuevos' => ['estado_locker' => $lockerEstadoNuevo],
-                ]);
+                // Registrar en historial de empresa si existe empresa_id
+                if ($reserva->empresa_id) {
+                    HistorialEmpresaService::registrarReservaCompletada(
+                        $reserva->empresa_id,
+                        $reserva->id
+                    );
+                }
             } elseif ($data['estado'] === 'anulado' && $estadoAnterior === 'pendiente') {
-                HistorialLocker::create([
-                    'locker_id' => $reserva->locker_id,
-                    'usuario_id' => Auth::id(),
-                    'accion' => 'reserva_anulada',
-                    'descripcion' => "Reserva #{$reserva->id} anulada",
-                    'reserva_id' => $reserva->id,
-                ]);
+                HistorialLockerService::registrarReservaAnulada(
+                    $reserva->locker_id,
+                    $reserva->id,
+                    Auth::id()
+                );
+
+                // Registrar en historial de empresa si existe empresa_id
+                if ($reserva->empresa_id) {
+                    HistorialEmpresaService::registrarReservaCancelada(
+                        $reserva->empresa_id,
+                        $reserva->id,
+                        null
+                    );
+                }
             }
         }
 
@@ -415,6 +442,7 @@ class ReservaController extends Controller
         $lockerId = $reserva->locker_id;
         $reservaId = $reserva->id;
         $estadoReserva = $reserva->estado;
+        $empresaId = $reserva->empresa_id;
         
         $this->liberarRepartidor($reserva);
 
@@ -422,13 +450,20 @@ class ReservaController extends Controller
         
         // Registrar en historial si la reserva estaba pendiente
         if ($estadoReserva === 'pendiente') {
-            HistorialLocker::create([
-                'locker_id' => $lockerId,
-                'usuario_id' => Auth::id(),
-                'accion' => 'reserva_anulada',
-                'descripcion' => "Reserva #{$reservaId} eliminada",
-                'reserva_id' => $reservaId,
-            ]);
+            HistorialLockerService::registrarReservaAnulada(
+                $lockerId,
+                $reservaId,
+                Auth::id()
+            );
+
+            // Registrar en historial de empresa si la reserva tenía empresa_id
+            if ($empresaId) {
+                HistorialEmpresaService::registrarReservaCancelada(
+                    $empresaId,
+                    $reservaId,
+                    'Reserva eliminada'
+                );
+            }
         }
         
         // Actualizar estado del locker después de eliminar la reserva
@@ -634,15 +669,15 @@ class ReservaController extends Controller
             $descripcion .= "Locker #{$locker->numero} actualizado.";
         }
 
-        HistorialLocker::create([
-            'locker_id' => $reserva->locker_id,
-            'usuario_id' => $reserva->usuario_id, // Usuario que retiró los productos
-            'accion' => 'reserva_completada',
-            'descripcion' => $descripcion,
-            'reserva_id' => $reserva->id,
-            'datos_anteriores' => ['estado_locker' => $lockerEstadoAnterior],
-            'datos_nuevos' => ['estado_locker' => $lockerEstadoNuevo],
-        ]);
+        HistorialLockerService::registrarReservaCompletada(
+            $reserva->locker_id,
+            $reserva->id,
+            $locker->numero,
+            $usuarioNombre,
+            $lockerEstadoAnterior,
+            $lockerEstadoNuevo,
+            $reserva->usuario_id
+        );
 
         $this->liberarRepartidor($reserva);
 

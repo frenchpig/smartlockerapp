@@ -6,6 +6,8 @@ use App\Models\Usuario;
 use App\Models\DatosEmpresa;
 use App\Models\Region;
 use App\Models\Comuna;
+use App\Models\HistorialEmpresa;
+use App\Services\HistorialEmpresaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -92,6 +94,9 @@ class EmpresaController extends Controller
                 'comuna_id' => $data['comuna_id'] ?? null,
             ]);
 
+            // Registrar evento en historial
+            HistorialEmpresaService::registrarCreacionCuenta($usuario->id, $data['nombre_empresa']);
+
             DB::commit();
 
             return response()->json([
@@ -162,6 +167,22 @@ class EmpresaController extends Controller
             if (isset($data['comuna_id'])) $datosEmpresa->comuna_id = $data['comuna_id'];
             $datosEmpresa->save();
 
+            // Registrar evento en historial si hubo cambios
+            $camposModificados = [];
+            if (isset($data['nombre'])) $camposModificados['nombre'] = $data['nombre'];
+            if (isset($data['apellido'])) $camposModificados['apellido'] = $data['apellido'];
+            if (isset($data['email'])) $camposModificados['email'] = $data['email'];
+            if (isset($data['telefono'])) $camposModificados['telefono'] = $data['telefono'];
+            if (isset($data['nombre_empresa'])) $camposModificados['nombre_empresa'] = $data['nombre_empresa'];
+            if (isset($data['razon_social'])) $camposModificados['razon_social'] = $data['razon_social'];
+            if (isset($data['rut'])) $camposModificados['rut'] = $data['rut'];
+            if (isset($data['direccion'])) $camposModificados['direccion'] = $data['direccion'];
+            if (isset($data['comuna_id'])) $camposModificados['comuna_id'] = $data['comuna_id'];
+
+            if (!empty($camposModificados)) {
+                HistorialEmpresaService::registrarDatosActualizados($usuario->id, $camposModificados);
+            }
+
             DB::commit();
 
             return response()->json([
@@ -175,6 +196,26 @@ class EmpresaController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Obtener el historial de actividades de una empresa
+     */
+    public function historial(Request $request, Usuario $usuario)
+    {
+        if ($usuario->rol !== 'empresa') {
+            return response()->json(['message' => 'El usuario no es una empresa'], 400);
+        }
+
+        $perPage = (int) $request->query('per_page', 20);
+        $perPage = max(1, min(100, $perPage));
+
+        $historial = HistorialEmpresa::where('usuario_id', $usuario->id)
+            ->with('reserva')
+            ->orderByDesc('created_at')
+            ->paginate($perPage);
+
+        return response()->json($historial);
     }
 }
 

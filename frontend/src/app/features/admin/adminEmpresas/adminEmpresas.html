@@ -82,7 +82,7 @@
                   </td>
                   <td class="text-end">
                     <div class="btns-row">
-                      <button class="btn btn-light" (click)="verDetalle()">Detalle</button>
+                      <button class="btn btn-light" (click)="verDetalle(e)">Detalle</button>
                       <button class="btn btn-outline" (click)="editar()">Editar</button>
                       <button class="btn btn-success" *ngIf="e.estado === 'Inactiva'"
                         (click)="activar(e)">Activar</button>

@@ -136,12 +136,12 @@ $white: #fff;
 /* Grid principal */
 .grid-two {
     display: grid;
-    grid-template-columns: 1fr 320px;
+    grid-template-columns: 1fr;
     gap: .9rem;
     margin-bottom: 1rem;
 
-    @media (max-width: 992px) {
-        grid-template-columns: 1fr;
+    @media (min-width: 992px) {
+        grid-template-columns: 1fr 320px;
     }
 }
 

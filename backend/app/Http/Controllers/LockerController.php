@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Locker;
 use App\Models\Reserva;
 use App\Models\HistorialLocker;
+use App\Services\HistorialLockerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -105,12 +106,12 @@ class LockerController extends Controller
         $locker->load('ubicacion');
 
         // Registrar en historial
-        HistorialLocker::create([
-            'locker_id' => $locker->id,
-            'usuario_id' => Auth::id(),
-            'accion' => 'creado',
-            'descripcion' => "Locker #{$locker->numero} creado en " . ($locker->ubicacion->nombre ?? 'ubicación desconocida'),
-        ]);
+        HistorialLockerService::registrarCreacion(
+            $locker->id,
+            $locker->numero,
+            $locker->ubicacion->nombre ?? 'ubicación desconocida',
+            Auth::id()
+        );
 
         return response()->json($locker, 201);
     }
@@ -131,14 +132,12 @@ class LockerController extends Controller
 
         // Registrar cambio de estado si cambió
         if (isset($data['estado']) && $datosAnteriores['estado'] !== $datosNuevos['estado']) {
-            HistorialLocker::create([
-                'locker_id' => $locker->id,
-                'usuario_id' => Auth::id(),
-                'accion' => 'estado_cambiado',
-                'descripcion' => "Estado cambiado de '{$datosAnteriores['estado']}' a '{$datosNuevos['estado']}'",
-                'datos_anteriores' => ['estado' => $datosAnteriores['estado']],
-                'datos_nuevos' => ['estado' => $datosNuevos['estado']],
-            ]);
+            HistorialLockerService::registrarCambioEstado(
+                $locker->id,
+                $datosAnteriores['estado'],
+                $datosNuevos['estado'],
+                Auth::id()
+            );
         }
 
         return $locker->load('ubicacion');

@@ -40,5 +40,13 @@ class DatosEmpresa extends Model
     {
         return $this->belongsTo(Comuna::class, 'comuna_id');
     }
+
+    /**
+     * Relación: datos_empresa tiene muchos registros de historial
+     */
+    public function historial()
+    {
+        return $this->hasMany(HistorialEmpresa::class, 'usuario_id', 'usuario_id');
+    }
 }
 

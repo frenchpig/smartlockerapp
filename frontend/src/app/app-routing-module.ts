@@ -102,7 +102,7 @@ const routes: Routes = [
       { path: 'crear', component: CrearLockers },
       { path: 'empresa', component: AdminEmpresas },
       { path: 'empresaForm', component: EmpresaForm },
-      { path: 'detalleEmpresa', component: DetalleEmpresa },
+      { path: 'detalleEmpresa/:id', component: DetalleEmpresa },
       { path: 'editarEmpresa', component: EditarEmpresa },
       { path: 'tarifas', component: AdminTarifas },
       { path: 'crearTarifas', component: CrearTarifa },

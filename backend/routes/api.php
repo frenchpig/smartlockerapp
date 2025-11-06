@@ -72,6 +72,7 @@ Route::prefix('empresas')->group(function () {
     Route::get('/regiones/{regionId}/comunas', [App\Http\Controllers\EmpresaController::class, 'getComunasPorRegion']);
     Route::post('/', [App\Http\Controllers\EmpresaController::class, 'store']);
     Route::put('/{usuario}', [App\Http\Controllers\EmpresaController::class, 'update']);
+    Route::get('/{usuario}/historial', [App\Http\Controllers\EmpresaController::class, 'historial']);
 });
 
 // Ruta adicional para historial de lockers con paginación

@@ -205,8 +205,8 @@ export class AdminEmpresas implements OnInit {
     this.router.navigate(['/admin/editarEmpresa']);
   }
 
-  verDetalle() {
-    this.router.navigate(['/admin/detalleEmpresa']);
+  verDetalle(empresa: Empresa) {
+    this.router.navigate(['/admin/detalleEmpresa', empresa.id]);
   }
 
   private cambiarEstado(id: number, nuevo: EmpresaEstado) {
