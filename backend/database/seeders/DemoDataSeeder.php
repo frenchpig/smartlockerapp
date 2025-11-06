@@ -14,6 +14,7 @@ use App\Models\HistorialLocker;
 use App\Models\DatosEmpresa;
 use App\Models\Comuna;
 use App\Models\Region;
+use App\Models\Tarifa;
 use App\Services\HistorialLockerService;
 use App\Services\HistorialEmpresaService;
 use Carbon\Carbon;
@@ -30,6 +31,71 @@ class DemoDataSeeder extends Seeder
      */
     public function run(): void
     {
+        // Tarifas
+        $tarifas = [
+            [
+                'nombre_publico' => 'Smart Basic',
+                'codigo_interno' => 'smart-basic',
+                'precio_mensual' => 29000,
+                'estado' => 'Activo',
+                'descripcion_corta' => 'Recomendado para empresas pequeñas',
+                'sedes_permitidas' => 2,
+                'lockers_por_sede' => 10,
+                'prioridad_soporte' => 'Normal',
+                'incluye' => [
+                    'Hasta 2 sedes',
+                    'Soporte en horario laboral',
+                    'Reportes básicos',
+                ],
+                'no_incluye' => [
+                    'Sedes extra',
+                    'Repostes avanzados',
+                ],
+            ],
+            [
+                'nombre_publico' => 'Smart Pro',
+                'codigo_interno' => 'smart-pro',
+                'precio_mensual' => 49000,
+                'estado' => 'Activo',
+                'descripcion_corta' => 'Para sedes dentro del metro',
+                'sedes_permitidas' => 6,
+                'lockers_por_sede' => 20,
+                'prioridad_soporte' => 'Prioritario',
+                'incluye' => [
+                    'Hasta 6 sedes',
+                    'Reportes avanzados',
+                    'Prioridad en soporte',
+                ],
+                'no_incluye' => [
+                    'Sedes ilimitadas',
+                ],
+            ],
+            [
+                'nombre_publico' => 'Smart Max',
+                'codigo_interno' => 'smart-max',
+                'precio_mensual' => 69000,
+                'estado' => 'Inactivo',
+                'descripcion_corta' => 'Cobertura completa',
+                'sedes_permitidas' => 0,
+                'lockers_por_sede' => 0,
+                'prioridad_soporte' => 'Prioritario',
+                'incluye' => [
+                    'Sedes ilimitadas',
+                    'Integraciones externas',
+                    'Reportes diarios',
+                    'Soporte extendido',
+                ],
+                'no_incluye' => [],
+            ],
+        ];
+
+        foreach ($tarifas as $attributes) {
+            Tarifa::query()->updateOrCreate(
+                ['codigo_interno' => $attributes['codigo_interno']],
+                $attributes
+            );
+        }
+
         // Usuarios
         $u1 = Usuario::create([
             'nombre' => 'Ema',
