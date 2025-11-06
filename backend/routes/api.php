@@ -10,6 +10,7 @@ use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\MantenimientoController;
 use App\Http\Controllers\IncidenciaController;
 use App\Http\Controllers\HistorialEnvioController;
+use App\Http\Controllers\TarifaController;
 use App\Http\Controllers\UbicacionController;
 
 Route::prefix('auth')->group(function () {
@@ -70,6 +71,7 @@ Route::apiResources([
     'mantenimientos'    => MantenimientoController::class,
     'incidencias'       => IncidenciaController::class,
     'historial-envios'  => HistorialEnvioController::class,
+    'tarifas'           => TarifaController::class,
 ]);
 
 // Rutas para empresas
