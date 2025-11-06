@@ -149,6 +149,56 @@ textarea.input {
     .input {
         flex: 1;
     }
+
+    &.auto {
+        .input {
+            background: #f3f4f6;
+            border-color: #e5e7eb;
+            color: #4b5563;
+            cursor: default;
+        }
+    }
+}
+
+.auto-tags {
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+    margin-bottom: .6rem;
+}
+
+.tag {
+    font-size: .7rem;
+    font-weight: 600;
+    color: #2563eb;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+}
+
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .75rem;
+    padding: 3rem 1rem;
+    color: #4b5563;
+    text-align: center;
+}
+
+.spinner {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 4px solid #e5e7eb;
+    border-top-color: $green;
+    animation: spin .9s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .btn {

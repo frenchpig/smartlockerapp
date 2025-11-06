@@ -170,7 +170,7 @@ export class AdminTarifas implements OnInit {
     }
 
     editar(plan: PlanTarifa) {
-        this.router.navigate(['/admin/editarTarifas']);
+        this.router.navigate(['/admin/editarTarifas', plan.id]);
     }
 
     nuevaTarifa() {

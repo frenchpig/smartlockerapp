@@ -106,7 +106,7 @@ const routes: Routes = [
       { path: 'editarEmpresa/:id', component: EditarEmpresa },
       { path: 'tarifas', component: AdminTarifas },
       { path: 'crearTarifas', component: CrearTarifa },
-      { path: 'editarTarifas', component: EditarTarifa },
+      { path: 'editarTarifas/:id', component: EditarTarifa },
     ]
   },
 

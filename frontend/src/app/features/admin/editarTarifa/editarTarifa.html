@@ -9,11 +9,18 @@
             </h1>
 
             <div class="toolbar-actions">
-                <button type="button" class="btn btn-light" (click)="cancelar()">Cancelar</button>
-                <button type="submit" class="btn btn-success" form="form-editar-tarifa">Guardar</button>
+                <button type="button" class="btn btn-light" (click)="cancelar()" [disabled]="guardando()">Cancelar</button>
+                <button type="submit" class="btn btn-success" form="form-editar-tarifa" [disabled]="guardando()">
+                    {{ guardando() ? 'Guardando…' : 'Guardar' }}
+                </button>
             </div>
         </div>
 
+        <div class="alert error" *ngIf="errorMessage()">
+            {{ errorMessage() }}
+        </div>
+
+        <ng-container *ngIf="!cargando(); else loadingState">
         <form [formGroup]="form" (ngSubmit)="guardar()" id="form-editar-tarifa" class="edit-shell">
 
             <section class="card form-left">
@@ -33,7 +40,7 @@
 
   <div class="field">
     <label>Precio *</label>
-    <input class="input" type="number" formControlName="precio" />
+    <input class="input" type="number" formControlName="precio" min="0" />
   </div>
 
   <div class="field">
@@ -46,33 +53,6 @@
 </div>
 
 
-                <!-- <div class="form-group field">
-                    <label>Nombre</label>
-                    <input class="input" type="text" formControlName="nombre" placeholder="Ej: Smart Pro" />
-                </div>
-
-                <div class="form-row form-grid-2">
-                    <div class="form-group field">
-                        <label>Código</label>
-                        <input class="input input-readonly" type="text" formControlName="codigo" readonly />
-                        <small class="muted">Este código no se puede modificar.</small>
-                    </div>
-
-                    <div class="form-group field">
-                        <label>Estado</label>
-                        <select class="input" formControlName="estado">
-                            <option value="Activo">Activo</option>
-                            <option value="Inactivo">Inactivo</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row form-grid-2">
-                    <div class="form-group field">
-                        <label>Precio *</label>
-                        <input class="input" type="number" formControlName="precio" min="0" />
-                    </div>
-                </div> -->
 
                 <div class="form-row">
                     <div class="form-group">
@@ -96,7 +76,8 @@
                 <div class="form-group">
                     <label>Descripción</label>
                     <textarea class="input" rows="3" formControlName="descripcion"
-                        placeholder="Breve descripción de la tarifa..."></textarea>
+                        placeholder="Breve descripción de la tarifa..." maxlength="{{ descripcionMax }}"></textarea>
+                    <small class="hint">{{ form.controls.descripcion.value.length || 0 }} / {{ descripcionMax }} caracteres</small>
                 </div>
             </section>
 
@@ -108,6 +89,15 @@
                     <div class="sub-title-row">
                         <h3>Incluye</h3>
                         <button type="button" class="btn btn-light btn-sm" (click)="addIncluye()">+ Agregar</button>
+                    </div>
+
+                    <div class="auto-tags" *ngIf="dynamicIncluye().length">
+                        <span class="tag">Automáticos</span>
+                        <div class="list-block">
+                            <div class="list-item auto" *ngFor="let item of dynamicIncluye()">
+                                <input class="input" type="text" [value]="item" readonly disabled />
+                            </div>
+                        </div>
                     </div>
 
                     <div class="list-block" formArrayName="incluye">
@@ -126,6 +116,15 @@
                         <button type="button" class="btn btn-light btn-sm" (click)="addNoIncluye()">+ Agregar</button>
                     </div>
 
+                    <div class="auto-tags" *ngIf="dynamicNoIncluye().length">
+                        <span class="tag">Automáticos</span>
+                        <div class="list-block">
+                            <div class="list-item auto" *ngFor="let item of dynamicNoIncluye()">
+                                <input class="input" type="text" [value]="item" readonly disabled />
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="list-block" formArrayName="noIncluye">
                         <div class="list-item" *ngFor="let ctrl of noIncluye.controls; index as i">
                             <input class="input" type="text" [formControlName]="i" placeholder="Ej: Sedes ilimitadas" />
@@ -137,5 +136,13 @@
 
             </section>
         </form>
+        </ng-container>
+
+        <ng-template #loadingState>
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <p>Cargando datos…</p>
+            </div>
+        </ng-template>
     </div>
 </main>
