@@ -22,6 +22,7 @@ class Usuario extends Authenticatable
         'contrasena',
         'telefono',
         'rol',
+        'habilitado',
     ];
 
     protected $hidden = [
@@ -30,6 +31,7 @@ class Usuario extends Authenticatable
     ];
 
     protected $casts = [
+        'habilitado' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

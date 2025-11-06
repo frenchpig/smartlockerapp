@@ -55,6 +55,12 @@ Route::prefix('totem')->middleware('auth.device')->group(function () {
     Route::post('/logout', [DeviceAuthController::class, 'logout']);
 });
 
+// Ruta específica para activar/desactivar usuarios (debe estar antes de apiResources)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::patch('/usuarios/{usuario}/habilitado', [UsuarioController::class, 'toggleHabilitado']);
+    Route::put('/usuarios/{usuario}/habilitado', [UsuarioController::class, 'toggleHabilitado']);
+});
+
 Route::apiResources([
     'usuarios'          => UsuarioController::class,
     'lockers'           => LockerController::class,

@@ -25,6 +25,13 @@ class AuthController extends Controller
             ]);
         }
 
+        // Verificar si el usuario está habilitado
+        if (!$user->habilitado) {
+            throw ValidationException::withMessages([
+                'email' => ['Esta cuenta ha sido deshabilitada. Contacte al administrador.'],
+            ]);
+        }
+
         // Opcional: revocar tokens anteriores si "Recordarme" viene falso
         if (!$request->boolean('remember')) { $user->tokens()->delete(); }
 

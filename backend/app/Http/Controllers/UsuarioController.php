@@ -74,4 +74,22 @@ class UsuarioController extends Controller
         $usuario->delete();
         return response()->noContent();
     }
+
+    /**
+     * Activar o desactivar un usuario
+     */
+    public function toggleHabilitado(Request $request, Usuario $usuario)
+    {
+        $data = $request->validate([
+            'habilitado' => ['required', 'boolean'],
+        ]);
+
+        $usuario->habilitado = $data['habilitado'];
+        $usuario->save();
+
+        return response()->json([
+            'message' => $usuario->habilitado ? 'Usuario habilitado correctamente' : 'Usuario deshabilitado correctamente',
+            'usuario' => $usuario
+        ]);
+    }
 }

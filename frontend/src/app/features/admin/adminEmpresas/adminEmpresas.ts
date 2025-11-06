@@ -71,7 +71,7 @@ export class AdminEmpresas implements OnInit {
           telefono: usuario.telefono ?? undefined,
           ubicacion: datosEmpresa?.comuna?.nombre || undefined,
           rut: datosEmpresa?.rut || undefined,
-          estado: 'Activa' as EmpresaEstado,
+          estado: usuario.habilitado ? 'Activa' as EmpresaEstado : 'Inactiva' as EmpresaEstado,
           creadaEl: usuario.created_at ? new Date(usuario.created_at).toISOString().split('T')[0] : undefined,
         };
       });
@@ -209,20 +209,41 @@ export class AdminEmpresas implements OnInit {
     this.router.navigate(['/admin/detalleEmpresa', empresa.id]);
   }
 
-  private cambiarEstado(id: number, nuevo: EmpresaEstado) {
-    this.empresas.update(lista =>
-      lista.map(emp => emp.id === id ? { ...emp, estado: nuevo } : emp)
-    );
-  }
-
   activar(e: Empresa) {
     if (e.estado === 'Activa') return;
-    this.cambiarEstado(e.id, 'Activa');
+    this.cambiarEstadoUsuario(e.id, true);
   }
 
   desactivar(e: Empresa) {
     if (e.estado === 'Inactiva') return;
-    this.cambiarEstado(e.id, 'Inactiva');
+    this.cambiarEstadoUsuario(e.id, false);
+  }
+
+  private async cambiarEstadoUsuario(id: number, habilitado: boolean): Promise<void> {
+    try {
+      const response = await this.http
+        .put<any>(`${environment.apiUrl}/usuarios/${id}/habilitado`, { habilitado })
+        .toPromise();
+
+      // Actualizar el estado local
+      this.cambiarEstado(id, habilitado ? 'Activa' : 'Inactiva');
+      
+      // Recargar empresas para sincronizar con el backend
+      await this.cargarEmpresas();
+    } catch (error: any) {
+      console.error('Error cambiando estado del usuario:', error);
+      const errorMessage = error?.error?.message || error?.message || 'Error desconocido';
+      const statusCode = error?.status || error?.statusCode || 'N/A';
+      console.error(`Status: ${statusCode}, Mensaje: ${errorMessage}`);
+      alert(`Error al cambiar el estado de la empresa (${statusCode}): ${errorMessage}`);
+    }
+  }
+
+  private cambiarEstado(id: number, nuevo: EmpresaEstado) {
+    this.empresas.update(lista =>
+      lista.map(emp => emp.id === id ? { ...emp, estado: nuevo } : emp)
+    );
+    this.aplicarFiltros();
   }
 
   trackById = (_: number, e: Empresa) => e.id;
