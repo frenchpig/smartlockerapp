@@ -692,7 +692,24 @@ class ReservaController extends Controller
             return;
         }
 
-        $repartidor = Repartidor::where('disponible', true)->inRandomOrder()->first();
+        $query = Repartidor::where('disponible', true);
+
+        if ($reserva->empresa_id) {
+            $query->where('empresa_id', $reserva->empresa_id);
+        } else {
+            $query->whereNull('empresa_id');
+        }
+
+        $repartidor = $query->inRandomOrder()->first();
+
+        // Si no existe un repartidor asociado a la empresa, intentar con repartidores sin empresa para no bloquear la reserva
+        if (!$repartidor && $reserva->empresa_id) {
+            $repartidor = Repartidor::whereNull('empresa_id')
+                ->where('disponible', true)
+                ->inRandomOrder()
+                ->first();
+        }
+
         if (!$repartidor) {
             return;
         }

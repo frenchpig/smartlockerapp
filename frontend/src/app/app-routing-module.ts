@@ -22,6 +22,7 @@ import { RepartidorHome } from './features/repartidor/home/repartidor-home';
 import { PerfilRepartidor } from './features/repartidor/perfil/perfil';
 import { ReservaNuevaComponent } from './features/empresa/reservas/reserva-nueva/reserva-nueva';
 import { EmpresaPedidoDetalle } from './features/empresa/pedidoDetalle/pedido-detalle';
+import { EmpresaRepartidoresComponent } from './features/empresa/repartidores/repartidores';
 
 import { AdminHomeComponent } from './features/admin/admin-home/adminHome';
 import { AdminLockers } from './features/admin/adminLockers/adminLockers';
@@ -75,6 +76,7 @@ const routes: Routes = [
       { path: 'pedidos/:id', component: EmpresaPedidoDetalle },
       { path: 'lockers', component: Lockers },
       { path: 'reservas/nueva', component: ReservaNuevaComponent },
+      { path: 'repartidores', component: EmpresaRepartidoresComponent },
     ],
   },
 

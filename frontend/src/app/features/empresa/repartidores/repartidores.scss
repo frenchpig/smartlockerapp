@@ -1,0 +1,177 @@
+.badge-disponible {
+  background-color: #d1f2e5;
+  color: #0a6b3f;
+  border: 1px solid rgba(10, 107, 63, 0.2);
+}
+
+.badge-no-disponible {
+  background-color: #fde2e1;
+  color: #b42318;
+  border: 1px solid rgba(180, 35, 24, 0.2);
+}
+
+.filter-toolbar .form-control,
+.filter-toolbar .form-select {
+  border-radius: 0.75rem;
+}
+
+.filter-toolbar .btn {
+  border-radius: 0.75rem;
+}
+
+.repartidor-create-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(1px);
+  z-index: 1030;
+}
+
+.repartidor-create-panel {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 1040;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.repartidor-create-panel--open {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+.repartidor-create-panel__card {
+  width: min(480px, 92vw);
+  max-height: 90vh;
+  background: #ffffff;
+  border-radius: 1.25rem;
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.22);
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(24px) scale(0.95);
+  transition: transform 0.3s ease;
+}
+
+.repartidor-create-panel--open .repartidor-create-panel__card {
+  transform: translateY(0) scale(1);
+}
+
+.repartidor-create-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.repartidor-create-panel__body {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.repartidor-create-panel__body .form-control,
+.repartidor-create-panel__body .btn,
+.repartidor-create-panel__body .input-group-text {
+  border-radius: 0.75rem;
+}
+
+.card {
+  border-radius: 1rem;
+}
+
+.card .form-label {
+  font-size: 0.9rem;
+  color: #4a4a4a;
+}
+
+.card .form-control {
+  border-radius: 0.75rem;
+}
+
+.card .btn {
+  border-radius: 0.75rem;
+}
+
+.table thead th {
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+}
+
+.table tbody td {
+  vertical-align: middle;
+  border-color: rgba(0, 0, 0, 0.03);
+}
+
+.table tbody tr:hover {
+  background-color: rgba(25, 135, 84, 0.05);
+}
+
+.rut-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.6rem;
+  background-color: #eef2ff;
+  color: #1d4ed8;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+}
+
+.telefono-text {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #198754;
+}
+
+.repartidor-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 1040;
+}
+
+.repartidor-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 1050;
+}
+
+.repartidor-modal__dialog {
+  width: min(640px, 100%);
+  background: #ffffff;
+  border-radius: 1rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  padding: 1.5rem;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.repartidor-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.repartidor-modal__body .form-control {
+  border-radius: 0.75rem;
+}
+
+.repartidor-modal__body .btn {
+  border-radius: 0.75rem;
+}
+

@@ -219,8 +219,16 @@ class DemoDataSeeder extends Seeder
         $tecnicos = [$tecnico1, $tecnico2];
 
         $repartidores = [
-            Repartidor::create(['usuario_id' => $repUser1->id]),
-            Repartidor::create(['usuario_id' => $repUser2->id]),
+            Repartidor::create([
+                'usuario_id' => $repUser1->id,
+                'empresa_id' => $empresa1->id,
+                'rut' => '111111111',
+            ]),
+            Repartidor::create([
+                'usuario_id' => $repUser2->id,
+                'empresa_id' => $empresa2->id,
+                'rut' => '22222222K',
+            ]),
         ];
 
         $metroNunoa = Ubicacion::create([

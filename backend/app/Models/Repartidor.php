@@ -13,6 +13,8 @@ class Repartidor extends Model
 
     protected $fillable = [
         'usuario_id',
+        'empresa_id',
+        'rut',
         'disponible',
     ];
 
@@ -25,6 +27,11 @@ class Repartidor extends Model
     public function usuario()
     {
         return $this->belongsTo(Usuario::class, 'usuario_id');
+    }
+
+    public function empresa()
+    {
+        return $this->belongsTo(Usuario::class, 'empresa_id');
     }
 
     public function reservas()

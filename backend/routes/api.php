@@ -12,6 +12,7 @@ use App\Http\Controllers\IncidenciaController;
 use App\Http\Controllers\HistorialEnvioController;
 use App\Http\Controllers\TarifaController;
 use App\Http\Controllers\UbicacionController;
+use App\Http\Controllers\EmpresaRepartidorController;
 
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
@@ -39,6 +40,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reservas/{reserva}/codigo-temporal/estado', [ReservaController::class, 'estadoCodigoTemporal']);
     // Verificar codigo temporal y completar reserva
     Route::post('/reservas/{reserva}/codigo-temporal/verificar', [ReservaController::class, 'verificarCodigoTemporal']);
+
+    // Repartidores de empresa
+    Route::get('/empresa/repartidores', [EmpresaRepartidorController::class, 'index']);
+    Route::post('/empresa/repartidores', [EmpresaRepartidorController::class, 'store']);
+    Route::put('/empresa/repartidores/{repartidor}', [EmpresaRepartidorController::class, 'update']);
+    Route::patch('/empresa/repartidores/{repartidor}', [EmpresaRepartidorController::class, 'update']);
+    Route::delete('/empresa/repartidores/{repartidor}', [EmpresaRepartidorController::class, 'destroy']);
 });
 
 // DEV-ONLY (sin auth): generar/regenerar codigo temporal para pruebas locales

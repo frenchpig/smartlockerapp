@@ -1,0 +1,389 @@
+<app-header-empresa titulo="Repartidores"></app-header-empresa>
+
+<section class="container py-4">
+  <div class="row g-4">
+    <div class="col-12">
+      <div class="card shadow-sm h-100">
+        <div class="card-body d-flex flex-column">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <h2 class="h5 fw-semibold mb-0">Repartidores</h2>
+            <button class="btn btn-outline-success btn-sm" type="button" (click)="cargarRepartidores()" [disabled]="loading">
+              <i class="bi bi-arrow-repeat me-1"></i> Actualizar
+            </button>
+            <button class="btn btn-success" type="button" (click)="openCreateForm()">
+              <i class="bi bi-person-plus me-1"></i> Nuevo repartidor
+            </button>
+          </div>
+
+          <ng-container *ngIf="successMsg">
+            <div class="alert alert-success py-2">{{ successMsg }}</div>
+          </ng-container>
+
+          <ng-container *ngIf="errorMsg">
+            <div class="alert alert-danger py-2">{{ errorMsg }}</div>
+          </ng-container>
+
+          <form class="row g-3 align-items-end mb-4 filter-toolbar" (ngSubmit)="aplicarFiltro()" novalidate>
+            <div class="col-sm-6 col-lg-5">
+              <label class="form-label fw-semibold">Buscar</label>
+              <input
+                type="text"
+                class="form-control"
+                [formControl]="busquedaControl"
+                placeholder="Nombre, correo o RUT" />
+            </div>
+            <div class="col-sm-3 col-lg-2">
+              <label class="form-label fw-semibold">Por página</label>
+              <select
+                class="form-select"
+                name="perPageSelector"
+                [(ngModel)]="perPage"
+                (ngModelChange)="cambiarPerPage($event)">
+                <option [ngValue]="5">5</option>
+                <option [ngValue]="10">10</option>
+                <option [ngValue]="20">20</option>
+                <option [ngValue]="50">50</option>
+              </select>
+            </div>
+            <div class="col-sm-3 col-lg-5 d-flex gap-2">
+              <button type="submit" class="btn btn-success flex-fill" [disabled]="loading">
+                <i class="bi bi-search me-1"></i> Buscar
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-secondary flex-fill"
+                (click)="limpiarFiltro()"
+                [disabled]="loading">
+                <i class="bi bi-eraser me-1"></i> Limpiar
+              </button>
+            </div>
+          </form>
+
+          <div class="table-responsive flex-grow-1">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>RUT</th>
+                  <th>Correo</th>
+                  <th>Teléfono</th>
+                  <th>Disponibilidad</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngIf="loading">
+                  <td colspan="6" class="text-center py-4">
+                    <div class="spinner-border text-success" role="status">
+                      <span class="visually-hidden">Cargando...</span>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr *ngFor="let item of repartidores; trackBy: trackById">
+                  <td>
+                    <div class="fw-semibold">
+                      {{ item.usuario.nombre }} {{ item.usuario.apellido || '' }}
+                    </div>
+                  </td>
+                  <td>
+                    <span class="rut-pill">{{ formatRut(item.rut) }}</span>
+                  </td>
+                  <td>
+                    <a class="text-decoration-none" [href]="'mailto:' + item.usuario.email">
+                      {{ item.usuario.email }}
+                    </a>
+                  </td>
+                  <td>
+                    <span class="telefono-text">{{ formatTelefono(item.usuario.telefono) }}</span>
+                  </td>
+                  <td>
+                    <span
+                      class="badge px-3 py-2"
+                      [ngClass]="item.disponible ? 'badge-disponible' : 'badge-no-disponible'">
+                      {{ item.disponible ? 'Disponible' : 'Ocupado' }}
+                    </span>
+                  </td>
+                  <td class="text-end">
+                    <div class="d-flex justify-content-end flex-wrap gap-2">
+                      <button
+                        type="button"
+                        class="btn btn-outline-success btn-sm"
+                        (click)="iniciarEdicion(item)"
+                        [disabled]="saving">
+                        <i class="bi bi-pencil-square me-1"></i> Editar
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-outline-danger btn-sm"
+                        (click)="eliminar(item)"
+                        [disabled]="saving">
+                        <i class="bi bi-trash me-1"></i> Eliminar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr *ngIf="!loading && repartidores.length === 0">
+                  <td colspan="6" class="text-center text-muted py-4">
+                    No tienes repartidores registrados todavía.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 gap-2">
+            <div class="text-muted small">
+              Página {{ page }} de {{ lastPage }} · {{ total }} repartidores en total
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <button
+                type="button"
+                class="btn btn-outline-success btn-sm"
+                (click)="paginaAnterior()"
+                [disabled]="loading || page <= 1">
+                <i class="bi bi-chevron-left me-1"></i> Anterior
+              </button>
+              <span class="text-muted small">{{ page }} / {{ lastPage }}</span>
+              <button
+                type="button"
+                class="btn btn-outline-success btn-sm"
+                (click)="paginaSiguiente()"
+                [disabled]="loading || page >= lastPage">
+                Siguiente <i class="bi bi-chevron-right ms-1"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="repartidor-create-backdrop" *ngIf="showCreateForm" (click)="closeCreateForm()"></div>
+<div
+  class="repartidor-create-panel"
+  [class.repartidor-create-panel--open]="showCreateForm"
+  (click)="closeCreateForm()">
+  <div class="repartidor-create-panel__card" (click)="$event.stopPropagation()">
+    <div class="repartidor-create-panel__header">
+      <div>
+        <h2 class="h5 fw-semibold mb-1">Nuevo repartidor</h2>
+        <p class="text-muted small mb-0">Registra repartidores vinculados a tu empresa.</p>
+      </div>
+      <button type="button" class="btn btn-link text-muted p-0" (click)="closeCreateForm()">
+        <i class="bi bi-x-lg fs-5"></i>
+      </button>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="crearRepartidor()" class="repartidor-create-panel__body" novalidate>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Nombre</label>
+        <input
+          type="text"
+          formControlName="nombre"
+          class="form-control"
+          [class.is-invalid]="form.controls.nombre.invalid && form.controls.nombre.touched"
+          placeholder="Laura" />
+        <div class="invalid-feedback">Ingresa el nombre del repartidor.</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Apellido</label>
+        <input
+          type="text"
+          formControlName="apellido"
+          class="form-control"
+          placeholder="Campos" />
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">RUT</label>
+        <input
+          type="text"
+          formControlName="rut"
+          class="form-control"
+          maxlength="9"
+          inputmode="text"
+          autocomplete="off"
+          autocapitalize="characters"
+          spellcheck="false"
+          (input)="onRutInput('create', $event)"
+          [class.is-invalid]="form.controls.rut.invalid && form.controls.rut.touched"
+          placeholder="123456789" />
+        <div class="invalid-feedback">Ingresa el RUT sin puntos ni guion. Usa K si corresponde.</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Correo electrónico</label>
+        <input
+          type="email"
+          formControlName="email"
+          class="form-control"
+          [class.is-invalid]="form.controls.email.invalid && form.controls.email.touched"
+          placeholder="repartidor@email.com" />
+        <div class="invalid-feedback">Ingresa un correo válido.</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Teléfono</label>
+        <div class="input-group">
+          <span class="input-group-text">+56 9</span>
+          <input
+            type="text"
+            formControlName="telefono"
+            class="form-control"
+            maxlength="8"
+            inputmode="numeric"
+            autocomplete="off"
+            [class.is-invalid]="form.controls.telefono.invalid && form.controls.telefono.touched"
+            (input)="onTelefonoInput('create', $event)"
+            placeholder="12345678" />
+        </div>
+        <div
+          class="invalid-feedback d-block"
+          *ngIf="form.controls.telefono.invalid && form.controls.telefono.touched">
+          Ingresa los 8 dígitos finales del número móvil.
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label fw-semibold">Contraseña</label>
+        <input
+          type="password"
+          formControlName="contrasena"
+          class="form-control"
+          [class.is-invalid]="form.controls.contrasena.invalid && form.controls.contrasena.touched"
+          placeholder="Al menos 6 caracteres" />
+        <div class="invalid-feedback">La contraseña debe tener 6 caracteres o más.</div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button
+          type="button"
+          class="btn btn-outline-secondary w-50"
+          (click)="closeCreateForm()"
+          [disabled]="saving">
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          class="btn btn-success w-50"
+          [disabled]="form.invalid || saving">
+          <span *ngIf="!saving">Crear</span>
+          <span *ngIf="saving" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="repartidor-modal-backdrop" *ngIf="showEditModal"></div>
+<div class="repartidor-modal" *ngIf="showEditModal">
+  <div class="repartidor-modal__dialog">
+    <div class="repartidor-modal__header">
+      <h3 class="h6 fw-semibold mb-0 text-success">Editar repartidor</h3>
+      <button type="button" class="btn btn-link text-muted p-0" (click)="cancelarEdicion()" [disabled]="saving">
+        <i class="bi bi-x-lg fs-5"></i>
+      </button>
+    </div>
+    <div class="repartidor-modal__body">
+      <form [formGroup]="editForm" (ngSubmit)="guardarEdicion()" novalidate>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Nombre</label>
+            <input
+              type="text"
+              formControlName="nombre"
+              class="form-control"
+              [class.is-invalid]="editForm.controls.nombre.invalid && editForm.controls.nombre.touched" />
+            <div class="invalid-feedback">Ingresa el nombre.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Apellido</label>
+            <input type="text" formControlName="apellido" class="form-control" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">RUT</label>
+            <input
+              type="text"
+              formControlName="rut"
+              class="form-control"
+              maxlength="9"
+              inputmode="text"
+              autocomplete="off"
+              autocapitalize="characters"
+              spellcheck="false"
+              (input)="onRutInput('edit', $event)"
+              [class.is-invalid]="editForm.controls.rut.invalid && editForm.controls.rut.touched" />
+            <div class="invalid-feedback">Ingresa un RUT válido.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Correo electrónico</label>
+            <input
+              type="email"
+              formControlName="email"
+              class="form-control"
+              [class.is-invalid]="editForm.controls.email.invalid && editForm.controls.email.touched" />
+            <div class="invalid-feedback">Correo no válido.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Teléfono</label>
+            <div class="input-group">
+              <span class="input-group-text">+56 9</span>
+              <input
+                type="text"
+                formControlName="telefono"
+                class="form-control"
+                maxlength="8"
+                inputmode="numeric"
+                autocomplete="off"
+                [class.is-invalid]="editForm.controls.telefono.invalid && editForm.controls.telefono.touched"
+                (input)="onTelefonoInput('edit', $event)"
+                placeholder="12345678" />
+            </div>
+            <div
+              class="invalid-feedback d-block"
+              *ngIf="editForm.controls.telefono.invalid && editForm.controls.telefono.touched">
+              Ingresa los 8 dígitos finales del número móvil.
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Contraseña (opcional)</label>
+            <input
+              type="password"
+              formControlName="contrasena"
+              class="form-control"
+              [class.is-invalid]="editForm.controls.contrasena.invalid && editForm.controls.contrasena.touched"
+              placeholder="Sólo si deseas cambiarla" />
+            <div class="invalid-feedback">Debe tener 6 caracteres como mínimo.</div>
+          </div>
+          <div class="col-12">
+            <div class="form-check form-switch mt-2">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                formControlName="disponible"
+                id="disponibleModalSwitch" />
+              <label class="form-check-label" for="disponibleModalSwitch">
+                Disponible para asignaciones
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4 justify-content-end">
+          <button type="button" class="btn btn-outline-secondary" (click)="cancelarEdicion()" [disabled]="saving">
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn-success" [disabled]="saving || editForm.invalid">
+            <span *ngIf="!saving">Guardar cambios</span>
+            <span *ngIf="saving" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
