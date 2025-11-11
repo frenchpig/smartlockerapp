@@ -14,7 +14,7 @@ interface PlanTarifa {
     code: string;
     nombre: string;
     descripcion: string;
-    precio: number;
+    // precio: number;
     periodicidad: 'mensual' | 'anual';
     maxSedes: number | 'ilimitado';
     maxLockersPorSede: number | 'ilimitado';
@@ -27,7 +27,7 @@ interface TarifaResponse {
     id: number;
     nombre_publico: string;
     codigo_interno: string;
-    precio_mensual: number;
+    // precio_mensual: number;
     estado: PlanEstado;
     descripcion_corta: string | null;
     sedes_permitidas: number;
@@ -81,7 +81,7 @@ export class AdminTarifas implements OnInit {
             code: tarifa.codigo_interno,
             nombre: tarifa.nombre_publico,
             descripcion: tarifa.descripcion_corta ?? '—',
-            precio: tarifa.precio_mensual,
+            // precio: tarifa.precio_mensual,
             periodicidad: 'mensual',
             maxSedes: this.transformCantidad(tarifa.sedes_permitidas),
             maxLockersPorSede: this.transformCantidad(tarifa.lockers_por_sede),

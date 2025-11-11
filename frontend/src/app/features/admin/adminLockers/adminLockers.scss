@@ -206,3 +206,38 @@ $green: #18884b;
         border-color: transparent;
     }
 }
+
+.ubicacion-block {
+    position: relative;
+    margin-top: 1.2rem;
+    padding-top: 1rem;
+
+    &::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: #e5e7eb;
+    }
+
+    &:first-of-type::before {
+        display: none;
+    }
+}
+
+.ubicacion-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: .75rem;
+    margin: .6rem;
+}
+
+.ubicacion-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+    color: #134e2b;
+}

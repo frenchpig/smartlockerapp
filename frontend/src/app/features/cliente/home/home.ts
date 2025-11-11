@@ -8,6 +8,7 @@ import { HeaderClienteComponent } from '../shared/header-cliente/header-cliente.
 
 type LogisticaEstado = 'pendiente_repartidor' | 'asignado' | 'en_camino' | 'completado';
 type EstadoVisual = 'Listo para recoger' | 'En camino' | 'Pendiente de repartidor' | 'Repartidor asignado' | 'Cancelado';
+type EstadoCliente = 'Activo' | 'Inactivo' | 'Suspendido';
 interface Pedido {
   id: number;
   estado: EstadoVisual;
@@ -35,18 +36,71 @@ export class Home implements OnInit {
   pedidos: Pedido[] = [];
   loading = false;
 
-private readonly router = inject(Router);
-private readonly auth = inject(AuthService);
-private readonly http = inject(HttpClient);
-// Señal con el usuario autenticado
-user = this.auth.user;
+  private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
+  private readonly http = inject(HttpClient);
+  // Señal con el usuario autenticado
+  user = this.auth.user;
 
   ngOnInit(): void {
     // Asegura que cargamos los datos del usuario al entrar
-    this.auth.fetchMe().catch(() => {}).finally(() => {
+    this.auth.fetchMe().catch(() => { }).finally(() => {
+      console.log('usuario que llegó del back:', this.user());
+      console.log('estadoCliente calculado:', this.estadoCliente);
       this.cargarPedidos();
     });
   }
+
+  //Para el back maybe funciona esto:
+  // get estadoCliente(): EstadoCliente | null {
+  //   const u: any = this.user();
+  //   if (!u) return null;
+
+  //   return (
+  //     (u.estado as EstadoCliente) ||
+  //     (u.estado_cliente as EstadoCliente) ||
+  //     (u.status as EstadoCliente) ||
+  //     null
+  //   );
+  // }
+
+  get estadoCliente(): EstadoCliente {
+  const u: any = this.user();
+  const estado =
+    (u?.estado as EstadoCliente) ||
+    (u?.estado_cliente as EstadoCliente) ||
+    (u?.status as EstadoCliente);
+
+  return estado || 'Activo'; //temporal
+}
+
+
+  estadoClienteClase(estado?: string) {
+    switch ((estado || '').toLowerCase()) {
+      case 'activo':
+        return 'badge-status-active';
+      case 'inactivo':
+        return 'badge-status-inactive';
+      case 'suspendido':
+        return 'badge-status-suspended';
+      default:
+        return 'badge-status-active';
+    }
+  }
+
+  estadoClienteEstilo(estado: EstadoCliente) {
+  switch (estado) {
+    case 'Activo':
+      return { background: '#dcfce7', color: '#166534' }; // verde suave
+    case 'Inactivo':
+      return { background: '#fee2e2', color: '#991b1b' }; // rojo claro
+    case 'Suspendido':
+      return { background: '#fef9c3', color: '#92400e' }; // amarillo
+    default:
+      return { background: '#e5e7eb', color: '#374151' }; // gris neutro
+  }
+}
+
 
   async abrirConClave(id: number) {
     try {

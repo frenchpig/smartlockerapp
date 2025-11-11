@@ -113,8 +113,8 @@ const routes: Routes = [
   },
 
 
-  { path: '', pathMatch: 'full', redirectTo: 'admin' }, //login
-  { path: '**', redirectTo: 'admin' }, //login
+  { path: '', pathMatch: 'full', redirectTo: 'login' }, //login
+  { path: '**', redirectTo: 'login' }, //login
 ];
 
 @NgModule({

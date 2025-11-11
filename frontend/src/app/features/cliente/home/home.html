@@ -1,64 +1,67 @@
 ﻿<app-header-cliente titulo="Smart Lockers"></app-header-cliente>
 
 <main class="container-narrow my-4">
-        <section aria-labelledby="saludo-usuario">
-            <header class="mb-4">
-                <h2 id="saludo-usuario" class="h3 mb-1">Hola {{ user()?.nombre || 'Usuario' }}!</h2>
-                <p class="text-muted mb-0">Revisa tus pedidos activos.</p>
-            </header>
-        </section>
+    <section aria-labelledby="saludo-usuario">
+        <header class="mb-4">
+            <h2 id="saludo-usuario" class="h3 mb-1">
+                Hola {{ user()?.nombre || 'Usuario' }}!
+                <span *ngIf="estadoCliente" class="badge" [ngStyle]="estadoClienteEstilo(estadoCliente)">
+                    {{ estadoCliente }}
+                </span>
+            </h2>
 
-        <section aria-labelledby="pedidos-activos">
-            <header class="d-flex justify-content-between align-items-center mb-3">
-                <h3 id="pedidos-activos" class="h5 m-0">Pedidos Activos</h3>
-                <small class="text-muted">{{ pedidos.length }} en curso</small>
-            </header>
+            <p class="text-muted mb-0">Revisa tus pedidos activos.</p>
+        </header>
+    </section>
 
-            <!-- Cargando -->
-            <div class="d-flex justify-content-center py-4" *ngIf="loading">
-                <div class="spinner-border text-success" role="status" aria-label="Cargando"></div>
-            </div>
 
-            <!-- Vacío -->
-            <p class="text-muted" *ngIf="!loading && !pedidos.length">No hay pedidos para mostrar.</p>
+    <section aria-labelledby="pedidos-activos">
+        <header class="d-flex justify-content-between align-items-center mb-3">
+            <h3 id="pedidos-activos" class="h5 m-0">Pedidos Activos</h3>
+            <small class="text-muted">{{ pedidos.length }} en curso</small>
+        </header>
 
-            <ul class="list-unstyled m-0" *ngIf="!loading && pedidos.length">
-                <li *ngFor="let p of pedidos" class="mb-3">
-                    <article class="card card-soft p-3" [attr.aria-label]="'Pedido ' + p.id">
-                        <header class="mb-2 d-flex justify-content-between align-items-start flex-wrap gap-2">
-                            <h4 class="h6 fw-bold m-0">Pedido #{{ p.id }}</h4>
-                            <span class="badge rounded-pill px-3 py-2" [ngClass]="p.estadoBadge">
-                                {{ p.estado }}
-                            </span>
-                        </header>
+        <!-- Cargando -->
+        <div class="d-flex justify-content-center py-4" *ngIf="loading">
+            <div class="spinner-border text-success" role="status" aria-label="Cargando"></div>
+        </div>
 
-                        <p class="text-muted mb-3">
-                            <span class="dot" [ngClass]="{
+        <!-- Vacío -->
+        <p class="text-muted" *ngIf="!loading && !pedidos.length">No hay pedidos para mostrar.</p>
+
+        <ul class="list-unstyled m-0" *ngIf="!loading && pedidos.length">
+            <li *ngFor="let p of pedidos" class="mb-3">
+                <article class="card card-soft p-3" [attr.aria-label]="'Pedido ' + p.id">
+                    <header class="mb-2 d-flex justify-content-between align-items-start flex-wrap gap-2">
+                        <h4 class="h6 fw-bold m-0">Pedido #{{ p.id }}</h4>
+                        <span class="badge rounded-pill px-3 py-2" [ngClass]="p.estadoBadge">
+                            {{ p.estado }}
+                        </span>
+                    </header>
+
+                    <p class="text-muted mb-3">
+                        <span class="dot" [ngClass]="{
                                 'ok': p.logisticaEstado === 'completado',
                                 'warn': p.logisticaEstado === 'en_camino',
                                 'pending': p.logisticaEstado !== 'en_camino' && p.logisticaEstado !== 'completado'
                             }"></span>
-                            <span class="ms-1">Locker <strong>{{ p.locker }}</strong></span> ·
-                            <span>{{ p.sede }}</span> ·
-                            <time [attr.datetime]="p.creadoEl">{{ p.creadoEl | date:'medium' }}</time>
-                            <br>
-                            <span class="badge-logistica" [ngClass]="p.logisticaBadge">{{ p.logisticaLabel }}</span>
-                        </p>
-                        <footer class="d-flex flex-wrap gap-2 justify-content-end">
-                            <button class="btn btn-primary"
-                                type="button"
-                                [class.disabled]="!p.canVerCodigo"
-                                [attr.aria-disabled]="!p.canVerCodigo"
-                                [disabled]="!p.canVerCodigo"
-                                (click)="abrirPedido(p)">
-                                {{ p.tipoAcceso === 'qr' ? 'Ver QR' : 'Ver codigo' }}
-                            </button>
-                        </footer>
+                        <span class="ms-1">Locker <strong>{{ p.locker }}</strong></span> ·
+                        <span>{{ p.sede }}</span> ·
+                        <time [attr.datetime]="p.creadoEl">{{ p.creadoEl | date:'medium' }}</time>
+                        <br>
+                        <span class="badge-logistica" [ngClass]="p.logisticaBadge">{{ p.logisticaLabel }}</span>
+                    </p>
+                    <footer class="d-flex flex-wrap gap-2 justify-content-end">
+                        <button class="btn btn-primary" type="button" [class.disabled]="!p.canVerCodigo"
+                            [attr.aria-disabled]="!p.canVerCodigo" [disabled]="!p.canVerCodigo"
+                            (click)="abrirPedido(p)">
+                            {{ p.tipoAcceso === 'qr' ? 'Ver QR' : 'Ver codigo' }}
+                        </button>
+                    </footer>
 
-                    </article>
-                </li>
-            </ul>
+                </article>
+            </li>
+        </ul>
 
-        </section>
+    </section>
 </main>
-

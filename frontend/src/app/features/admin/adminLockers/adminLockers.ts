@@ -17,6 +17,11 @@ interface LockerRow {
     actualizadoEl: string;
 }
 
+interface GrupoUbicacion {
+    nombre: string;
+    lockers: LockerRow[];
+}
+
 @Component({
     standalone: true,
     selector: 'app-admin-lockers',
@@ -30,14 +35,14 @@ export class AdminLockers implements OnInit {
 
     rows: LockerRow[] = [];
     loading = false;
-    
+
     // Paginación
     currentPage = 1;
     perPage = 20;
     total = 0;
     lastPage = 1;
-    
-    // KPIs - contadores totales
+
+    // KPIs
     kpisLoading = false;
     kpis = {
         totales: 0,
@@ -47,19 +52,13 @@ export class AdminLockers implements OnInit {
         bloqueados: 0
     };
 
-    // ====== FILTROS ======
     q = '';
     fEstado: LockerEstado | 'Todos' = 'Todos';
     fUbicacion: string | 'Todas' = 'Todas';
 
     get ubicaciones(): string[] {
-        // Cargar ubicaciones desde todos los lockers cargados hasta ahora
-        // Para obtener todas las ubicaciones, necesitaríamos cargar todos los lockers o hacer una llamada separada
-        // Por ahora, usamos las ubicaciones de los lockers visibles en la página actual
         const set = new Set(this.rows.map(r => r.ubicacion));
-        const ubicacionesList = [...set];
-        // Ordenar ubicaciones alfabéticamente
-        return ubicacionesList.sort((a, b) => a.localeCompare(b));
+        return [...set].sort((a, b) => a.localeCompare(b));
     }
 
     get filtrados(): LockerRow[] {
@@ -73,14 +72,27 @@ export class AdminLockers implements OnInit {
             return matchQ && matchE && matchU;
         });
 
-        // Mantener el ordenamiento por ubicación y número después de filtrar
         return filtrados.sort((a, b) => {
             const ubicacionCompare = a.ubicacion.localeCompare(b.ubicacion);
-            if (ubicacionCompare !== 0) {
-                return ubicacionCompare;
-            }
+            if (ubicacionCompare !== 0) return ubicacionCompare;
             return a.numero - b.numero;
         });
+    }
+
+    get agrupadosPorUbicacion(): GrupoUbicacion[] {
+        const map = new Map<string, GrupoUbicacion>();
+
+        for (const row of this.filtrados) {
+            if (!map.has(row.ubicacion)) {
+                map.set(row.ubicacion, {
+                    nombre: row.ubicacion,
+                    lockers: []
+                });
+            }
+            map.get(row.ubicacion)!.lockers.push(row);
+        }
+
+        return Array.from(map.values()).sort((a, b) => a.nombre.localeCompare(b.nombre));
     }
 
     get countTotales() { return this.kpis.totales; }
@@ -88,7 +100,6 @@ export class AdminLockers implements OnInit {
     get countOcupados() { return this.kpis.ocupados; }
     get countRevision() { return this.kpis.revision; }
     get countBloqueados() { return this.kpis.bloqueados; }
-
 
     limpiarFiltros() {
         this.q = '';
@@ -100,25 +111,17 @@ export class AdminLockers implements OnInit {
 
     async marcarRevision(row: LockerRow) {
         try {
-            // Si está en revisión (mantenimiento), revertir a activo
-            // Si no está en revisión, cambiar a mantenimiento
             const nuevoEstado = row.estado === 'En revisión' ? 'activo' : 'mantenimiento';
-            
+
             await this.http
                 .patch(`${environment.apiUrl}/lockers/${row.id}`, { estado: nuevoEstado })
                 .toPromise();
-            
-            // Actualizar el estado localmente
-            if (nuevoEstado === 'activo') {
-                row.estado = 'Activo';
-            } else {
-                row.estado = 'En revisión';
-            }
-            
+
+            row.estado = nuevoEstado === 'activo' ? 'Activo' : 'En revisión';
             row.actualizadoEl = new Date().toISOString();
             await Promise.all([
-                this.cargarLockers(), // Recargar para obtener datos actualizados
-                this.cargarKPIs() // Actualizar KPIs
+                this.cargarLockers(),
+                this.cargarKPIs()
             ]);
         } catch (error) {
             console.error('Error marcando revisión:', error);
@@ -133,10 +136,7 @@ export class AdminLockers implements OnInit {
                 .toPromise();
             row.estado = 'Bloqueado';
             row.actualizadoEl = new Date().toISOString();
-            await Promise.all([
-                this.cargarLockers(), // Recargar para obtener datos actualizados
-                this.cargarKPIs() // Actualizar KPIs
-            ]);
+            await Promise.all([this.cargarLockers(), this.cargarKPIs()]);
         } catch (error) {
             console.error('Error bloqueando locker:', error);
             alert('No se pudo bloquear el locker');
@@ -150,10 +150,7 @@ export class AdminLockers implements OnInit {
                 .toPromise();
             row.estado = 'Activo';
             row.actualizadoEl = new Date().toISOString();
-            await Promise.all([
-                this.cargarLockers(), // Recargar para obtener datos actualizados
-                this.cargarKPIs() // Actualizar KPIs
-            ]);
+            await Promise.all([this.cargarLockers(), this.cargarKPIs()]);
         } catch (error) {
             console.error('Error activando locker:', error);
             alert('No se pudo activar el locker');
@@ -185,18 +182,16 @@ export class AdminLockers implements OnInit {
     private async cargarKPIs(): Promise<void> {
         this.kpisLoading = true;
         try {
-            // Cargar todos los lockers para obtener los KPIs totales
             const response: any = await this.http
-                .get<any>(`${environment.apiUrl}/lockers`, { 
-                    params: { 
-                        per_page: 10000 // Cargar todos para los KPIs
-                    } 
+                .get<any>(`${environment.apiUrl}/lockers`, {
+                    params: {
+                        per_page: 10000
+                    }
                 })
                 .toPromise();
 
             const allLockers = response?.data || [];
-            
-            // Contar estados
+
             this.kpis.totales = allLockers.length;
             this.kpis.activos = allLockers.filter((l: any) => l.estado === 'activo').length;
             this.kpis.ocupados = allLockers.filter((l: any) => l.estado === 'ocupado').length;
@@ -213,18 +208,17 @@ export class AdminLockers implements OnInit {
         this.loading = true;
         try {
             const response: any = await this.http
-                .get<any>(`${environment.apiUrl}/lockers`, { 
-                    params: { 
+                .get<any>(`${environment.apiUrl}/lockers`, {
+                    params: {
                         per_page: this.perPage,
                         page: this.currentPage
-                    } 
+                    }
                 })
                 .toPromise();
 
             const lockers = response?.data || [];
 
             this.rows = lockers.map((l: any) => {
-                // Mapear estado del backend al frontend
                 let estado: LockerEstado = 'Activo';
                 if (l.estado === 'activo') estado = 'Activo';
                 else if (l.estado === 'ocupado') estado = 'Ocupado';
@@ -241,18 +235,12 @@ export class AdminLockers implements OnInit {
                 };
             });
 
-            // Ordenar por ubicación (alfabético) y luego por número (aunque ya viene ordenado del backend)
             this.rows.sort((a, b) => {
-                // Primero por ubicación
                 const ubicacionCompare = a.ubicacion.localeCompare(b.ubicacion);
-                if (ubicacionCompare !== 0) {
-                    return ubicacionCompare;
-                }
-                // Si la ubicación es igual, ordenar por número
+                if (ubicacionCompare !== 0) return ubicacionCompare;
                 return a.numero - b.numero;
             });
 
-            // Actualizar información de paginación
             this.currentPage = response?.current_page || 1;
             this.lastPage = response?.last_page || 1;
             this.total = response?.total || 0;
