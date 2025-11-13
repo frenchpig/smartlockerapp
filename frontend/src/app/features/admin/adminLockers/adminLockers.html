@@ -1,149 +1,171 @@
 <app-header-admin></app-header-admin>
 
 <main class="lockers-wrap">
-    <div class="container">
+  <div class="container">
 
-        <div class="toolbar">
-            <h1 class="page-title">Gestionar lockers</h1>
+    <div class="toolbar">
+      <h1 class="page-title">Gestionar lockers</h1>
 
-            <div class="toolbar-actions">
-                <button class="btn btn-outline" (click)="limpiarFiltros()">Limpiar filtros</button>
-                <button class="btn btn-success" [routerLink]="['/admin/crear']">Nuevo locker</button>
-            </div>
-        </div>
-
-        <!-- KPIs -->
-        <section class="kpi-grid">
-            <div class="kpi-card">
-                <div class="kpi-label">Totales</div>
-                <div class="kpi-value">{{ countTotales }}</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-label">Activos</div>
-                <div class="kpi-value">{{ countActivos }}</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-label">Ocupados</div>
-                <div class="kpi-value">{{ countOcupados }}</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-label">En revisión</div>
-                <div class="kpi-value">{{ countRevision }}</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-label">Bloqueados</div>
-                <div class="kpi-value">{{ countBloqueados }}</div>
-            </div>
-        </section>
-
-        <!-- Filtros -->
-        <section class="filters">
-            <input class="input" type="text" placeholder="Buscar por número, ubicación, empresa o estado…"
-                [(ngModel)]="q" />
-
-            <select class="input" [(ngModel)]="fEstado">
-                <option>Todos</option>
-                <option>Activo</option>
-                <option>Ocupado</option>
-                <option>En revisión</option>
-                <option>Bloqueado</option>
-            </select>
-
-            <select class="input" [(ngModel)]="fUbicacion">
-                <option>Todas</option>
-                <option *ngFor="let u of ubicaciones" [value]="u">{{ u }}</option>
-            </select>
-        </section>
-
-        <div class="table-card">
-            <div *ngIf="loading" class="text-center py-4">
-                <p>Cargando lockers...</p>
-            </div>
-
-            <ng-container *ngIf="!loading">
-
-                <p *ngIf="agrupadosPorUbicacion.length === 0" class="empty p-3">
-                    Sin resultados
-                </p>
-
-                <div *ngFor="let grupo of agrupadosPorUbicacion" class="ubicacion-block">
-                    <div class="ubicacion-head">
-                        <h2 class="ubicacion-title">{{ grupo.nombre }}</h2>
-                        <small class="text-muted">{{ grupo.lockers.length }} lockers</small>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Número</th>
-                                    <th>Empresa</th>
-                                    <th>Estado</th>
-                                    <th>Actualizado</th>
-                                    <th class="text-end">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr *ngFor="let r of grupo.lockers">
-                                    <td>#{{ r.id }}</td>
-                                    <td>{{ r.numero }}</td>
-                                    <td>{{ r.empresa || '—' }}</td>
-                                    <td>
-                                        <span class="badge" [class.badge-success]="r.estado === 'Activo'"
-                                            [class.badge-warning]="r.estado === 'Ocupado'"
-                                            [class.badge-info]="r.estado === 'En revisión'"
-                                            [class.badge-danger]="r.estado === 'Bloqueado'">
-                                            {{ r.estado }}
-                                        </span>
-                                    </td>
-                                    <td>{{ r.actualizadoEl | date: 'short' }}</td>
-                                    <td class="text-end">
-                                        <div class="btns-row">
-                                            <button class="btn btn-light" (click)="irDetalle(r)">Detalle</button>
-                                            <button class="btn btn-outline" (click)="irEditar(r)">Editar</button>
-                                            <button class="btn btn-warning" (click)="marcarRevision(r)">
-                                                {{ r.estado === 'En revisión' ? 'Quitar revisión' : 'Revisión' }}
-                                            </button>
-                                            <button class="btn btn-danger" *ngIf="r.estado !== 'Bloqueado'"
-                                                (click)="bloquear(r)">
-                                                Bloquear
-                                            </button>
-                                            <button class="btn btn-success" *ngIf="r.estado === 'Bloqueado'"
-                                                (click)="activar(r)">
-                                                Activar
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-            </ng-container>
-
-            <!-- Paginación -->
-            <div *ngIf="!loading && total > 0" class="d-flex justify-content-between align-items-center mt-3 px-3 pb-3">
-                <small class="text-muted">
-                    Mostrando {{ filtrados.length }} de {{ total }} lockers
-                    <span *ngIf="filtrados.length < rows.length">
-                        (filtrados de {{ rows.length }} en esta página)
-                    </span>
-                </small>
-                <div class="pagination d-flex align-items-center gap-2">
-                    <button class="btn btn-sm btn-outline" [disabled]="currentPage === 1"
-                        (click)="cambiarPagina(currentPage - 1)">
-                        Anterior
-                    </button>
-                    <span class="mx-2">Página {{ currentPage }} de {{ lastPage }}</span>
-                    <button class="btn btn-sm btn-outline" [disabled]="currentPage === lastPage"
-                        (click)="cambiarPagina(currentPage + 1)">
-                        Siguiente
-                    </button>
-                </div>
-            </div>
-        </div>
-
+      <div class="toolbar-actions">
+        <button class="btn btn-outline" (click)="limpiarFiltros()">Limpiar filtros</button>
+        <button class="btn btn-success" [routerLink]="['/admin/crear']">Nuevo locker</button>
+      </div>
     </div>
+
+    <!-- KPIs -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Totales</div>
+        <div class="kpi-value">{{ countTotales }}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Activos</div>
+        <div class="kpi-value">{{ countActivos }}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Ocupados</div>
+        <div class="kpi-value">{{ countOcupados }}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">En revisión</div>
+        <div class="kpi-value">{{ countRevision }}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Bloqueados</div>
+        <div class="kpi-value">{{ countBloqueados }}</div>
+      </div>
+    </section>
+
+    <!-- Filtros -->
+    <section class="filters">
+      <input
+        class="input"
+        type="text"
+        placeholder="Buscar por número, ubicación, empresa o estado…"
+        [(ngModel)]="q"
+      />
+
+      <select class="input" [(ngModel)]="fEstado">
+        <option>Todos</option>
+        <option>Activo</option>
+        <option>Ocupado</option>
+        <option>En revisión</option>
+        <option>Bloqueado</option>
+      </select>
+
+      <select class="input" [(ngModel)]="fUbicacion">
+        <option>Todas</option>
+        <option *ngFor="let u of ubicaciones" [value]="u">{{ u }}</option>
+      </select>
+    </section>
+
+    <div class="table-card">
+      <div *ngIf="loading" class="text-center py-4">
+        <p>Cargando lockers...</p>
+      </div>
+
+      <ng-container *ngIf="!loading">
+
+        <p *ngIf="agrupadosPorUbicacion.length === 0" class="empty p-3">
+          Sin resultados
+        </p>
+
+        <div *ngFor="let grupo of agrupadosPorUbicacion" class="ubicacion-block">
+          <div class="ubicacion-head">
+            <h2 class="ubicacion-title">{{ grupo.nombre }}</h2>
+            <small class="text-muted">{{ grupo.lockers.length }} lockers</small>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Número</th>
+                  <th>Empresa</th>
+                  <th>Estado</th>
+                  <th>Actualizado</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let r of grupo.lockers">
+                  <td data-label="ID">#{{ r.id }}</td>
+                  <td data-label="Número">{{ r.numero }}</td>
+                  <td data-label="Empresa">{{ r.empresa || '—' }}</td>
+                  <td data-label="Estado">
+                    <span
+                      class="badge"
+                      [class.badge-success]="r.estado === 'Activo'"
+                      [class.badge-warning]="r.estado === 'Ocupado'"
+                      [class.badge-info]="r.estado === 'En revisión'"
+                      [class.badge-danger]="r.estado === 'Bloqueado'"
+                    >
+                      {{ r.estado }}
+                    </span>
+                  </td>
+                  <td data-label="Actualizado">{{ r.actualizadoEl | date: 'short' }}</td>
+                  <td data-label="Acciones" class="text-end">
+                    <div class="btns-row">
+                      <button class="btn btn-light" (click)="irDetalle(r)">Detalle</button>
+                      <button class="btn btn-outline" (click)="irEditar(r)">Editar</button>
+                      <button class="btn btn-warning" (click)="marcarRevision(r)">
+                        {{ r.estado === 'En revisión' ? 'Quitar revisión' : 'Revisión' }}
+                      </button>
+                      <button
+                        class="btn btn-danger"
+                        *ngIf="r.estado !== 'Bloqueado'"
+                        (click)="bloquear(r)"
+                      >
+                        Bloquear
+                      </button>
+                      <button
+                        class="btn btn-success"
+                        *ngIf="r.estado === 'Bloqueado'"
+                        (click)="activar(r)"
+                      >
+                        Activar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </ng-container>
+
+      <!-- Paginación -->
+      <div
+        *ngIf="!loading && total > 0"
+        class="d-flex justify-content-between align-items-center mt-3 px-3 pb-3"
+      >
+        <small class="text-muted">
+          Mostrando {{ filtrados.length }} de {{ total }} lockers
+          <span *ngIf="filtrados.length < rows.length">
+            (filtrados de {{ rows.length }} en esta página)
+          </span>
+        </small>
+        <div class="pagination d-flex align-items-center gap-2">
+          <button
+            class="btn btn-sm btn-outline"
+            [disabled]="currentPage === 1"
+            (click)="cambiarPagina(currentPage - 1)"
+          >
+            Anterior
+          </button>
+          <span class="mx-2">Página {{ currentPage }} de {{ lastPage }}</span>
+          <button
+            class="btn btn-sm btn-outline"
+            [disabled]="currentPage === lastPage"
+            (click)="cambiarPagina(currentPage + 1)"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </main>

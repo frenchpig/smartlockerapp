@@ -84,14 +84,15 @@
             <h3 class="modal-title">Editar Perfil</h3>
             <button type="button" class="btn-close" (click)="cerrarModales()" aria-label="Cerrar"></button>
         </div>
-        
+
         <div class="modal-body">
             <form [formGroup]="editForm">
                 <div class="mb-3">
                     <label for="nombre" class="form-label">Nombre</label>
-                    <input type="text" id="nombre" class="form-control" formControlName="nombre" 
-                           [class.is-invalid]="editForm.get('nombre')?.invalid && editForm.get('nombre')?.touched">
-                    <div class="invalid-feedback" *ngIf="editForm.get('nombre')?.invalid && editForm.get('nombre')?.touched">
+                    <input type="text" id="nombre" class="form-control" formControlName="nombre"
+                        [class.is-invalid]="editForm.get('nombre')?.invalid && editForm.get('nombre')?.touched">
+                    <div class="invalid-feedback"
+                        *ngIf="editForm.get('nombre')?.invalid && editForm.get('nombre')?.touched">
                         Nombre es requerido
                     </div>
                 </div>
@@ -99,8 +100,9 @@
                 <div class="mb-3">
                     <label for="apellido" class="form-label">Apellido</label>
                     <input type="text" id="apellido" class="form-control" formControlName="apellido"
-                           [class.is-invalid]="editForm.get('apellido')?.invalid && editForm.get('apellido')?.touched">
-                    <div class="invalid-feedback" *ngIf="editForm.get('apellido')?.invalid && editForm.get('apellido')?.touched">
+                        [class.is-invalid]="editForm.get('apellido')?.invalid && editForm.get('apellido')?.touched">
+                    <div class="invalid-feedback"
+                        *ngIf="editForm.get('apellido')?.invalid && editForm.get('apellido')?.touched">
                         Apellido es requerido
                     </div>
                 </div>
@@ -108,8 +110,9 @@
                 <div class="mb-3">
                     <label for="email" class="form-label">Email</label>
                     <input type="email" id="email" class="form-control" formControlName="email"
-                           [class.is-invalid]="editForm.get('email')?.invalid && editForm.get('email')?.touched">
-                    <div class="invalid-feedback" *ngIf="editForm.get('email')?.invalid && editForm.get('email')?.touched">
+                        [class.is-invalid]="editForm.get('email')?.invalid && editForm.get('email')?.touched">
+                    <div class="invalid-feedback"
+                        *ngIf="editForm.get('email')?.invalid && editForm.get('email')?.touched">
                         Email válido es requerido
                     </div>
                 </div>
@@ -142,14 +145,15 @@
             <h3 class="modal-title">Cambiar Contraseña</h3>
             <button type="button" class="btn-close" (click)="cerrarModales()" aria-label="Cerrar"></button>
         </div>
-        
+
         <div class="modal-body">
             <form [formGroup]="passwordForm">
                 <div class="mb-3">
                     <label for="current_password" class="form-label">Contraseña Actual</label>
                     <input type="password" id="current_password" class="form-control" formControlName="current_password"
-                           [class.is-invalid]="passwordForm.get('current_password')?.invalid && passwordForm.get('current_password')?.touched">
-                    <div class="invalid-feedback" *ngIf="passwordForm.get('current_password')?.invalid && passwordForm.get('current_password')?.touched">
+                        [class.is-invalid]="passwordForm.get('current_password')?.invalid && passwordForm.get('current_password')?.touched">
+                    <div class="invalid-feedback"
+                        *ngIf="passwordForm.get('current_password')?.invalid && passwordForm.get('current_password')?.touched">
                         Contraseña actual es requerida
                     </div>
                 </div>
@@ -157,8 +161,9 @@
                 <div class="mb-3">
                     <label for="new_password" class="form-label">Nueva Contraseña</label>
                     <input type="password" id="new_password" class="form-control" formControlName="new_password"
-                           [class.is-invalid]="passwordForm.get('new_password')?.invalid && passwordForm.get('new_password')?.touched">
-                    <div class="invalid-feedback" *ngIf="passwordForm.get('new_password')?.invalid && passwordForm.get('new_password')?.touched">
+                        [class.is-invalid]="passwordForm.get('new_password')?.invalid && passwordForm.get('new_password')?.touched">
+                    <div class="invalid-feedback"
+                        *ngIf="passwordForm.get('new_password')?.invalid && passwordForm.get('new_password')?.touched">
                         La contraseña debe tener al menos 6 caracteres
                     </div>
                 </div>
@@ -166,8 +171,9 @@
                 <div class="mb-3">
                     <label for="confirm_password" class="form-label">Confirmar Nueva Contraseña</label>
                     <input type="password" id="confirm_password" class="form-control" formControlName="confirm_password"
-                           [class.is-invalid]="passwordForm.get('confirm_password')?.invalid && passwordForm.get('confirm_password')?.touched">
-                    <div class="invalid-feedback" *ngIf="passwordForm.get('confirm_password')?.invalid && passwordForm.get('confirm_password')?.touched">
+                        [class.is-invalid]="passwordForm.get('confirm_password')?.invalid && passwordForm.get('confirm_password')?.touched">
+                    <div class="invalid-feedback"
+                        *ngIf="passwordForm.get('confirm_password')?.invalid && passwordForm.get('confirm_password')?.touched">
                         Confirmación de contraseña es requerida
                     </div>
                 </div>

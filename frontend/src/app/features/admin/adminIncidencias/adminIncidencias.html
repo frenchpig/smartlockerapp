@@ -1,0 +1,180 @@
+<app-header-admin></app-header-admin>
+
+<main class="incidencias-wrap">
+    <div class="container">
+        <div class="toolbar">
+            <h1 class="page-title">Incidencias</h1>
+        </div>
+
+        <!-- Desktop table -->
+        <section class="table-card tabla-incidencias">
+            <div class="table-responsive">
+                <table class="table">
+                    <colgroup>
+                        <col class="col-id" />
+                        <col class="col-titulo" />
+                        <col class="col-origen" />
+                        <col class="col-locker" />
+                        <col class="col-sede" />
+                        <col class="col-empresa" />
+                        <col class="col-prioridad" />
+                        <col class="col-asignado" />
+                        <col class="col-estado" />
+                        <col class="col-acciones" />
+                    </colgroup>
+
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Título</th>
+                            <th>Origen</th>
+                            <th>Locker</th>
+                            <th>Sede</th>
+                            <th>Empresa</th>
+                            <th>Prioridad</th>
+                            <th>Asignado</th>
+                            <th>Estado</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr *ngFor="let inc of incidencias; trackBy: trackById">
+                            <td>#{{ inc.id }}</td>
+
+                            <td>
+                                <div class="title-cell">
+                                    <strong>{{ inc.titulo }}</strong>
+                                    <small class="muted">{{ inc.fecha | date:'short' }}</small>
+                                </div>
+                            </td>
+
+                            <td>{{ inc.origen }}</td>
+                            <td>{{ inc.locker }}</td>
+                            <td>{{ inc.sede }}</td>
+                            <td>{{ inc.empresa }}</td>
+
+                            <!-- PRIORIDAD -->
+                            <td class="cell-chip" (click)="$event.stopPropagation()">
+                                <button class="chip" [ngClass]="prioridadClase(inc.prioridad)"
+                                    (click)="abrirMenu('prioridad', inc)" aria-haspopup="listbox"
+                                    [attr.aria-expanded]="menu.abierto && menu.tipo==='prioridad' && menu.id===inc.id">
+                                    {{ inc.prioridad }} <span class="chev">▾</span>
+                                </button>
+                                <div class="chip-menu"
+                                    *ngIf="menu.abierto && menu.tipo==='prioridad' && menu.id===inc.id" role="listbox">
+                                    <button class="chip-opt" *ngFor="let p of PRIORIDADES"
+                                        [class.is-active]="p===inc.prioridad" (click)="cambiarPrioridad(inc,p)">
+                                        {{ p }}
+                                    </button>
+                                </div>
+                            </td>
+
+                            <!-- ASIGNADO -->
+                            <td>
+                                <select class="select-chip" [ngModel]="inc.asignadoA || 'Sin asignar'"
+                                    (ngModelChange)="cambiarAsignado(inc,$event)">
+                                    <option *ngFor="let op of ASIGNABLES" [ngValue]="op">
+                                        {{ op }}
+                                    </option>
+                                </select>
+                            </td>
+
+
+                            <!-- ESTADO -->
+                            <td class="cell-chip" (click)="$event.stopPropagation()">
+                                <button class="chip" [ngClass]="estadoClase(inc.estado)"
+                                    (click)="abrirMenu('estado', inc)" aria-haspopup="listbox"
+                                    [attr.aria-expanded]="menu.abierto && menu.tipo==='estado' && menu.id===inc.id">
+                                    {{ inc.estado }} <span class="chev">▾</span>
+                                </button>
+                                <div class="chip-menu" *ngIf="menu.abierto && menu.tipo==='estado' && menu.id===inc.id"
+                                    role="listbox">
+                                    <button class="chip-opt" *ngFor="let e of ESTADOS"
+                                        [class.is-active]="e===inc.estado" (click)="cambiarEstado(inc,e)">
+                                        {{ e }}
+                                    </button>
+                                </div>
+                            </td>
+
+                            <!-- ACCIONES -->
+                            <td class="text-end">
+                                <button class="btn btn-light" (click)="verDetalle(inc)">Detalle</button>
+                            </td>
+                        </tr>
+
+                        <tr *ngIf="!incidencias.length">
+                            <td colspan="10" class="empty">No hay incidencias.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+
+
+        <!-- Mobile cards -->
+        <section class="cards-incidencias">
+            <article class="inc-card" *ngFor="let inc of incidencias; trackBy: trackById">
+                <header class="inc-head">
+                    <div>
+                        <h2>#{{ inc.id }} · {{ inc.titulo }}</h2>
+                        <p class="inc-sub">{{ inc.fecha | date:'short' }}</p>
+                    </div>
+                </header>
+
+                <div class="inc-body">
+                    <p><strong>Origen:</strong> {{ inc.origen }}</p>
+                    <p><strong>Locker:</strong> {{ inc.locker }}</p>
+                    <p><strong>Sede:</strong> {{ inc.sede }}</p>
+                    <p><strong>Empresa:</strong> {{ inc.empresa }}</p>
+
+                    <p class="row-inline">
+                        <strong>Prioridad:</strong>
+                        <span class="cell-chip" (click)="$event.stopPropagation()">
+                            <button class="chip" [ngClass]="prioridadClase(inc.prioridad)"
+                                (click)="abrirMenu('prioridad', inc)">
+                                {{ inc.prioridad }} <span class="chev">▾</span>
+                            </button>
+                            <div class="chip-menu" *ngIf="menu.abierto && menu.tipo==='prioridad' && menu.id===inc.id">
+                                <button class="chip-opt" *ngFor="let p of PRIORIDADES"
+                                    [class.is-active]="p===inc.prioridad" (click)="cambiarPrioridad(inc,p)">
+                                    {{ p }}
+                                </button>
+                            </div>
+                        </span>
+                    </p>
+
+                    <p class="row-inline">
+                        <strong>Estado:</strong>
+                        <span class="cell-chip" (click)="$event.stopPropagation()">
+                            <button class="chip" [ngClass]="estadoClase(inc.estado)" (click)="abrirMenu('estado', inc)">
+                                {{ inc.estado }} <span class="chev">▾</span>
+                            </button>
+                            <div class="chip-menu" *ngIf="menu.abierto && menu.tipo==='estado' && menu.id===inc.id">
+                                <button class="chip-opt" *ngFor="let e of ESTADOS" [class.is-active]="e===inc.estado"
+                                    (click)="cambiarEstado(inc,e)">
+                                    {{ e }}
+                                </button>
+                            </div>
+                        </span>
+                    </p>
+
+                    <p>
+                        <strong>Asignado:</strong>
+                        <select class="input input-sm" [ngModel]="inc.asignadoA || 'Sin asignar'"
+                            (ngModelChange)="cambiarAsignado(inc,$event)">
+                            <option *ngFor="let op of ASIGNABLES" [ngValue]="op">{{ op }}</option>
+                        </select>
+                    </p>
+                </div>
+
+                <footer class="inc-actions">
+                    <button class="btn btn-light" (click)="verDetalle(inc)">Detalle</button>
+                </footer>
+            </article>
+
+            <p class="empty" *ngIf="!incidencias.length">No hay incidencias.</p>
+        </section>
+    </div>
+</main>

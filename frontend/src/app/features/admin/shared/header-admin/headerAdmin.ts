@@ -59,11 +59,15 @@ export class HeaderAdmin {
 
     irIncidencias() {
         this.vistaActual = 'incidencias';
-        console.log('Ir a /admin/incidencias');
-        // this.router.navigate(['/admin/incidencias']);
+        this.router.navigate(['/admin/AdminIncidencias']);
         this.cerrarMenuMobile();
         this.menuAbiertoUser = false;
     }
+
+    irPerfil() {
+        this.router.navigate(['/admin/perfilAdmin']);
+    }
+
 
     irTarifas() {
         this.vistaActual = 'tarifas';

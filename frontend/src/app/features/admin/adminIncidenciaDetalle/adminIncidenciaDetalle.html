@@ -1,0 +1,116 @@
+<app-header-admin></app-header-admin>
+
+<main class="detalle-wrap" *ngIf="!loading && incidencia">
+    <div class="container">
+        <!-- barra -->
+        <div class="top-bar">
+            <button class="btn btn-light" type="button" (click)="volver()">
+                ← Volver a incidencias
+            </button>
+        </div>
+
+        <!-- ficha principal -->
+        <section class="card-detalle">
+            <header class="card-header">
+                <div>
+                    <h1 class="titulo">
+                        #{{ incidencia.id }} · {{ incidencia.titulo }}
+                    </h1>
+                    <p class="meta">
+                        {{ incidencia.fecha | date: 'medium' }} · Origen:
+                        <strong>{{ incidencia.origen }}</strong>
+                    </p>
+                </div>
+
+                <div class="chips-header">
+                    <!-- Prioridad -->
+                    <div class="chip-wrapper" (click)="$event.stopPropagation()">
+                        <button type="button" class="chip" [ngClass]="prioridadClase(incidencia.prioridad)"
+                            (click)="abrirMenu('prioridad', incidencia)" aria-haspopup="listbox"
+                            [attr.aria-expanded]="menu.abierto && menu.tipo==='prioridad' && menu.id===incidencia.id">
+                            Prioridad: {{ incidencia.prioridad }}
+                            <span class="chev">▾</span>
+                        </button>
+
+                        <div class="chip-menu"
+                            *ngIf="menu.abierto && menu.tipo==='prioridad' && menu.id===incidencia.id" role="listbox">
+                            <button type="button" class="chip-opt" *ngFor="let p of PRIORIDADES"
+                                (click)="cambiarPrioridad(p)" [class.is-active]="p === incidencia.prioridad">
+                                {{ p }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Estado -->
+                    <div class="chip-wrapper" (click)="$event.stopPropagation()">
+                        <button type="button" class="chip" [ngClass]="estadoClase(incidencia.estado)"
+                            (click)="abrirMenu('estado', incidencia)" aria-haspopup="listbox"
+                            [attr.aria-expanded]="menu.abierto && menu.tipo==='estado' && menu.id===incidencia.id">
+                            Estado: {{ incidencia.estado }}
+                            <span class="chev">▾</span>
+                        </button>
+
+                        <div class="chip-menu" *ngIf="menu.abierto && menu.tipo==='estado' && menu.id===incidencia.id"
+                            role="listbox">
+                            <button type="button" class="chip-opt" *ngFor="let e of ESTADOS" (click)="cambiarEstado(e)"
+                                [class.is-active]="e === incidencia.estado">
+                                {{ e }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <section class="grid-info">
+                <div class="info-block">
+                    <h2>Locker / sede</h2>
+                    <p><strong>Locker:</strong> {{ incidencia.locker }}</p>
+                    <p><strong>Sede:</strong> {{ incidencia.sede }}</p>
+                </div>
+
+                <div class="info-block">
+                    <h2>Usuario / asignación</h2>
+
+                    <!-- Tipo de usuario: Empresa | Cliente -->
+                    <p>
+                        <strong>Tipo de usuario:</strong>
+                        <select class="select-chip select-user-type" [ngModel]="incidencia.tipoUsuario || 'Empresa'"
+                            (ngModelChange)="cambiarTipoUsuario($event)">
+                            <option value="Empresa">Empresa</option>
+                            <option value="Cliente">Cliente</option>
+                        </select>
+                    </p>
+
+                    <!-- Asignado a -->
+                    <p>
+                        <strong>Asignado a:</strong>
+                        <select class="select-chip" [ngModel]="incidencia.asignadoA || 'Sin asignar'"
+                            (ngModelChange)="cambiarAsignado($event)">
+                            <option *ngFor="let op of ASIGNABLES" [ngValue]="op">
+                                {{ op }}
+                            </option>
+                        </select>
+                    </p>
+                </div>
+            </section>
+
+            <!-- descripción -->
+            <section class="descripcion">
+                <h2>Descripción</h2>
+                <p *ngIf="incidencia.descripcion; else sinDesc">
+                    {{ incidencia.descripcion }}
+                </p>
+                <ng-template #sinDesc>
+                    <p class="muted">Esta incidencia aún no tiene una descripción detallada.</p>
+                </ng-template>
+            </section>
+        </section>
+    </div>
+</main>
+
+<!-- loading -->
+<main class="detalle-wrap" *ngIf="loading">
+    <div class="container">
+        <p>Cargando incidencia…</p>
+    </div>
+</main>

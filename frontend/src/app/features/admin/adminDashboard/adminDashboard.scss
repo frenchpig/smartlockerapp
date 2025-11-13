@@ -1,0 +1,253 @@
+$green: #18884b;
+
+.dash-wrap {
+  background: #f8faf9;
+  padding: 1.25rem 0 2rem;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #134e2b;
+  margin-bottom: .5rem;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+/* KPI */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: .75rem;
+  margin-bottom: 1.4rem;
+
+  @media (max-width: 992px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 576px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.kpi-card {
+  background: #fff;
+  border-radius: .75rem;
+  border: 1px solid #e5e7eb;
+  padding: .9rem 1rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
+
+  .kpi-label {
+    font-size: .78rem;
+    color: #6b7280;
+  }
+
+  .kpi-value {
+    margin-top: .25rem;
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: #111827;
+  }
+}
+
+/* Secciones */
+.dashboard-section {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: .75rem;
+  padding: 1rem 1.2rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .05);
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: .9rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #111827;
+  }
+}
+
+/* tabla */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+
+  thead th {
+    font-size: .75rem;
+    color: #6b7280;
+    padding: .65rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  tbody td {
+    padding: .7rem .65rem;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .text-end {
+    text-align: right;
+  }
+
+  .empty {
+    text-align: center;
+    padding: 1rem;
+    color: #9ca3af;
+  }
+}
+
+.chip {
+  display: inline-flex;
+  padding: .32rem .65rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: .75rem;
+}
+
+.chip-low {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.chip-medium {
+  background: #ede9fe;
+  color: #6b21a8;
+}
+
+.chip-high {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.chip-critical {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+/* estado */
+.chip-success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.chip-warn {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.chip-danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* ===== Tablas dentro de las secciones del dashboard ===== */
+
+/* Tarjeta que contiene la tabla */
+.dash-section-card {
+  overflow: hidden;                // respeta los bordes redondeados
+}
+
+/* Wrapper con scroll horizontal suave */
+.dash-section-card .table-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Tabla en sí */
+.dash-section-card .table {
+  width: 100%;
+  min-width: 620px;                // ancho mínimo cómodo para todas las columnas
+  border-collapse: collapse;
+}
+
+/* Celdas: el texto puede partirse en varias líneas si es muy largo */
+.dash-section-card .table th,
+.dash-section-card .table td {
+  padding: .6rem .9rem;
+  white-space: nowrap;
+}
+
+.dash-section-card .table td:nth-child(2),
+.dash-section-card .table td:nth-child(3),
+.dash-section-card .table td:nth-child(4) {
+  white-space: normal;             // en columnas de texto largo (título/empresa) sí dejamos que salte de línea
+  word-break: break-word;
+}
+
+
+/* ===== Vista mobile: la tabla se convierte en tarjetas ===== */
+@media (max-width: 640px) {
+
+  /* ya no necesitamos scroll horizontal en mobile */
+  .dash-section-card .table-scroll {
+    overflow-x: visible;
+  }
+
+  .dash-section-card .table {
+    width: 100%;
+    min-width: 0;
+    border-collapse: separate;
+    display: block;
+  }
+
+  .dash-section-card .table thead {
+    display: none;  /* ocultamos encabezados */
+  }
+
+  .dash-section-card .table tbody {
+    display: grid;
+    gap: .5rem;
+  }
+
+  .dash-section-card .table tr {
+    display: grid;
+    grid-template-columns: 1fr;
+    background: #ffffff;
+    border-radius: .75rem;
+    border: 1px solid #e5e7eb;
+    padding: .5rem .75rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .06);
+  }
+
+  .dash-section-card .table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .2rem 0;
+    border-bottom: 0;
+    white-space: normal;
+  }
+
+  /* Etiqueta de cada campo (Origen, Prioridad, etc.) */
+  .dash-section-card .table td::before {
+    content: attr(data-label);
+    font-size: .72rem;
+    font-weight: 600;
+    color: #6b7280;
+    margin-right: .75rem;
+  }
+
+  /* Última celda (acciones) abajo, alineada a la derecha */
+  .dash-section-card .table td:last-child {
+    margin-top: .35rem;
+    justify-content: flex-end;
+  }
+}

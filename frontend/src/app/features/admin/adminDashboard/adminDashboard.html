@@ -1,0 +1,118 @@
+<app-header-admin></app-header-admin>
+
+<main class="dash-wrap">
+  <div class="container">
+
+    <!-- Título -->
+    <div class="toolbar">
+      <h1 class="page-title">Dashboard administrador</h1>
+    </div>
+
+    <!-- KPIs -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Total de lockers</div>
+        <div class="kpi-value">{{ lockersTotales }}</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Lockers activos</div>
+        <div class="kpi-value">{{ lockersActivos }}</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Lockers ocupados</div>
+        <div class="kpi-value">{{ lockersOcupados }}</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Lockers en revisión</div>
+        <div class="kpi-value">{{ lockersRevision }}</div>
+      </div>
+    </section>
+
+    <!-- INCIDENCIAS -->
+    <section class="dashboard-section dash-section-card">
+      <header class="section-head dash-section-header">
+        <h2>Incidencias recientes</h2>
+        <button class="btn btn-light" (click)="irIncidencias()">Ver todas</button>
+      </header>
+
+      <div class="table-scroll">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Título</th>
+              <th>Origen</th>
+              <th>Prioridad</th>
+              <th>Estado</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let i of incidenciasRecientes">
+              <td data-label="ID">#{{ i.id }}</td>
+              <td data-label="Título">{{ i.titulo }}</td>
+              <td data-label="Origen">{{ i.origen }}</td>
+              <td data-label="Prioridad">
+                <span class="chip" [ngClass]="prioridadClase(i.prioridad)">
+                  {{ i.prioridad }}
+                </span>
+              </td>
+              <td data-label="Estado">
+                <span class="chip" [ngClass]="estadoClase(i.estado)">
+                  {{ i.estado }}
+                </span>
+              </td>
+              <td data-label="Acciones" class="text-end">
+                <button class="btn btn-light" (click)="verIncidencia(i.id)">Detalle</button>
+              </td>
+            </tr>
+
+            <tr *ngIf="!incidenciasRecientes.length">
+              <td colspan="6" class="empty">No hay incidencias recientes.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- EMPRESAS -->
+    <section class="dashboard-section dash-section-card">
+      <header class="section-head dash-section-header">
+        <h2>Empresas activas</h2>
+        <button class="btn btn-light" (click)="irEmpresas()">Ver empresas</button>
+      </header>
+
+      <div class="table-scroll">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Empresa</th>
+              <th>Correo</th>
+              <th>Ubicación</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let e of empresasActivas">
+              <td data-label="Empresa">{{ e.nombre }}</td>
+              <td data-label="Correo">{{ e.correo }}</td>
+              <td data-label="Ubicación">{{ e.ubicacion }}</td>
+              <td data-label="Acciones" class="text-end">
+                <button class="btn btn-light" (click)="verEmpresa(e.id)">Detalle</button>
+              </td>
+            </tr>
+
+            <tr *ngIf="!empresasActivas.length">
+              <td colspan="4" class="empty">No hay empresas activas.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+</main>

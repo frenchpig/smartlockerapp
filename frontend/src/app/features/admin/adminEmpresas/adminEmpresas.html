@@ -59,47 +59,76 @@
           </thead>
 
           <tbody>
-            <ng-container *ngIf="loading(); then cargando; else contenido"></ng-container>
+  <ng-container *ngIf="loading(); then cargando; else contenido"></ng-container>
 
-            <ng-template #cargando>
-              <tr>
-                <td colspan="6" class="empty text-center">Cargando empresas...</td>
-              </tr>
-            </ng-template>
+  <ng-template #cargando>
+    <tr>
+      <td colspan="6" class="empty text-center">Cargando empresas...</td>
+    </tr>
+  </ng-template>
 
-            <ng-template #contenido>
-              <ng-container *ngIf="filtradas().length; else vacio">
-                <tr *ngFor="let e of filtradas(); trackBy: trackById">
-                  <td>#{{ e.id }}</td>
-                  <td>{{ e.nombre }}</td>
-                  <td>{{ e.correo }}</td>
-                  <td>{{ e.ubicacion || '—' }}</td>
-                  <td>
-                    <span class="badge" [class.badge-success]="e.estado === 'Activa'"
-                      [class.badge-danger]="e.estado === 'Inactiva'">
-                      {{ e.estado }}
-                    </span>
-                  </td>
-                  <td class="text-end">
-                    <div class="btns-row">
-                      <button class="btn btn-light" (click)="verDetalle(e)">Detalle</button>
-                      <button class="btn btn-outline" (click)="editar(e)">Editar</button>
-                      <button class="btn btn-success" *ngIf="e.estado === 'Inactiva'"
-                        (click)="activar(e)">Activar</button>
-                      <button class="btn btn-warning" *ngIf="e.estado === 'Activa'"
-                        (click)="desactivar(e)">Desactivar</button>
-                    </div>
-                  </td>
-                </tr>
-              </ng-container>
+  <ng-template #contenido>
+    <ng-container *ngIf="filtradas().length; else vacio">
+      <tr *ngFor="let e of filtradas(); trackBy: trackById">
+        <td [attr.data-label]="'ID'">
+          #{{ e.id }}
+        </td>
 
-              <ng-template #vacio>
-                <tr>
-                  <td colspan="6" class="empty text-center">No hay empresas registradas</td>
-                </tr>
-              </ng-template>
-            </ng-template>
-          </tbody>
+        <td [attr.data-label]="'Nombre'">
+          {{ e.nombre }}
+        </td>
+
+        <td [attr.data-label]="'Correo'">
+          {{ e.correo }}
+        </td>
+
+        <td [attr.data-label]="'Ubicación'">
+          {{ e.ubicacion || '—' }}
+        </td>
+
+        <td [attr.data-label]="'Estado'">
+          <span
+            class="badge"
+            [class.badge-success]="e.estado === 'Activa'"
+            [class.badge-danger]="e.estado === 'Inactiva'"
+          >
+            {{ e.estado }}
+          </span>
+        </td>
+
+        <td [attr.data-label]="''" class="text-end">
+          <div class="btns-row">
+            <button class="btn btn-light" (click)="verDetalle(e)">Detalle</button>
+            <button class="btn btn-outline" (click)="editar(e)">Editar</button>
+            <button
+              class="btn btn-success"
+              *ngIf="e.estado === 'Inactiva'"
+              (click)="activar(e)"
+            >
+              Activar
+            </button>
+            <button
+              class="btn btn-warning"
+              *ngIf="e.estado === 'Activa'"
+              (click)="desactivar(e)"
+            >
+              Desactivar
+            </button>
+          </div>
+        </td>
+      </tr>
+    </ng-container>
+
+    <ng-template #vacio>
+      <tr>
+        <td colspan="6" class="empty text-center">
+          No hay empresas registradas
+        </td>
+      </tr>
+    </ng-template>
+  </ng-template>
+</tbody>
+
         </table>
       </div>
     </div>

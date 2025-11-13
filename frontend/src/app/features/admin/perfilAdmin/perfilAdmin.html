@@ -1,0 +1,244 @@
+<app-header-admin></app-header-admin>
+
+<main class="perfil-main">
+  <div class="perfil-card">
+
+    <!-- Loading State -->
+    <div class="d-flex justify-content-center py-4" *ngIf="loading">
+      <div class="spinner-border text-success" role="status" aria-label="Cargando">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+    </div>
+
+    <!-- Profile Content -->
+    <ng-container *ngIf="!loading">
+      <section aria-labelledby="info-title" class="perfil-section">
+        <header class="perfil-section-header">
+          <div>
+            <h2 id="info-title" class="section-title">Información del administrador</h2>
+            <p class="section-hint">
+              Estos son los datos asociados a tu cuenta de administrador
+            </p>
+          </div>
+
+          <div class="section-actions">
+            <button class="btn btn-outline-secondary btn-sm" (click)="editarPerfil()">
+              Editar datos
+            </button>
+            <button class="btn btn-outline-secondary btn-sm" (click)="cambiarPassword()">
+              Cambiar contraseña
+            </button>
+          </div>
+        </header>
+
+        <dl class="perfil-datos">
+          <div class="dato-row">
+            <dt>Nombre</dt>
+            <dd>{{ user.nombre }}</dd>
+          </div>
+
+          <div class="dato-row">
+            <dt>Apellido</dt>
+            <dd>{{ user.apellido }}</dd>
+          </div>
+
+          <div class="dato-row">
+            <dt>Email</dt>
+            <dd>{{ user.email }}</dd>
+          </div>
+
+          <div class="dato-row">
+            <dt>Teléfono</dt>
+            <dd>{{ user.telefono || 'No especificado' }}</dd>
+          </div>
+
+          <div class="dato-row">
+            <dt>Rol</dt>
+            <dd>{{ user.rol || 'Administrador' }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section aria-labelledby="session-title" class="perfil-section">
+        <header class="perfil-section-header">
+          <div>
+            <h2 id="session-title" class="section-title">Sesión</h2>
+            <p class="section-hint">Puedes cerrar tu sesión de forma segura</p>
+          </div>
+        </header>
+
+        <button class="btn btn-danger w-100" (click)="logout()">
+          Cerrar sesión
+        </button>
+      </section>
+    </ng-container>
+  </div>
+
+  <footer class="perfil-footer text-center text-muted">
+    <small>&copy; 2025 Smart Lockers · Panel administrador</small>
+  </footer>
+</main>
+
+<!-- Modal de Editar Perfil -->
+<div class="modal-overlay" *ngIf="showEditModal()" (click)="cerrarModales()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">Editar perfil de administrador</h3>
+      <button type="button" class="btn-close" (click)="cerrarModales()" aria-label="Cerrar"></button>
+    </div>
+
+    <div class="modal-body">
+      <form [formGroup]="editForm">
+        <div class="mb-3">
+          <label for="nombre" class="form-label">Nombre</label>
+          <input
+            type="text"
+            id="nombre"
+            class="form-control"
+            formControlName="nombre"
+            [class.is-invalid]="editForm.get('nombre')?.invalid && editForm.get('nombre')?.touched"
+          />
+          <div
+            class="invalid-feedback"
+            *ngIf="editForm.get('nombre')?.invalid && editForm.get('nombre')?.touched"
+          >
+            Nombre es requerido
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="apellido" class="form-label">Apellido</label>
+          <input
+            type="text"
+            id="apellido"
+            class="form-control"
+            formControlName="apellido"
+            [class.is-invalid]="editForm.get('apellido')?.invalid && editForm.get('apellido')?.touched"
+          />
+          <div
+            class="invalid-feedback"
+            *ngIf="editForm.get('apellido')?.invalid && editForm.get('apellido')?.touched"
+          >
+            Apellido es requerido
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="email" class="form-label">Email</label>
+          <input
+            type="email"
+            id="email"
+            class="form-control"
+            formControlName="email"
+            [class.is-invalid]="editForm.get('email')?.invalid && editForm.get('email')?.touched"
+          />
+          <div
+            class="invalid-feedback"
+            *ngIf="editForm.get('email')?.invalid && editForm.get('email')?.touched"
+          >
+            Email válido es requerido
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="telefono" class="form-label">Teléfono</label>
+          <input
+            type="tel"
+            id="telefono"
+            class="form-control"
+            formControlName="telefono"
+          />
+        </div>
+
+        <div class="alert alert-danger" *ngIf="errorMsg()" role="alert">
+          {{ errorMsg() }}
+        </div>
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="cerrarModales()">Cancelar</button>
+      <button type="button" class="btn btn-primary" (click)="guardarPerfil()" [disabled]="saving()">
+        <span *ngIf="!saving()">Guardar</span>
+        <span *ngIf="saving()">Guardando...</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Cambiar Contraseña -->
+<div class="modal-overlay" *ngIf="showPasswordModal()" (click)="cerrarModales()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">Cambiar contraseña</h3>
+      <button type="button" class="btn-close" (click)="cerrarModales()" aria-label="Cerrar"></button>
+    </div>
+
+    <div class="modal-body">
+      <form [formGroup]="passwordForm">
+        <div class="mb-3">
+          <label for="current_password" class="form-label">Contraseña actual</label>
+          <input
+            type="password"
+            id="current_password"
+            class="form-control"
+            formControlName="current_password"
+            [class.is-invalid]="passwordForm.get('current_password')?.invalid && passwordForm.get('current_password')?.touched"
+          />
+          <div
+            class="invalid-feedback"
+            *ngIf="passwordForm.get('current_password')?.invalid && passwordForm.get('current_password')?.touched"
+          >
+            Contraseña actual es requerida
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="new_password" class="form-label">Nueva contraseña</label>
+          <input
+            type="password"
+            id="new_password"
+            class="form-control"
+            formControlName="new_password"
+            [class.is-invalid]="passwordForm.get('new_password')?.invalid && passwordForm.get('new_password')?.touched"
+          />
+          <div
+            class="invalid-feedback"
+            *ngIf="passwordForm.get('new_password')?.invalid && passwordForm.get('new_password')?.touched"
+          >
+            La contraseña debe tener al menos 6 caracteres
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="confirm_password" class="form-label">Confirmar nueva contraseña</label>
+          <input
+            type="password"
+            id="confirm_password"
+            class="form-control"
+            formControlName="confirm_password"
+            [class.is-invalid]="passwordForm.get('confirm_password')?.invalid && passwordForm.get('confirm_password')?.touched"
+          />
+          <div
+            class="invalid-feedback"
+            *ngIf="passwordForm.get('confirm_password')?.invalid && passwordForm.get('confirm_password')?.touched"
+          >
+            Confirmación de contraseña es requerida
+          </div>
+        </div>
+
+        <div class="alert alert-danger" *ngIf="errorMsg()" role="alert">
+          {{ errorMsg() }}
+        </div>
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="cerrarModales()">Cancelar</button>
+      <button type="button" class="btn btn-primary" (click)="guardarPassword()" [disabled]="saving()">
+        <span *ngIf="!saving()">Actualizar</span>
+        <span *ngIf="saving()">Actualizando...</span>
+      </button>
+    </div>
+  </div>
+</div>

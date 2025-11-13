@@ -24,7 +24,7 @@ import { ReservaNuevaComponent } from './features/empresa/reservas/reserva-nueva
 import { EmpresaPedidoDetalle } from './features/empresa/pedidoDetalle/pedido-detalle';
 import { EmpresaRepartidoresComponent } from './features/empresa/repartidores/repartidores';
 
-import { AdminHomeComponent } from './features/admin/admin-home/adminHome';
+import { AdminDashboard } from './features/admin/adminDashboard/adminDashboard';
 import { AdminLockers } from './features/admin/adminLockers/adminLockers';
 import { LockerDetalle } from "./features/admin/detalleLockers/detalleLockers";
 import { EditarLockers } from "./features/admin/editarLockers/editarLockers";
@@ -36,13 +36,15 @@ import { EditarEmpresa } from "./features/admin/editarEmpresa/editarEmpresa";
 import { AdminTarifas } from "./features/admin/tarifasAdmin/tarifasAdmin";
 import { EditarTarifa } from "./features/admin/editarTarifa/editarTarifa";
 import { CrearTarifa } from "./features/admin/crearTarifa/crearTarifa";
-
+import { AdminIncidencias } from "./features/admin/adminIncidencias/adminIncidencias";
+import { AdminIncidenciaDetalle } from "./features/admin/adminIncidenciaDetalle/adminIncidenciaDetalle";
+import { PerfilAdmin } from "./features/admin/perfilAdmin/perfilAdmin";
 
 
 const routes: Routes = [
   { path: 'test-backend', component: TestBackend },
   { path: 'login', component: LoginComponent },
-  
+
   // Totem routes
   { path: 'totem/device-login', component: DeviceLoginComponent },
   { path: 'totem/codigo', component: TotemCodigoComponent, canActivate: [deviceGuard] },
@@ -97,7 +99,7 @@ const routes: Routes = [
     canActivateChild: [authGuard],
     data: { roles: ['administrador'] },
     children: [
-      { path: '', component: AdminHomeComponent },
+      { path: '', component: AdminDashboard },
       { path: 'lockers', component: AdminLockers },
       { path: 'detalle/:id', component: LockerDetalle },
       { path: 'editar/:id', component: EditarLockers },
@@ -109,12 +111,16 @@ const routes: Routes = [
       { path: 'tarifas', component: AdminTarifas },
       { path: 'crearTarifas', component: CrearTarifa },
       { path: 'editarTarifas/:id', component: EditarTarifa },
+      { path: 'AdminIncidencias', component: AdminIncidencias },
+      { path: 'IncidenciaDetalle/:id', component: AdminIncidenciaDetalle },
+      { path: 'perfilAdmin', component: PerfilAdmin },
+
     ]
   },
 
 
-  { path: '', pathMatch: 'full', redirectTo: 'login' }, //login
-  { path: '**', redirectTo: 'login' }, //login
+  { path: '', pathMatch: 'full', redirectTo: 'admin' }, //login
+  { path: '**', redirectTo: 'admin' }, //login
 ];
 
 @NgModule({

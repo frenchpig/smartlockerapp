@@ -5,7 +5,7 @@
       <div class="title-row">
         <h1 class="panel-title" (click)="irHome()">Panel Admin</h1>
 
-        <button
+        <!-- <button
           class="btn-hamburger"
           (click)="toggleMenuMobile()"
           [attr.aria-expanded]="menuMobileAbierto"
@@ -14,59 +14,35 @@
           <span class="bar"></span>
           <span class="bar"></span>
           <span class="bar"></span>
-        </button>
+        </button> -->
       </div>
 
       <nav class="header-actions-desktop">
-        <button
-          class="nav-link-custom"
-          [class.active]="vistaActual === 'home'"
-          (click)="irHome()"
-        >
+        <button class="nav-link-custom" [class.active]="vistaActual === 'home'" (click)="irHome()">
           <span>Dashboard</span>
         </button>
 
-        <button
-          class="nav-link-custom"
-          [class.active]="vistaActual === 'lockers'"
-          (click)="irLockers()"
-        >
+        <button class="nav-link-custom" [class.active]="vistaActual === 'lockers'" (click)="irLockers()">
           <span>Gestionar lockers</span>
         </button>
 
-        <button
-          class="nav-link-custom"
-          [class.active]="vistaActual === 'incidencias'"
-          (click)="irIncidencias()"
-        >
+        <button class="nav-link-custom" [class.active]="vistaActual === 'incidencias'" (click)="irIncidencias()">
           <span>Incidencias</span>
         </button>
 
-        <button
-          class="nav-link-custom"
-          [class.active]="vistaActual === 'tarifas'"
-          (click)="irTarifas()"
-        >
+        <button class="nav-link-custom" [class.active]="vistaActual === 'tarifas'" (click)="irTarifas()">
           <span>Tarifas</span>
         </button>
 
-        <button
-          class="nav-link-custom"
-          [class.active]="vistaActual === 'empresas'"
-          (click)="irEmpresas()"
-        >
+        <button class="nav-link-custom" [class.active]="vistaActual === 'empresas'" (click)="irEmpresas()">
           <span>Empresas</span>
         </button>
       </nav>
     </div>
 
     <div class="right-col">
-      <button
-        class="btn-user-menu"
-        (click)="toggleUserMenu()"
-        [attr.aria-expanded]="menuAbiertoUser"
-        aria-haspopup="true"
-      >
+      <button class="btn-user-menu" (click)="toggleUserMenu()" [attr.aria-expanded]="menuAbiertoUser"
+        aria-haspopup="true">
         <div class="user-avatar">
           <div class="avatar-circle">{{ inicialAvatar }}</div>
         </div>
@@ -79,21 +55,27 @@
         <div class="chevron-icon">▾</div>
       </button>
 
-      <div
-        class="dropdown-menu-animated"
-        *ngIf="menuAbiertoUser"
-      >
+      <div class="dropdown-menu-animated" *ngIf="menuAbiertoUser">
         <div class="dropdown-header">
           <div class="fw-semibold">{{ nombreCompleto }}</div>
           <div class="text-muted small">{{ user()?.email || 'admin@email.com' }}</div>
         </div>
 
+        <!-- NUEVO: enlace a Perfil -->
+        <button class="dropdown-item" (click)="irPerfil()">
+          <span>Perfil</span>
+        </button>
+
         <button class="dropdown-item" (click)="irHome()">
-          <span>Dashboard</span>
+          <span>Home</span>
         </button>
 
         <button class="dropdown-item" (click)="irLockers()">
           <span>Gestionar Lockers</span>
+        </button>
+
+        <button class="dropdown-item" (click)="irIncidencias()">
+          <span>Incidencias</span>
         </button>
 
         <button class="dropdown-item" (click)="irEmpresas()">
@@ -111,7 +93,7 @@
     </div>
   </div>
 
-  <aside
+  <!-- <aside
     class="mobile-menu-panel"
     *ngIf="menuMobileAbierto"
   >
@@ -119,6 +101,14 @@
       <button class="mobile-close" (click)="cerrarMenuMobile()" aria-label="Cerrar menú">✕</button>
 
       <nav class="mobile-nav-list">
+
+        <button
+          class="mobile-nav-item"
+          (click)="irPerfil()"
+        >
+          <span>Perfil</span>
+        </button>
+
         <button
           class="mobile-nav-item"
           [class.active]="vistaActual === 'home'"
@@ -160,5 +150,5 @@
         </button>
       </nav>
     </div>
-  </aside>
+  </aside> -->
 </header>
