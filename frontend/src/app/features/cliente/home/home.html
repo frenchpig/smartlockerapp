@@ -35,7 +35,7 @@
                     <header class="mb-2 d-flex justify-content-between align-items-start flex-wrap gap-2">
                         <h4 class="h6 fw-bold m-0">Pedido #{{ p.id }}</h4>
                         <span class="badge rounded-pill px-3 py-2" [ngClass]="p.estadoBadge">
-                            {{ p.estado }}
+                            Estado: {{ p.estado }}
                         </span>
                     </header>
 
@@ -48,8 +48,6 @@
                         <span class="ms-1">Locker <strong>{{ p.locker }}</strong></span> ·
                         <span>{{ p.sede }}</span> ·
                         <time [attr.datetime]="p.creadoEl">{{ p.creadoEl | date:'medium' }}</time>
-                        <br>
-                        <span class="badge-logistica" [ngClass]="p.logisticaBadge">{{ p.logisticaLabel }}</span>
                     </p>
                     <footer class="d-flex flex-wrap gap-2 justify-content-end">
                         <button class="btn btn-primary" type="button" [class.disabled]="!p.canVerCodigo"

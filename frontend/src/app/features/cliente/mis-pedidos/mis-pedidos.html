@@ -30,7 +30,7 @@
                         <header class="mb-2 d-flex justify-content-between align-items-start flex-wrap gap-2">
                             <h3 class="h6 fw-bold m-0">Pedido #{{ p.id }}</h3>
                             <span class="badge rounded-pill px-3 py-2" [ngClass]="p.estadoBadge">
-                                {{ p.estado }}
+                                Estado: {{ p.estado }}
                             </span>
                         </header>
 
@@ -50,10 +50,6 @@
                                     Entregado {{ p.finalizadoEl | date:'medium' }}
                                 </time>
                             </ng-container>
-                            <br>
-                            <span class="badge-logistica" [ngClass]="p.logisticaBadge">
-                                {{ p.logisticaLabel }}
-                            </span>
                         </p>
 
                         <div class="history-meta">

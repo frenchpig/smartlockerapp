@@ -160,7 +160,8 @@ export class Home implements OnInit {
           longitud: r.locker?.ubicacion?.longitud ?? null,
           creadoEl: r.created_at ?? r.fecha_reserva ?? new Date().toISOString(),
           tipoAcceso: r.tipo_acceso,
-        }));
+        }))
+        .sort((a, b) => this.prioridadEstado(a.logisticaEstado) - this.prioridadEstado(b.logisticaEstado));
     } catch (err) {
       console.error('Error cargando pedidos', err);
     } finally {
@@ -202,6 +203,19 @@ export class Home implements OnInit {
       logisticaBadge: logisticaMap.logisticaBadge,
       canVerCodigo,
     };
+  }
+
+  private prioridadEstado(estado: LogisticaEstado) {
+    switch (estado) {
+      case 'completado':
+        return 0;
+      case 'en_camino':
+        return 1;
+      case 'asignado':
+        return 2;
+      default:
+        return 3;
+    }
   }
 
   private mapLogistica(estado: LogisticaEstado) {
