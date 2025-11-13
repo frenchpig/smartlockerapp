@@ -13,6 +13,7 @@ import { PedidoQr } from './features/cliente/pedido-qr/pedido-qr';
 import { TotemCodigoComponent } from './features/totem/codigo/totem-codigo';
 import { DeviceLoginComponent } from './features/totem/device-login/device-login';
 import { Perfil } from './features/cliente/perfil/perfil';
+import { PedidoDetalle } from './features/cliente/pedido-detalle/pedido-detalle';
 
 import { HomeEmpresa } from './features/empresa/home-empresa/home-empresa';
 import { Lockers } from './features/empresa/lockers/lockers';
@@ -62,6 +63,7 @@ const routes: Routes = [
       { path: '', component: Home },
       { path: 'mis-pedidos', component: MisPedidos },
       { path: 'perfil', component: Perfil },
+      { path: 'pedido/:id', component: PedidoDetalle },
       { path: 'pedido/:id/clave', component: PedidoClave },
       { path: 'pedido/:id/qr', component: PedidoQr },
     ],

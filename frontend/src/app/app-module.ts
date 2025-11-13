@@ -14,6 +14,7 @@ import { PedidoQr } from './features/cliente/pedido-qr/pedido-qr';
 import { MisPedidos } from './features/cliente/mis-pedidos/mis-pedidos';
 import { RepartidorHome } from './features/repartidor/home/repartidor-home';
 import { ReservaNuevaComponent } from './features/empresa/reservas/reserva-nueva/reserva-nueva';
+import { PedidoDetalle } from './features/cliente/pedido-detalle/pedido-detalle';
 
 @NgModule({
   declarations: [App, TestBackend,],
@@ -24,6 +25,7 @@ import { ReservaNuevaComponent } from './features/empresa/reservas/reserva-nueva
     Home,
     PedidoClave,
     PedidoQr,
+    PedidoDetalle,
     MisPedidos,
     RepartidorHome,
     ReservaNuevaComponent

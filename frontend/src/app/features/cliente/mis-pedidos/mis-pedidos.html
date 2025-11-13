@@ -52,6 +52,28 @@
                             </ng-container>
                         </p>
 
+                        <section class="pedido-resumen mb-3">
+                            <h4 class="fw-semibold small text-uppercase text-muted mb-2">Contenido del pedido</h4>
+                            <ul class="list-unstyled mb-1 small" *ngIf="p.articulos.length; else sinArticulosHistorial">
+                                <li *ngFor="let item of p.articulos | slice:0:3">
+                                    <span class="fw-semibold">{{ item.cantidad }}×</span>
+                                    <span class="ms-1">{{ item.nombre }}</span>
+                                </li>
+                            </ul>
+                            <ng-template #sinArticulosHistorial>
+                                <p class="text-muted small mb-0">No hay artículos registrados.</p>
+                            </ng-template>
+                            <p class="text-muted small mb-0" *ngIf="p.articulos.length > 3">
+                                + {{ p.articulos.length - 3 }} artículos adicionales
+                            </p>
+                        </section>
+
+                        <div class="text-muted mb-3">
+                            <span class="badge-logistica" [ngClass]="p.logisticaBadge">
+                                {{ p.logisticaLabel }}
+                            </span>
+                        </div>
+
                         <div class="history-meta">
                             <span class="badge bg-light text-dark" *ngIf="p.tipoAcceso">
                                 Acceso: {{ p.tipoAcceso === 'codigo_temporal' ? 'Código temporal' : (p.tipoAcceso === 'qr' ? 'QR' : p.tipoAcceso) }}
@@ -59,6 +81,9 @@
                         </div>
 
                         <footer class="d-flex flex-wrap gap-2 justify-content-end mt-3">
+                            <button class="btn btn-outline-primary" type="button" (click)="verDetalle(p)">
+                                Ver detalle
+                            </button>
                             <button class="btn btn-primary"
                                 type="button"
                                 [class.disabled]="!p.canVerCodigo"

@@ -9,6 +9,11 @@ import { HeaderClienteComponent } from '../shared/header-cliente/header-cliente.
 type LogisticaEstado = 'pendiente_repartidor' | 'asignado' | 'en_camino' | 'completado';
 type EstadoVisual = 'Listo para recoger' | 'En camino' | 'Pendiente de repartidor' | 'Repartidor asignado' | 'Cancelado';
 type EstadoCliente = 'Activo' | 'Inactivo' | 'Suspendido';
+type ArticuloResumen = {
+  id?: number;
+  nombre: string;
+  cantidad: number;
+};
 interface Pedido {
   id: number;
   estado: EstadoVisual;
@@ -23,6 +28,8 @@ interface Pedido {
   longitud?: number | null;
   creadoEl: string;
   tipoAcceso?: 'qr' | 'codigo_temporal' | string;
+  articulos: ArticuloResumen[];
+  totalArticulos: number;
 }
 
 @Component({
@@ -151,7 +158,9 @@ export class Home implements OnInit {
 
       this.pedidos = (res || [])
         .filter(r => r.estado !== 'anulado')
-        .map(r => ({
+        .map(r => {
+          const articulos = this.mapArticulos(r.articulos);
+          return {
           id: r.id,
           ...this.mapEstados(r.logistica_estado, r.estado),
           locker: `#${r.locker?.numero ?? r.locker?.id ?? r.locker_id ?? ''}`,
@@ -160,7 +169,10 @@ export class Home implements OnInit {
           longitud: r.locker?.ubicacion?.longitud ?? null,
           creadoEl: r.created_at ?? r.fecha_reserva ?? new Date().toISOString(),
           tipoAcceso: r.tipo_acceso,
-        }))
+            articulos,
+            totalArticulos: articulos.reduce((acc, art) => acc + art.cantidad, 0),
+          };
+        })
         .sort((a, b) => this.prioridadEstado(a.logisticaEstado) - this.prioridadEstado(b.logisticaEstado));
     } catch (err) {
       console.error('Error cargando pedidos', err);
@@ -175,6 +187,10 @@ export class Home implements OnInit {
     } finally {
       this.router.navigate(['/login']);
     }
+  }
+
+  verDetalle(p: Pedido) {
+    this.router.navigate(['/cliente/pedido', p.id]);
   }
 
   private mapEstados(logisticaEstado: string | undefined, estadoApi: string | undefined) {
@@ -249,5 +265,23 @@ export class Home implements OnInit {
           logisticaBadge: 'badge-logistica badge-logistica-pendiente',
         };
     }
+  }
+
+  private mapArticulos(data: any): ArticuloResumen[] {
+    if (!Array.isArray(data)) {
+      return [];
+    }
+
+    return data
+      .map((art: any, index) => ({
+        id: art?.id ?? index,
+        nombre: String(art?.nombre ?? '').trim() || `Artículo ${index + 1}`,
+        cantidad: Number(art?.cantidad ?? 1) || 1,
+      }))
+      .filter((art: ArticuloResumen) => !!art.nombre)
+      .map((art) => ({
+        ...art,
+        cantidad: art.cantidad > 0 ? art.cantidad : 1,
+      }));
   }
 }

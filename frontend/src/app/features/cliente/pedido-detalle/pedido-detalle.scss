@@ -1,0 +1,37 @@
+.container-narrow {
+    max-width: 920px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.card-soft {
+    border: 1px solid rgba(0, 0, 0, .06);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .06);
+    border-radius: .8rem;
+    background: #fff;
+}
+
+.list-group-item {
+    padding: 1rem 1.25rem;
+}
+
+.list-group-item + .list-group-item {
+    border-top: 1px solid rgba(0, 0, 0, .05);
+}
+
+.badge-logistica {
+    align-self: flex-start;
+}
+
+footer .btn {
+    min-width: 10rem;
+}
+
+@media (max-width: 576px) {
+    footer .btn {
+        width: 100%;
+    }
+}
+

@@ -8,6 +8,11 @@ import { HeaderClienteComponent } from '../shared/header-cliente/header-cliente.
 
 type LogisticaEstado = 'pendiente_repartidor' | 'asignado' | 'en_camino' | 'completado';
 type EstadoVisual = 'Listo para recoger' | 'En camino' | 'Pendiente de repartidor' | 'Repartidor asignado' | 'Entregado' | 'Cancelado';
+type ArticuloResumen = {
+  id?: number;
+  nombre: string;
+  cantidad: number;
+};
 interface Pedido {
   id: number;
   estado: EstadoVisual;
@@ -23,6 +28,8 @@ interface Pedido {
   creadoEl: string;
   finalizadoEl?: string | null;
   tipoAcceso?: 'qr' | 'codigo_temporal' | string;
+  articulos: ArticuloResumen[];
+  totalArticulos: number;
 }
 
 interface PaginatedResponse<T> {
@@ -72,6 +79,10 @@ export class MisPedidos implements OnInit {
     }
 
     await this.abrirConClave(p.id);
+  }
+
+  verDetalle(p: Pedido) {
+    this.router.navigate(['/cliente/pedido', p.id]);
   }
 
   async abrirConClave(id: number) {
@@ -135,17 +146,22 @@ export class MisPedidos implements OnInit {
 
       const data = res?.data ?? [];
 
-      this.pedidos = data.map((r) => ({
-        id: r.id,
-        ...this.mapEstados(r.logistica_estado, r.estado),
-        locker: `#${r.locker?.numero ?? r.locker?.id ?? r.locker_id ?? ''}`,
-        sede: r.locker?.ubicacion?.nombre ?? 'N/D',
-        latitud: r.locker?.ubicacion?.latitud ?? null,
-        longitud: r.locker?.ubicacion?.longitud ?? null,
-        creadoEl: r.created_at ?? r.fecha_reserva ?? new Date().toISOString(),
-        finalizadoEl: r.hora_fin ?? r.updated_at ?? null,
-        tipoAcceso: r.tipo_acceso,
-      }));
+      this.pedidos = data.map((r, index) => {
+        const articulos = this.mapArticulos(r.articulos, index);
+        return {
+          id: r.id,
+          ...this.mapEstados(r.logistica_estado, r.estado),
+          locker: `#${r.locker?.numero ?? r.locker?.id ?? r.locker_id ?? ''}`,
+          sede: r.locker?.ubicacion?.nombre ?? 'N/D',
+          latitud: r.locker?.ubicacion?.latitud ?? null,
+          longitud: r.locker?.ubicacion?.longitud ?? null,
+          creadoEl: r.created_at ?? r.fecha_reserva ?? new Date().toISOString(),
+          finalizadoEl: r.hora_fin ?? r.updated_at ?? null,
+          tipoAcceso: r.tipo_acceso,
+          articulos,
+          totalArticulos: articulos.reduce((acc, art) => acc + art.cantidad, 0),
+        };
+      });
 
       this.page = res?.current_page ?? page;
       this.lastPage = res?.last_page ?? 1;
@@ -229,5 +245,23 @@ export class MisPedidos implements OnInit {
           logisticaBadge: 'badge-logistica badge-logistica-pendiente',
         };
     }
+  }
+
+  private mapArticulos(data: any, fallbackIndex: number): ArticuloResumen[] {
+    if (!Array.isArray(data)) {
+      return [];
+    }
+
+    return data
+      .map((art: any, index) => ({
+        id: art?.id ?? `${fallbackIndex}-${index}`,
+        nombre: String(art?.nombre ?? '').trim() || `Artículo ${index + 1}`,
+        cantidad: Number(art?.cantidad ?? 1) || 1,
+      }))
+      .filter((art: ArticuloResumen) => !!art.nombre)
+      .map((art) => ({
+        ...art,
+        cantidad: art.cantidad > 0 ? art.cantidad : 1,
+      }));
   }
 }
