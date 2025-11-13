@@ -37,8 +37,6 @@ export class HeaderAdmin {
     // ---- Navegación ----
     vistaActual: string = 'home';
 
-    menuAbiertoUser = false;
-
     menuMobileAbierto = false;
 
 
@@ -47,21 +45,18 @@ export class HeaderAdmin {
         this.vistaActual = 'home';
         this.router.navigate(['/admin']);
         this.cerrarMenuMobile();
-        this.menuAbiertoUser = false;
     }
 
     irLockers() {
         this.vistaActual = 'lockers';
         this.router.navigate(['/admin/lockers']);
         this.cerrarMenuMobile();
-        this.menuAbiertoUser = false;
     }
 
     irIncidencias() {
         this.vistaActual = 'incidencias';
         this.router.navigate(['/admin/AdminIncidencias']);
         this.cerrarMenuMobile();
-        this.menuAbiertoUser = false;
     }
 
     irPerfil() {
@@ -74,7 +69,6 @@ export class HeaderAdmin {
         console.log('Ir a /admin/tarifas');
         this.router.navigate(['/admin/tarifas']);
         this.cerrarMenuMobile();
-        this.menuAbiertoUser = false;
     }
 
     irEmpresas() {
@@ -82,17 +76,10 @@ export class HeaderAdmin {
         console.log('Ir a /admin/empresas');
         this.router.navigate(['/admin/empresa']);
         this.cerrarMenuMobile();
-        this.menuAbiertoUser = false;
     }
 
     // menú usuario
-
-    toggleUserMenu() {
-        this.menuAbiertoUser = !this.menuAbiertoUser;
-    }
-
     async logout() {
-        this.menuAbiertoUser = false;
         try {
             await this.auth.logout();
         } finally {
