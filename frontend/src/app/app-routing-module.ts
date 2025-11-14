@@ -23,6 +23,8 @@ import { PerfilRepartidor } from './features/repartidor/perfil/perfil';
 import { ReservaNuevaComponent } from './features/empresa/reservas/reserva-nueva/reserva-nueva';
 import { EmpresaPedidoDetalle } from './features/empresa/pedidoDetalle/pedido-detalle';
 import { EmpresaRepartidoresComponent } from './features/empresa/repartidores/repartidores';
+import { PerfilEmpresa } from "./features/empresa/perfilEmpresa/perfilEmpresa";
+
 
 import { AdminDashboard } from './features/admin/adminDashboard/adminDashboard';
 import { AdminLockers } from './features/admin/adminLockers/adminLockers';
@@ -79,6 +81,7 @@ const routes: Routes = [
       { path: 'lockers', component: Lockers },
       { path: 'reservas/nueva', component: ReservaNuevaComponent },
       { path: 'repartidores', component: EmpresaRepartidoresComponent },
+      { path: 'PerfilEmpresa', component: PerfilEmpresa },
     ],
   },
 
