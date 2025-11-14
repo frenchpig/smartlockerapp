@@ -41,7 +41,12 @@ interface Pedido {
 })
 export class Home implements OnInit {
   pedidos: Pedido[] = [];
+  pedidosPaginados: Pedido[] = [];
   loading = false;
+  page = 1;
+  perPage = 4;
+  total = 0;
+  lastPage = 1;
 
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
@@ -149,6 +154,20 @@ export class Home implements OnInit {
 
   refrescar() { this.cargarPedidos(); }
 
+  siguiente() {
+    if (this.page < this.lastPage) {
+      this.page++;
+      this.actualizarVistaPaginada();
+    }
+  }
+
+  anterior() {
+    if (this.page > 1) {
+      this.page--;
+      this.actualizarVistaPaginada();
+    }
+  }
+
   private async cargarPedidos() {
     this.loading = true;
     try {
@@ -170,15 +189,25 @@ export class Home implements OnInit {
           creadoEl: r.created_at ?? r.fecha_reserva ?? new Date().toISOString(),
           tipoAcceso: r.tipo_acceso,
             articulos,
-            totalArticulos: articulos.reduce((acc, art) => acc + art.cantidad, 0),
+            totalArticulos: articulos.reduce((acc: number, art: ArticuloResumen) => acc + art.cantidad, 0),
           };
         })
         .sort((a, b) => this.prioridadEstado(a.logisticaEstado) - this.prioridadEstado(b.logisticaEstado));
+
+      this.total = this.pedidos.length;
+      this.lastPage = Math.max(1, Math.ceil(this.total / this.perPage));
+      this.page = Math.min(this.page, this.lastPage);
+      this.actualizarVistaPaginada();
     } catch (err) {
       console.error('Error cargando pedidos', err);
     } finally {
       this.loading = false;
     }
+  }
+
+  private actualizarVistaPaginada() {
+    const start = (this.page - 1) * this.perPage;
+    this.pedidosPaginados = this.pedidos.slice(start, start + this.perPage);
   }
 
   async onLogout() {

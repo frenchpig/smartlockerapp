@@ -16,9 +16,9 @@
 
 
     <section aria-labelledby="pedidos-activos">
-        <header class="d-flex justify-content-between align-items-center mb-3">
+        <header class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
             <h3 id="pedidos-activos" class="h5 m-0">Pedidos Activos</h3>
-            <small class="text-muted">{{ pedidos.length }} en curso</small>
+            <small class="text-muted">{{ total }} en curso</small>
         </header>
 
         <!-- Cargando -->
@@ -29,8 +29,8 @@
         <!-- Vacío -->
         <p class="text-muted" *ngIf="!loading && !pedidos.length">No hay pedidos para mostrar.</p>
 
-        <ul class="list-unstyled m-0" *ngIf="!loading && pedidos.length">
-            <li *ngFor="let p of pedidos" class="mb-3">
+        <ul class="list-unstyled m-0" *ngIf="!loading && pedidosPaginados.length">
+            <li *ngFor="let p of pedidosPaginados" class="mb-3">
                 <article class="card card-soft p-3" [attr.aria-label]="'Pedido ' + p.id">
                     <header class="mb-2 d-flex justify-content-between align-items-start flex-wrap gap-2">
                         <h4 class="h6 fw-bold m-0">Pedido #{{ p.id }}</h4>
@@ -84,6 +84,17 @@
                 </article>
             </li>
         </ul>
+
+        <nav class="pagination-controls mt-4 mb-5 d-flex align-items-center justify-content-center gap-3"
+            aria-label="Pedidos activos" *ngIf="!loading && lastPage > 1">
+            <button class="btn btn-outline-secondary" type="button" (click)="anterior()" [disabled]="page <= 1">
+                <i class="bi bi-chevron-left me-1"></i> Anterior
+            </button>
+            <span class="page-indicator">Página {{ page }} de {{ lastPage }}</span>
+            <button class="btn btn-outline-secondary" type="button" (click)="siguiente()" [disabled]="page >= lastPage">
+                Siguiente <i class="bi bi-chevron-right ms-1"></i>
+            </button>
+        </nav>
 
     </section>
 </main>
