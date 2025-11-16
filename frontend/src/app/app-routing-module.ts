@@ -24,6 +24,9 @@ import { ReservaNuevaComponent } from './features/empresa/reservas/reserva-nueva
 import { EmpresaPedidoDetalle } from './features/empresa/pedidoDetalle/pedido-detalle';
 import { EmpresaRepartidoresComponent } from './features/empresa/repartidores/repartidores';
 import { PerfilEmpresa } from "./features/empresa/perfilEmpresa/perfilEmpresa";
+import { EmpresaTarifas } from "./features/empresa/tarifa/tarifaEmpresa";
+import { EmpresaIncidencias } from "./features/empresa/incidenciasEmpresa/incidenciasEmpresa";
+import { ClienteIncidencias  } from "./features/cliente/incidenciasCliente/incidenciasCliente";
 
 
 import { AdminDashboard } from './features/admin/adminDashboard/adminDashboard';
@@ -66,6 +69,8 @@ const routes: Routes = [
       { path: 'perfil', component: Perfil },
       { path: 'pedido/:id/clave', component: PedidoClave },
       { path: 'pedido/:id/qr', component: PedidoQr },
+      { path: 'ClienteIncidencias', component: ClienteIncidencias  },
+
     ],
   },
 
@@ -82,6 +87,10 @@ const routes: Routes = [
       { path: 'reservas/nueva', component: ReservaNuevaComponent },
       { path: 'repartidores', component: EmpresaRepartidoresComponent },
       { path: 'PerfilEmpresa', component: PerfilEmpresa },
+      { path: 'tarifaEmpresa', component: EmpresaTarifas },
+      { path: 'EmpresaIncidencias', component: EmpresaIncidencias },
+
+
     ],
   },
 

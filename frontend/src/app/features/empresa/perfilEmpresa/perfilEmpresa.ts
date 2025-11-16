@@ -89,15 +89,27 @@ export class PerfilEmpresa implements OnInit {
         this.loadEmpresaProfile();
     }
 
+    // ========= Cargar perfil desde /auth/me =========
     async loadEmpresaProfile() {
         this.loading = true;
         try {
-            const profile = await this.http
-                .get<EmpresaProfile>(`${environment.apiUrl}/empresa/profile`)
+            const me = await this.http
+                .get<any>(`${environment.apiUrl}/auth/me`)
                 .toPromise();
 
-            if (profile) {
-                this.empresa = profile;
+            if (me) {
+                this.empresa = {
+                    id: me.id,
+                    nombre: me.nombre ?? 'Empresa',
+                    rut: me.rut ?? null,
+                    razonSocial: me.razon_social ?? me.razonSocial ?? null,
+                    direccion: me.direccion ?? null,
+                    region: me.region ?? null,
+                    ciudad: me.ciudad ?? null,
+                    correo: me.email ?? null,
+                    telefono: me.telefono ?? null,
+                    estado: 'Activa',
+                };
             }
         } catch (err) {
             console.error('Error cargando perfil de empresa:', err);
@@ -107,13 +119,16 @@ export class PerfilEmpresa implements OnInit {
                 this.empresa = {
                     id: currentUser.id,
                     nombre: currentUser.nombre || 'Empresa',
-                    rut: null,
-                    razonSocial: null,
-                    direccion: null,
-                    region: null,
-                    ciudad: null,
+                    rut: (currentUser as any).rut ?? null,
+                    razonSocial:
+                        (currentUser as any).razon_social ??
+                        (currentUser as any).razonSocial ??
+                        null,
+                    direccion: (currentUser as any).direccion ?? null,
+                    region: (currentUser as any).region ?? null,
+                    ciudad: (currentUser as any).ciudad ?? null,
                     correo: currentUser.email || null,
-                    telefono: null,
+                    telefono: (currentUser as any).telefono ?? null,
                     estado: 'Activa',
                 };
             }
@@ -149,19 +164,50 @@ export class PerfilEmpresa implements OnInit {
         this.saving.set(true);
         this.errorMsg.set('');
 
+        const formValue = this.editForm.value;
+        const payload = {
+            nombre: formValue.nombre,
+            rut: formValue.rut || null,
+            razon_social: formValue.razonSocial || null,
+            direccion: formValue.direccion || null,
+            region: formValue.region || null,
+            ciudad: formValue.ciudad || null,
+            email: formValue.correo,
+            telefono: formValue.telefono || null,
+        };
+
         try {
             const updated = await this.http
-                .patch<EmpresaProfile>(`${environment.apiUrl}/empresa/profile`, this.editForm.value)
+                .patch<any>(`${environment.apiUrl}/auth/profile`, payload)
                 .toPromise();
 
             if (updated) {
-                this.empresa = updated;
+                this.empresa = {
+                    id: updated.id,
+                    nombre: updated.nombre ?? this.empresa.nombre,
+                    rut: updated.rut ?? this.empresa.rut,
+                    razonSocial:
+                        updated.razon_social ??
+                        updated.razonSocial ??
+                        this.empresa.razonSocial,
+                    direccion: updated.direccion ?? this.empresa.direccion,
+                    region: updated.region ?? this.empresa.region,
+                    ciudad: updated.ciudad ?? this.empresa.ciudad,
+                    correo: updated.email ?? this.empresa.correo,
+                    telefono: updated.telefono ?? this.empresa.telefono,
+                    estado: this.empresa.estado,
+                };
+
+                // Refresca el usuario en el AuthService
                 await this.auth.fetchMe();
+
                 this.showEditModal.set(false);
             }
         } catch (err: any) {
             console.error('Error actualizando empresa:', err);
-            this.errorMsg.set(err?.error?.message || 'Error al actualizar los datos de la empresa');
+            this.errorMsg.set(
+                err?.error?.message || 'Error al actualizar los datos de la empresa'
+            );
         } finally {
             this.saving.set(false);
         }
@@ -205,7 +251,9 @@ export class PerfilEmpresa implements OnInit {
             this.passwordForm.reset();
         } catch (err: any) {
             console.error('Error al cambiar la contraseña:', err);
-            this.errorMsg.set(err?.error?.message || 'Error al cambiar la contraseña');
+            this.errorMsg.set(
+                err?.error?.message || 'Error al cambiar la contraseña'
+            );
         } finally {
             this.saving.set(false);
         }
