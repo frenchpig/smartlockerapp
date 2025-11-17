@@ -51,7 +51,7 @@ export class EmpresaTarifas implements OnInit {
     private http = inject(HttpClient);
 
     private _planes = signal<PlanTarifa[]>([]);
-    private loading = signal<boolean>(false);
+    loading = signal<boolean>(false);
 
     // Filtros
     estadoFiltro = signal<'Todos' | PlanEstado>('Activo');
@@ -60,6 +60,14 @@ export class EmpresaTarifas implements OnInit {
     // Plan actual
     private _planActual = signal<PlanTarifa | null>(null);
     planActual = computed(() => this._planActual());
+
+    // Modales
+    showConfirmModal = signal<boolean>(false);
+    showAlertModal = signal<boolean>(false);
+    showSuccessModal = signal<boolean>(false);
+    modalTitle = signal<string>('');
+    modalMessage = signal<string>('');
+    planSeleccionado = signal<PlanTarifa | null>(null);
 
     async ngOnInit(): Promise<void> {
         await this.cargarTarifas();
@@ -141,7 +149,7 @@ export class EmpresaTarifas implements OnInit {
     private async cargarPlanActual(): Promise<void> {
         try {
             const resp = await firstValueFrom(
-                this.http.get<PlanActualResponse>(
+                this.http.get<any>(
                     `${environment.apiUrl}/empresa/plan-actual`
                 )
             );
@@ -150,6 +158,11 @@ export class EmpresaTarifas implements OnInit {
             if (!id) {
                 this._planActual.set(null);
                 return;
+            }
+
+            // Esperar a que las tarifas estén cargadas
+            if (this._planes().length === 0) {
+                await this.cargarTarifas();
             }
 
             const plan = this._planes().find((p) => p.id === id) ?? null;
@@ -164,12 +177,88 @@ export class EmpresaTarifas implements OnInit {
         return this._planActual()?.id === plan.id;
     }
 
-    // Botón Pagar
+    // Cambiar tarifa
+    cambiarTarifa(plan: PlanTarifa): void {
+        if (this.loading() || plan.estado !== 'Activo') {
+            return;
+        }
+
+        if (this.esPlanActual(plan)) {
+            this.mostrarAlerta('Información', 'Esta ya es tu tarifa actual');
+            return;
+        }
+
+        this.planSeleccionado.set(plan);
+        this.mostrarConfirmacion(
+            'Confirmar cambio de tarifa',
+            `¿Estás seguro de que deseas cambiar a la tarifa "${plan.nombre}"?`
+        );
+    }
+
+    async confirmarCambioTarifa(): Promise<void> {
+        const plan = this.planSeleccionado();
+        if (!plan) {
+            return;
+        }
+
+        this.cerrarModales();
+        this.loading.set(true);
+        
+        try {
+            await firstValueFrom(
+                this.http.post<any>(
+                    `${environment.apiUrl}/empresa/cambiar-tarifa`,
+                    { tarifa_id: plan.id }
+                )
+            );
+
+            // Recargar el plan actual
+            await this.cargarPlanActual();
+            
+            this.mostrarExito('Éxito', 'Tarifa actualizada correctamente');
+        } catch (error: any) {
+            console.error('Error cambiando tarifa:', error);
+            this.mostrarAlerta('Error', error?.error?.message || 'Error al cambiar la tarifa');
+        } finally {
+            this.loading.set(false);
+            this.planSeleccionado.set(null);
+        }
+    }
+
+    // Métodos para mostrar modales
+    mostrarConfirmacion(titulo: string, mensaje: string): void {
+        this.modalTitle.set(titulo);
+        this.modalMessage.set(mensaje);
+        this.showConfirmModal.set(true);
+    }
+
+    mostrarAlerta(titulo: string, mensaje: string): void {
+        this.modalTitle.set(titulo);
+        this.modalMessage.set(mensaje);
+        this.showAlertModal.set(true);
+    }
+
+    mostrarExito(titulo: string, mensaje: string): void {
+        this.modalTitle.set(titulo);
+        this.modalMessage.set(mensaje);
+        this.showSuccessModal.set(true);
+    }
+
+    cerrarModales(): void {
+        this.showConfirmModal.set(false);
+        this.showAlertModal.set(false);
+        this.showSuccessModal.set(false);
+        this.modalTitle.set('');
+        this.modalMessage.set('');
+    }
+
+    // Botón Pagar (mantener por compatibilidad, pero ahora usamos cambiarTarifa)
     pagar(plan: PlanTarifa) {
         if (this.loading()) {
             return;
         }
-        this.router.navigate(['/empresa/pago', plan.id]);
+        // Cambiar directamente la tarifa en lugar de ir a pago
+        this.cambiarTarifa(plan);
     }
 
     trackById = (_: number, plan: PlanTarifa) => plan.id;

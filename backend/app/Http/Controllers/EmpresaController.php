@@ -365,5 +365,107 @@ class EmpresaController extends Controller
         
         return response()->json($ubicaciones);
     }
+
+    /**
+     * Obtener el plan actual (tarifa) de la empresa autenticada
+     */
+    public function planActual(Request $request)
+    {
+        $user = $request->user();
+        
+        if (!$user || $user->rol !== 'empresa') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $datosEmpresa = $user->datosEmpresa;
+        $tarifaId = $datosEmpresa?->tarifa_id;
+
+        return response()->json([
+            'tarifa_id' => $tarifaId,
+            'tarifa' => $datosEmpresa?->tarifa,
+        ]);
+    }
+
+    /**
+     * Cambiar la tarifa de la empresa autenticada
+     */
+    public function cambiarTarifa(Request $request)
+    {
+        $user = $request->user();
+        
+        if (!$user || $user->rol !== 'empresa') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $data = $request->validate([
+            'tarifa_id' => ['required', 'integer', 'exists:tarifas,id'],
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Obtener o crear datos_empresa
+            $datosEmpresa = DatosEmpresa::firstOrCreate(
+                ['usuario_id' => $user->id],
+                [
+                    'nombre' => $user->nombre . ' ' . $user->apellido,
+                    'razon_social' => null,
+                    'rut' => null,
+                    'direccion' => null,
+                    'comuna_id' => null,
+                    'tarifa_id' => null,
+                ]
+            );
+
+            // Verificar que la tarifa existe y está activa
+            $tarifa = \App\Models\Tarifa::findOrFail($data['tarifa_id']);
+            
+            if ($tarifa->estado !== 'Activo') {
+                return response()->json([
+                    'message' => 'Solo puedes seleccionar tarifas activas'
+                ], 422);
+            }
+
+            $tarifaAnteriorId = $datosEmpresa->tarifa_id;
+            $datosEmpresa->tarifa_id = $data['tarifa_id'];
+            $datosEmpresa->save();
+
+            // Si cambió la tarifa y tenía ubicaciones seleccionadas, verificar que no exceda el nuevo límite
+            if ($tarifaAnteriorId !== $data['tarifa_id']) {
+                $ubicacionesSeleccionadas = EmpresaUbicacion::where('empresa_id', $user->id)->count();
+                
+                if ($ubicacionesSeleccionadas > $tarifa->sedes_permitidas) {
+                    // Eliminar ubicaciones que excedan el nuevo límite
+                    $ubicacionesExcedentes = EmpresaUbicacion::where('empresa_id', $user->id)
+                        ->skip($tarifa->sedes_permitidas)
+                        ->take($ubicacionesSeleccionadas - $tarifa->sedes_permitidas)
+                        ->get();
+                    
+                    foreach ($ubicacionesExcedentes as $empresaUbicacion) {
+                        $empresaUbicacion->delete();
+                    }
+                }
+            }
+
+            // Registrar en historial
+            HistorialEmpresaService::registrarDatosActualizados($user->id, [
+                'tarifa_id' => $data['tarifa_id'],
+                'tarifa_anterior_id' => $tarifaAnteriorId,
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Tarifa actualizada correctamente',
+                'tarifa' => $datosEmpresa->load('tarifa')->tarifa,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Error al cambiar la tarifa',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
 

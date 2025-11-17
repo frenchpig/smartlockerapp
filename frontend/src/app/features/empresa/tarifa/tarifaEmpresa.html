@@ -11,6 +11,26 @@
       </div>
     </div>
 
+    <!-- Plan actual destacado -->
+    <section class="current-plan" *ngIf="planActual()">
+      <div class="current-plan-card">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+          <div>
+            <h2 class="h5 mb-2">Tu plan actual</h2>
+            <h3 class="h4 mb-1">{{ planActual()?.nombre }}</h3>
+            <p class="text-muted mb-0">{{ planActual()?.descripcion }}</p>
+            <div class="mt-2">
+              <span class="badge bg-primary me-2">Sedes: {{ planActual()?.maxSedes }}</span>
+              <span class="badge bg-info">Lockers por sede: {{ planActual()?.maxLockersPorSede }}</span>
+            </div>
+          </div>
+          <div class="text-end">
+            <span class="badge bg-success fs-6 px-3 py-2">Plan activo</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- filtros -->
     <section class="filters">
       <input class="input" type="text" placeholder="Buscar por nombre o código…" [value]="busqueda()"
@@ -26,7 +46,7 @@
     <!-- cards -->
     <section class="plans-grid">
       <ng-container *ngFor="let p of planesFiltrados(); trackBy: trackById">
-        <article class="plan-card" [class.inactive]="p.estado === 'Inactivo'">
+        <article class="plan-card" [class.inactive]="p.estado === 'Inactivo'" [class.current-plan-card]="esPlanActual(p)">
           <header class="plan-header">
             <div class="plan-title">
               <h2>{{ p.nombre }}</h2>
@@ -69,8 +89,17 @@
 
           <!-- Acciones -->
           <footer class="plan-actions">
-            <button class="btn btn-success" (click)="pagar(p)" [disabled]="p.estado !== 'Activo'">
-              Pagar
+            <div *ngIf="esPlanActual(p)" class="mb-2">
+              <span class="badge badge-success">Tu plan actual</span>
+            </div>
+            <button 
+              class="btn" 
+              [class.btn-success]="!esPlanActual(p)" 
+              [class.btn-outline-secondary]="esPlanActual(p)"
+              (click)="cambiarTarifa(p)" 
+              [disabled]="p.estado !== 'Activo' || loading()">
+              <span *ngIf="loading()" class="spinner-border spinner-border-sm me-2"></span>
+              {{ esPlanActual(p) ? 'Plan actual' : 'Seleccionar este plan' }}
             </button>
           </footer>
         </article>
@@ -82,3 +111,67 @@
     </section>
   </div>
 </main>
+
+<!-- Modal de Confirmación -->
+<div class="modal-overlay" *ngIf="showConfirmModal()" (click)="cerrarModales()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">{{ modalTitle() }}</h3>
+      <button type="button" class="btn-close" (click)="cerrarModales()" aria-label="Cerrar">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p>{{ modalMessage() }}</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" (click)="cerrarModales()">Cancelar</button>
+      <button type="button" class="btn btn-success" (click)="confirmarCambioTarifa()" [disabled]="loading()">
+        <span *ngIf="loading()" class="spinner-border spinner-border-sm me-2"></span>
+        Confirmar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Alerta -->
+<div class="modal-overlay" *ngIf="showAlertModal()" (click)="cerrarModales()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">{{ modalTitle() }}</h3>
+      <button type="button" class="btn-close" (click)="cerrarModales()" aria-label="Cerrar">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+        <p class="mb-0">{{ modalMessage() }}</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-success" (click)="cerrarModales()">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Éxito -->
+<div class="modal-overlay" *ngIf="showSuccessModal()" (click)="cerrarModales()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">{{ modalTitle() }}</h3>
+      <button type="button" class="btn-close" (click)="cerrarModales()" aria-label="Cerrar">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+        <p class="mb-0">{{ modalMessage() }}</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-success" (click)="cerrarModales()">Aceptar</button>
+    </div>
+  </div>
+</div>

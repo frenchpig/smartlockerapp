@@ -16,7 +16,6 @@ import { Perfil } from './features/cliente/perfil/perfil';
 import { PedidoDetalle } from './features/cliente/pedido-detalle/pedido-detalle';
 
 import { HomeEmpresa } from './features/empresa/home-empresa/home-empresa';
-import { Lockers } from './features/empresa/lockers/lockers';
 import { Pedidos } from './features/empresa/pedidos/pedidos';
 import { MisPedidos } from './features/cliente/mis-pedidos/mis-pedidos';
 import { RepartidorHome } from './features/repartidor/home/repartidor-home';
@@ -86,7 +85,6 @@ const routes: Routes = [
       { path: '', component: HomeEmpresa },
       { path: 'pedidos', component: Pedidos },
       { path: 'pedidos/:id', component: EmpresaPedidoDetalle },
-      { path: 'lockers', component: Lockers },
       { path: 'reservas/nueva', component: ReservaNuevaComponent },
       { path: 'repartidores', component: EmpresaRepartidoresComponent },
       { path: 'PerfilEmpresa', component: PerfilEmpresa },

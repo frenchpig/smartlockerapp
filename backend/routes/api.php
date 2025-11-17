@@ -91,11 +91,13 @@ Route::prefix('empresas')->group(function () {
     Route::get('/{usuario}/historial', [App\Http\Controllers\EmpresaController::class, 'historial']);
 });
 
-// Rutas para empresas autenticadas (selección de ubicaciones)
+// Rutas para empresas autenticadas (selección de ubicaciones y tarifas)
 Route::middleware('auth:sanctum')->prefix('empresa')->group(function () {
     Route::get('/mis-ubicaciones', [App\Http\Controllers\EmpresaController::class, 'misUbicaciones']);
     Route::post('/seleccionar-ubicaciones', [App\Http\Controllers\EmpresaController::class, 'seleccionarUbicaciones']);
     Route::get('/ubicaciones-disponibles', [App\Http\Controllers\EmpresaController::class, 'ubicacionesDisponibles']);
+    Route::get('/plan-actual', [App\Http\Controllers\EmpresaController::class, 'planActual']);
+    Route::post('/cambiar-tarifa', [App\Http\Controllers\EmpresaController::class, 'cambiarTarifa']);
 });
 
 // Ruta adicional para historial de lockers con paginación
