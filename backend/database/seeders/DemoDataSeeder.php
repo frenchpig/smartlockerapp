@@ -15,6 +15,7 @@ use App\Models\DatosEmpresa;
 use App\Models\Comuna;
 use App\Models\Region;
 use App\Models\Tarifa;
+use App\Models\EmpresaUbicacion;
 use App\Services\HistorialLockerService;
 use App\Services\HistorialEmpresaService;
 use Carbon\Carbon;
@@ -251,6 +252,27 @@ class DemoDataSeeder extends Seeder
             'device_password' => '123456', // se encripta por mutator SHA-256
         ]);
 
+        // Asignar ubicaciones a las empresas según su tarifa
+        // Empresa 1 (Smart Pro): puede usar hasta 6 sedes, asignamos 2 para el ejemplo
+        // Empresa 2 (Smart Basic): puede usar hasta 2 sedes, asignamos 2 (todas las disponibles)
+        EmpresaUbicacion::create([
+            'empresa_id' => $empresa1->id,
+            'ubicacion_id' => $metroNunoa->id,
+        ]);
+        EmpresaUbicacion::create([
+            'empresa_id' => $empresa1->id,
+            'ubicacion_id' => $metroNuble->id,
+        ]);
+        
+        EmpresaUbicacion::create([
+            'empresa_id' => $empresa2->id,
+            'ubicacion_id' => $metroNunoa->id,
+        ]);
+        EmpresaUbicacion::create([
+            'empresa_id' => $empresa2->id,
+            'ubicacion_id' => $metroNuble->id,
+        ]);
+
         $now = Carbon::now();
         
         // Crear lockers con fechas retroactivas (antes de las reservas)
@@ -287,8 +309,43 @@ class DemoDataSeeder extends Seeder
         $l3->updated_at = $fechaCreacionLockers;
         $l3->save();
 
-        // Crear historial de creación de lockers inmediatamente después de crearlos
+        // Crear más lockers para que las empresas puedan tener reservas según sus tarifas
+        // Empresa 1 (Smart Pro): 20 lockers por sede
+        // Empresa 2 (Smart Basic): 10 lockers por sede
+        // Crear lockers adicionales en ambas ubicaciones
         $lockers = [$l1, $l2, $l3];
+        
+        // Crear más lockers en Metro Nunoa (hasta 20 para que ambas empresas puedan usar)
+        for ($i = 3; $i <= 20; $i++) {
+            $tamano = ['S', 'M', 'L'][($i - 1) % 3];
+            $l = new Locker([
+                'numero' => $i,
+                'ubicacion_id' => $metroNunoa->id,
+                'estado' => 'activo',
+                'tamano' => $tamano,
+            ]);
+            $l->created_at = $fechaCreacionLockers;
+            $l->updated_at = $fechaCreacionLockers;
+            $l->save();
+            $lockers[] = $l;
+        }
+        
+        // Crear más lockers en Metro Nuble (hasta 20 para que ambas empresas puedan usar)
+        for ($i = 2; $i <= 20; $i++) {
+            $tamano = ['S', 'M', 'L'][($i - 1) % 3];
+            $l = new Locker([
+                'numero' => $i,
+                'ubicacion_id' => $metroNuble->id,
+                'estado' => 'activo',
+                'tamano' => $tamano,
+            ]);
+            $l->created_at = $fechaCreacionLockers;
+            $l->updated_at = $fechaCreacionLockers;
+            $l->save();
+            $lockers[] = $l;
+        }
+
+        // Crear historial de creación de lockers inmediatamente después de crearlos
         foreach ($lockers as $locker) {
             HistorialLockerService::registrarCreacion(
                 $locker->id,
@@ -323,14 +380,57 @@ class DemoDataSeeder extends Seeder
         foreach ($usuariosEmpresas as $pair) {
             $usuario = $pair['usuario'];
             $empresa = $pair['empresa'];
+            
+            // Obtener tarifa de la empresa
+            $datosEmpresa = DatosEmpresa::where('usuario_id', $empresa->id)->first();
+            $tarifa = $datosEmpresa?->tarifa;
+            
+            // Obtener ubicaciones asignadas a la empresa
+            $ubicacionesEmpresa = EmpresaUbicacion::where('empresa_id', $empresa->id)
+                ->with('ubicacion')
+                ->get();
+            $ubicacionesIds = $ubicacionesEmpresa->pluck('ubicacion_id')->toArray();
+            
+            // Obtener lockers solo de las ubicaciones asignadas
+            $lockersDisponibles = collect($lockers)->filter(function($locker) use ($ubicacionesIds) {
+                return in_array($locker->ubicacion_id, $ubicacionesIds);
+            })->values()->all();
+            
+            if (empty($lockersDisponibles)) {
+                continue; // Si no hay lockers disponibles, saltar esta empresa
+            }
+            
+            // Calcular límites según tarifa
+            $maxLockersPorSede = $tarifa?->lockers_por_sede ?? 10;
+            $maxSedes = $tarifa?->sedes_permitidas ?? 2;
+            $maxLockersPendientes = $maxSedes * $maxLockersPorSede;
+            
+            // Contador de reservas pendientes por ubicación
+            $reservasPendientesPorUbicacion = [];
+            foreach ($ubicacionesIds as $ubicacionId) {
+                $reservasPendientesPorUbicacion[$ubicacionId] = 0;
+            }
 
-            // Crear 7 pedidos recientes (últimos 7 días - aparecerán en home)
-            for ($i = 0; $i < 7; $i++) {
-                $diasAtras = $i + 1; // De 1 a 7 días atrás
+            // Crear pedidos recientes (últimos 7 días - aparecerán en home)
+            // Crear suficientes reservas para mostrar actividad, pero respetando límites
+            // Calcular cuántas reservas pendientes podemos crear
+            $maxReservasPendientes = min($maxLockersPendientes, count($lockersDisponibles));
+            $numReservasRecientes = min(15, $maxReservasPendientes + 5); // Algunas completadas/anuladas
+            
+            for ($i = 0; $i < $numReservasRecientes; $i++) {
+                $diasAtras = ($i % 7) + 1; // Distribuir en los últimos 7 días
                 $fechaReserva = $now->copy()->subDays($diasAtras);
                 $horaInicio = $fechaReserva->copy()->addHours(rand(9, 18)); // Hora aleatoria del día
 
-                $estado = $estadoSecuencia[$i % count($estadoSecuencia)];
+                // Determinar estado: priorizar pendientes hasta alcanzar el límite
+                $totalPendientes = array_sum($reservasPendientesPorUbicacion);
+                if ($totalPendientes < $maxReservasPendientes && ($i % 3) !== 2) {
+                    // Crear más pendientes si no hemos alcanzado el límite
+                    $estado = 'pendiente';
+                } else {
+                    // Alternar entre completado y anulado
+                    $estado = $estadoSecuencia[($i % 2) + 1]; // completado o anulado
+                }
 
                 $horaFin = null;
                 if ($estado === 'completado') {
@@ -339,7 +439,40 @@ class DemoDataSeeder extends Seeder
                     $horaFin = $horaInicio->copy()->addMinutes(45);
                 }
 
-                $locker = $lockers[$i % count($lockers)];
+                // Seleccionar locker de las ubicaciones asignadas
+                // Si la reserva es pendiente, verificar límites
+                $lockerSeleccionado = null;
+                if ($estado === 'pendiente') {
+                    // Buscar una ubicación que no haya alcanzado su límite
+                    foreach ($ubicacionesIds as $ubicacionId) {
+                        if ($reservasPendientesPorUbicacion[$ubicacionId] < $maxLockersPorSede) {
+                            // Buscar un locker disponible en esta ubicación
+                            $lockerEnUbicacion = collect($lockersDisponibles)
+                                ->first(function($l) use ($ubicacionId) {
+                                    return $l->ubicacion_id === $ubicacionId;
+                                });
+                            
+                            if ($lockerEnUbicacion) {
+                                $lockerSeleccionado = $lockerEnUbicacion;
+                                $reservasPendientesPorUbicacion[$ubicacionId]++;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Si no hay espacio para más reservas pendientes, hacerla completada
+                    if (!$lockerSeleccionado) {
+                        $estado = 'completado';
+                        $horaFin = $horaInicio->copy()->addHours(1);
+                    }
+                }
+                
+                // Si no se seleccionó locker (reserva completada/anulada), usar uno aleatorio
+                if (!$lockerSeleccionado) {
+                    $lockerSeleccionado = $lockersDisponibles[array_rand($lockersDisponibles)];
+                }
+                
+                $locker = $lockerSeleccionado;
                 $repartidor = $repartidores[$i % count($repartidores)];
 
                 $reserva = new Reserva([
@@ -402,6 +535,7 @@ class DemoDataSeeder extends Seeder
             }
 
             // Crear 18 pedidos antiguos (hace más de 7 días - no aparecerán en home pero sí en pedidos)
+            // Estos pueden ser completados o anulados, no afectan los límites de pendientes
             for ($i = 0; $i < 18; $i++) {
                 $diasAtras = 8 + $i; // De 8 a 25 días atrás
                 $fechaReserva = $now->copy()->subDays($diasAtras);
@@ -416,7 +550,8 @@ class DemoDataSeeder extends Seeder
                     $horaFin = $horaInicio->copy()->addMinutes(30);
                 }
 
-                $locker = $lockers[$i % count($lockers)];
+                // Para reservas antiguas, usar cualquier locker de las ubicaciones asignadas
+                $locker = $lockersDisponibles[array_rand($lockersDisponibles)];
                 $repartidor = $repartidores[$i % count($repartidores)];
 
                 $reserva = new Reserva([
