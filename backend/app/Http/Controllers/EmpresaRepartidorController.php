@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Repartidor;
-use App\Models\Usuario;
+use App\Models\Reserva;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -26,20 +26,15 @@ class EmpresaRepartidorController extends Controller
 
         $search = trim((string) $request->query('search', ''));
 
-        $query = Repartidor::with('usuario')
-            ->where('empresa_id', $empresa->id);
+        $query = Repartidor::where('empresa_id', $empresa->id);
 
         if ($search !== '') {
             $query->where(function ($builder) use ($search) {
                 $builder
                     ->where('rut', 'like', "%{$search}%")
-                    ->orWhereHas('usuario', function ($usuarioQuery) use ($search) {
-                        $usuarioQuery->where(function ($inner) use ($search) {
-                            $inner->where('nombre', 'like', "%{$search}%")
-                                ->orWhere('apellido', 'like', "%{$search}%")
-                                ->orWhere('email', 'like', "%{$search}%");
-                        });
-                    });
+                    ->orWhere('nombre', 'like', "%{$search}%")
+                    ->orWhere('apellido', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
@@ -60,35 +55,31 @@ class EmpresaRepartidorController extends Controller
         }
 
         $data = $request->validate([
-            'nombre' => ['required', 'string', 'max:255'],
-            'apellido' => ['nullable', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:usuarios,email'],
-            'contrasena' => ['required', 'string', 'min:6'],
-            'telefono' => ['nullable', 'regex:/^569\d{8}$/'],
-            'rut' => ['required', 'string', 'max:20', 'unique:repartidores,rut', 'regex:/^\d{7,8}[0-9Kk]$/'],
+            'nombre' => ['required', 'string', 'max:100'],
+            'apellido' => ['required', 'string', 'max:100'],
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('repartidores', 'email')->where('empresa_id', $empresa->id),
+            ],
+            'telefono' => ['nullable', 'string', 'max:20'],
+            'rut' => ['required', 'string', 'max:20', 'regex:/^\d{7,8}[0-9Kk]$/'],
             'disponible' => ['nullable', 'boolean'],
         ]);
 
         $data['rut'] = $this->normalizeRut($data['rut']);
         $data['telefono'] = $this->normalizeTelefono($data['telefono'] ?? null);
 
-        $repartidor = DB::transaction(function () use ($empresa, $data) {
-            $usuario = Usuario::create([
-                'nombre' => $data['nombre'],
-                'apellido' => $data['apellido'] ?? null,
-                'email' => $data['email'],
-                'contrasena' => $data['contrasena'],
-                'telefono' => $data['telefono'],
-                'rol' => 'repartidor',
-            ]);
-
-            return Repartidor::create([
-                'usuario_id' => $usuario->id,
-                'empresa_id' => $empresa->id,
-                'rut' => $data['rut'],
-                'disponible' => $data['disponible'] ?? true,
-            ])->load('usuario');
-        });
+        $repartidor = Repartidor::create([
+            'empresa_id' => $empresa->id,
+            'nombre' => $data['nombre'],
+            'apellido' => $data['apellido'],
+            'email' => $data['email'],
+            'telefono' => $data['telefono'],
+            'rut' => $data['rut'],
+            'disponible' => $data['disponible'] ?? true,
+        ]);
 
         return response()->json($repartidor, 201);
     }
@@ -109,16 +100,17 @@ class EmpresaRepartidorController extends Controller
         }
 
         $data = $request->validate([
-            'nombre' => ['sometimes', 'string', 'max:255'],
-            'apellido' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'nombre' => ['sometimes', 'string', 'max:100'],
+            'apellido' => ['sometimes', 'string', 'max:100'],
             'email' => [
                 'sometimes',
                 'email',
                 'max:255',
-                Rule::unique('usuarios', 'email')->ignore($repartidor->usuario_id),
+                Rule::unique('repartidores', 'email')
+                    ->where('empresa_id', $empresa->id)
+                    ->ignore($repartidor->id),
             ],
-            'contrasena' => ['sometimes', 'string', 'min:6'],
-            'telefono' => ['sometimes', 'nullable', 'regex:/^569\d{8}$/'],
+            'telefono' => ['sometimes', 'nullable', 'string', 'max:20'],
             'rut' => [
                 'sometimes',
                 'required',
@@ -134,45 +126,13 @@ class EmpresaRepartidorController extends Controller
             $data['rut'] = $this->normalizeRut((string) $data['rut']);
         }
 
-        $repartidorActualizado = DB::transaction(function () use ($repartidor, $data) {
-            $usuario = $repartidor->usuario;
+        if (array_key_exists('telefono', $data)) {
+            $data['telefono'] = $this->normalizeTelefono($data['telefono'] ?? null);
+        }
 
-            if (isset($data['nombre'])) {
-                $usuario->nombre = $data['nombre'];
-            }
-            if (array_key_exists('apellido', $data)) {
-                $usuario->apellido = $data['apellido'];
-            }
-            if (isset($data['email'])) {
-                $usuario->email = $data['email'];
-            }
-            if (isset($data['contrasena'])) {
-                $usuario->contrasena = $data['contrasena'];
-            }
-            if (array_key_exists('telefono', $data)) {
-                $usuario->telefono = $this->normalizeTelefono($data['telefono'] ?? null);
-            }
+        $repartidor->update($data);
 
-            if ($usuario->isDirty()) {
-                $usuario->save();
-            }
-
-            if (array_key_exists('disponible', $data)) {
-                $repartidor->disponible = (bool) $data['disponible'];
-            }
-
-            if (array_key_exists('rut', $data)) {
-                $repartidor->rut = $data['rut'];
-            }
-
-            if ($repartidor->isDirty()) {
-                $repartidor->save();
-            }
-
-            return $repartidor->fresh('usuario');
-        });
-
-        return response()->json($repartidorActualizado);
+        return response()->json($repartidor->fresh());
     }
 
     /**
@@ -201,16 +161,60 @@ class EmpresaRepartidorController extends Controller
             ], 422);
         }
 
-        DB::transaction(function () use ($repartidor) {
-            $usuario = $repartidor->usuario;
-            $repartidor->delete();
-
-            if ($usuario) {
-                $usuario->delete();
-            }
-        });
+        $repartidor->delete();
 
         return response()->noContent();
+    }
+
+    /**
+     * Obtener los pedidos asignados a un repartidor específico de la empresa
+     */
+    public function pedidosRepartidor(Request $request, Repartidor $repartidor)
+    {
+        $empresa = $request->user();
+
+        if (!$empresa || $empresa->rol !== 'empresa') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        if ($repartidor->empresa_id !== $empresa->id) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $perPage = (int) $request->query('per_page', 10);
+        $perPage = max(1, min(100, $perPage));
+
+        $estado = $request->query('estado');
+        $logisticaEstado = $request->query('logistica_estado');
+
+        $query = Reserva::with(['usuario', 'locker.ubicacion', 'articulos'])
+            ->where('repartidor_id', $repartidor->id)
+            ->where('empresa_id', $empresa->id)
+            ->orderByDesc('created_at');
+
+        if ($estado) {
+            $query->where('estado', $estado);
+        }
+
+        if ($logisticaEstado) {
+            $query->where('logistica_estado', $logisticaEstado);
+        } else {
+            // Por defecto, mostrar solo pedidos activos (no completados)
+            $query->whereIn('logistica_estado', ['pendiente_repartidor', 'asignado', 'en_camino']);
+        }
+
+        $reservas = $query->paginate($perPage);
+
+        return response()->json([
+            'repartidor' => $repartidor,
+            'reservas' => $reservas->items(),
+            'pagination' => [
+                'current_page' => $reservas->currentPage(),
+                'last_page' => $reservas->lastPage(),
+                'per_page' => $reservas->perPage(),
+                'total' => $reservas->total(),
+            ],
+        ]);
     }
 
     private function normalizeRut(string $rut): string
@@ -242,4 +246,3 @@ class EmpresaRepartidorController extends Controller
         return null;
     }
 }
-

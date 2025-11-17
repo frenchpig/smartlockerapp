@@ -83,19 +83,19 @@
                 <tr *ngFor="let item of repartidores; trackBy: trackById">
                   <td>
                     <div class="fw-semibold">
-                      {{ item.usuario.nombre }} {{ item.usuario.apellido || '' }}
+                      {{ item.nombre }} {{ item.apellido || '' }}
                     </div>
                   </td>
                   <td>
                     <span class="rut-pill">{{ formatRut(item.rut) }}</span>
                   </td>
                   <td>
-                    <a class="text-decoration-none" [href]="'mailto:' + item.usuario.email">
-                      {{ item.usuario.email }}
+                    <a class="text-decoration-none" [href]="'mailto:' + item.email">
+                      {{ item.email }}
                     </a>
                   </td>
                   <td>
-                    <span class="telefono-text">{{ formatTelefono(item.usuario.telefono) }}</span>
+                    <span class="telefono-text">{{ formatTelefono(item.telefono) }}</span>
                   </td>
                   <td>
                     <span
@@ -106,6 +106,13 @@
                   </td>
                   <td class="text-end">
                     <div class="d-flex justify-content-end flex-wrap gap-2">
+                      <button
+                        type="button"
+                        class="btn btn-outline-primary btn-sm"
+                        (click)="verPedidos(item)"
+                        [disabled]="saving || loading">
+                        <i class="bi bi-box-seam me-1"></i> Ver pedidos
+                      </button>
                       <button
                         type="button"
                         class="btn btn-outline-success btn-sm"
@@ -248,16 +255,6 @@
         </div>
       </div>
 
-      <div class="mb-4">
-        <label class="form-label fw-semibold">Contraseña</label>
-        <input
-          type="password"
-          formControlName="contrasena"
-          class="form-control"
-          [class.is-invalid]="form.controls.contrasena.invalid && form.controls.contrasena.touched"
-          placeholder="Al menos 6 caracteres" />
-        <div class="invalid-feedback">La contraseña debe tener 6 caracteres o más.</div>
-      </div>
 
       <div class="d-flex gap-2">
         <button
@@ -349,16 +346,6 @@
               Ingresa los 8 dígitos finales del número móvil.
             </div>
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Contraseña (opcional)</label>
-            <input
-              type="password"
-              formControlName="contrasena"
-              class="form-control"
-              [class.is-invalid]="editForm.controls.contrasena.invalid && editForm.controls.contrasena.touched"
-              placeholder="Sólo si deseas cambiarla" />
-            <div class="invalid-feedback">Debe tener 6 caracteres como mínimo.</div>
-          </div>
           <div class="col-12">
             <div class="form-check form-switch mt-2">
               <input
@@ -383,6 +370,109 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Pedidos del Repartidor -->
+<div class="repartidor-modal-backdrop" *ngIf="showPedidosModal" (click)="cerrarPedidosModal()"></div>
+<div class="repartidor-modal" *ngIf="showPedidosModal">
+  <div class="repartidor-modal__dialog repartidor-modal__dialog--large">
+    <div class="repartidor-modal__header">
+      <div>
+        <h3 class="h6 fw-semibold mb-0 text-success">
+          Pedidos de {{ repartidorSeleccionado?.nombre }} {{ repartidorSeleccionado?.apellido }}
+        </h3>
+        <p class="text-muted small mb-0">Gestiona los pedidos asignados a este repartidor</p>
+      </div>
+      <button type="button" class="btn btn-link text-muted p-0" (click)="cerrarPedidosModal()" [disabled]="saving">
+        <i class="bi bi-x-lg fs-5"></i>
+      </button>
+    </div>
+    <div class="repartidor-modal__body">
+      <ng-container *ngIf="errorMsg">
+        <div class="alert alert-danger py-2 mb-3">{{ errorMsg }}</div>
+      </ng-container>
+
+      <div class="d-flex justify-content-center py-4" *ngIf="loadingPedidos">
+        <div class="spinner-border text-success" role="status" aria-label="Cargando"></div>
+      </div>
+
+      <div *ngIf="!loadingPedidos && pedidosRepartidor.length === 0" class="text-center text-muted py-4">
+        <p class="mb-0">Este repartidor no tiene pedidos asignados.</p>
+      </div>
+
+      <div class="table-responsive" *ngIf="!loadingPedidos && pedidosRepartidor.length > 0">
+        <table class="table align-middle">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Destinatario</th>
+              <th>Locker</th>
+              <th>Ubicación</th>
+              <th>Estado</th>
+              <th>Logística</th>
+              <th>Fecha</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let pedido of pedidosRepartidor">
+              <td>#{{ pedido.id }}</td>
+              <td>
+                <div class="fw-semibold">{{ pedido.usuario.nombre }} {{ pedido.usuario.apellido }}</div>
+                <small class="text-muted">{{ pedido.usuario.email }}</small>
+              </td>
+              <td>#{{ pedido.locker.numero }}</td>
+              <td>{{ pedido.locker.ubicacion.nombre }}</td>
+              <td>
+                <span class="badge" [ngClass]="pedido.estado === 'pendiente' ? 'badge-warning' : pedido.estado === 'completado' ? 'badge-success' : 'badge-danger'">
+                  {{ pedido.estado }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="getEstadoLogisticaBadge(pedido.logistica_estado)">
+                  {{ getEstadoLogisticaLabel(pedido.logistica_estado) }}
+                </span>
+              </td>
+              <td>
+                <small>{{ pedido.fecha_reserva | date:'dd/MM/yy' }}</small><br>
+                <small class="text-muted" *ngIf="pedido.hora_inicio">{{ pedido.hora_inicio | date:'HH:mm' }}</small>
+              </td>
+              <td class="text-end">
+                <div class="d-flex justify-content-end gap-2">
+                  <button
+                    type="button"
+                    class="btn btn-outline-primary btn-sm"
+                    (click)="marcarEnRuta(pedido.id)"
+                    *ngIf="puedeMarcarEnRuta(pedido)"
+                    [disabled]="saving">
+                    <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
+                    En ruta
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-success btn-sm"
+                    (click)="marcarEntregado(pedido.id)"
+                    *ngIf="puedeMarcarEntregado(pedido)"
+                    [disabled]="saving">
+                    <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
+                    Entregado
+                  </button>
+                  <span class="text-muted small" *ngIf="pedido.logistica_estado === 'completado'">
+                    Completado
+                  </span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="repartidor-modal__footer">
+      <button type="button" class="btn btn-outline-secondary" (click)="cerrarPedidosModal()" [disabled]="saving">
+        Cerrar
+      </button>
     </div>
   </div>
 </div>

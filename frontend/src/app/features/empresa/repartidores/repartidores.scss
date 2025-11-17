@@ -175,3 +175,55 @@
   border-radius: 0.75rem;
 }
 
+.repartidor-modal__dialog--large {
+  width: min(900px, 95vw);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.repartidor-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  margin-top: 1rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.badge-warning {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid rgba(133, 100, 4, 0.2);
+}
+
+.badge-info {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid rgba(12, 84, 96, 0.2);
+}
+
+.badge-primary {
+  background-color: #cfe2ff;
+  color: #084298;
+  border: 1px solid rgba(8, 66, 152, 0.2);
+}
+
+.badge-success {
+  background-color: #d1e7dd;
+  color: #0f5132;
+  border: 1px solid rgba(15, 81, 50, 0.2);
+}
+
+.badge-secondary {
+  background-color: #e2e3e5;
+  color: #41464b;
+  border: 1px solid rgba(65, 70, 75, 0.2);
+}
+
+.badge-danger {
+  background-color: #f8d7da;
+  color: #842029;
+  border: 1px solid rgba(132, 32, 41, 0.2);
+}
+

@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 
@@ -7,19 +7,14 @@ import { AuthService } from '../../../core/auth/auth';
 import { environment } from '../../../../environments/environment';
 import { HeaderEmpresaComponent } from '../shared/header-empresa/header-empresa.component';
 
-interface UsuarioLigero {
-  id: number;
-  nombre: string;
-  apellido?: string | null;
-  email: string;
-  telefono?: string | null;
-}
-
 interface RepartidorItem {
   id: number;
   disponible: boolean;
   rut: string;
-  usuario: UsuarioLigero;
+  nombre: string;
+  apellido?: string | null;
+  email: string;
+  telefono?: string | null;
   creadoEn?: string | null;
   actualizadoEn?: string | null;
 }
@@ -32,10 +27,37 @@ interface PaginatedResponse<T> {
   total: number;
 }
 
+interface PedidoRepartidor {
+  id: number;
+  estado: string;
+  logistica_estado: string;
+  fecha_reserva: string;
+  hora_inicio: string;
+  locker: {
+    id: number;
+    numero: number;
+    ubicacion: {
+      id: number;
+      nombre: string;
+    };
+  };
+  usuario: {
+    id: number;
+    nombre: string;
+    apellido: string;
+    email: string;
+  };
+  articulos: Array<{
+    id: number;
+    nombre: string;
+    cantidad: number;
+  }>;
+}
+
 @Component({
   standalone: true,
   selector: 'app-empresa-repartidores',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, HeaderEmpresaComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, HeaderEmpresaComponent, DatePipe],
   templateUrl: './repartidores.html',
   styleUrls: ['./repartidores.scss'],
 })
@@ -50,6 +72,10 @@ export class EmpresaRepartidoresComponent implements OnInit {
   editingId: number | null = null;
   showEditModal = false;
   showCreateForm = false;
+  showPedidosModal = false;
+  repartidorSeleccionado: RepartidorItem | null = null;
+  pedidosRepartidor: PedidoRepartidor[] = [];
+  loadingPedidos = false;
   page = 1;
   perPage = 10;
   lastPage = 1;
@@ -59,21 +85,19 @@ export class EmpresaRepartidoresComponent implements OnInit {
   successMsg = '';
 
   form = this.fb.group({
-    nombre: ['', [Validators.required, Validators.maxLength(255)]],
-    apellido: ['', [Validators.maxLength(255)]],
+    nombre: ['', [Validators.required, Validators.maxLength(100)]],
+    apellido: ['', [Validators.required, Validators.maxLength(100)]],
     rut: ['', [Validators.required, Validators.pattern(/^\d{7,8}[0-9Kk]$/)]],
     email: ['', [Validators.required, Validators.email, Validators.maxLength(255)]],
     telefono: ['', [Validators.pattern(/^(\d{8})?$/)]],
-    contrasena: ['', [Validators.required, Validators.minLength(6)]],
   });
 
   editForm = this.fb.group({
-    nombre: ['', [Validators.required, Validators.maxLength(255)]],
-    apellido: ['', [Validators.maxLength(255)]],
+    nombre: ['', [Validators.required, Validators.maxLength(100)]],
+    apellido: ['', [Validators.required, Validators.maxLength(100)]],
     rut: ['', [Validators.required, Validators.pattern(/^\d{7,8}[0-9Kk]$/)]],
     email: ['', [Validators.required, Validators.email, Validators.maxLength(255)]],
     telefono: ['', [Validators.pattern(/^(\d{8})?$/)]],
-    contrasena: ['', [Validators.minLength(6)]],
     disponible: [true],
   });
 
@@ -135,21 +159,17 @@ export class EmpresaRepartidoresComponent implements OnInit {
   }
 
   private mapRepartidor(data: any): RepartidorItem {
-    const usuario = data?.usuario ?? {};
     const rutRaw = data?.rut;
     const rut = typeof rutRaw === 'string' ? this.prepareRut(rutRaw) : '';
-    const telefonoRaw = typeof usuario?.telefono === 'string' ? usuario.telefono : null;
+    const telefonoRaw = typeof data?.telefono === 'string' ? data.telefono : null;
     return {
       id: Number(data?.id ?? 0),
       disponible: Boolean(data?.disponible),
       rut,
-      usuario: {
-        id: Number(usuario?.id ?? 0),
-        nombre: String(usuario?.nombre ?? '').trim(),
-        apellido: usuario?.apellido ?? null,
-        email: String(usuario?.email ?? '').trim(),
-        telefono: telefonoRaw,
-      },
+      nombre: String(data?.nombre ?? '').trim(),
+      apellido: data?.apellido ?? null,
+      email: String(data?.email ?? '').trim(),
+      telefono: telefonoRaw,
       creadoEn: data?.created_at ?? null,
       actualizadoEn: data?.updated_at ?? null,
     };
@@ -170,10 +190,9 @@ export class EmpresaRepartidoresComponent implements OnInit {
     const telefono = this.prepareTelefonoPayload(value.telefono);
     const payload: Record<string, unknown> = {
       nombre: (value.nombre ?? '').trim(),
-      apellido: value.apellido ? value.apellido.trim() : null,
+      apellido: (value.apellido ?? '').trim(),
       rut,
       email: (value.email ?? '').trim(),
-      contrasena: (value.contrasena ?? '').trim(),
     };
 
     if (telefono !== null) {
@@ -195,14 +214,13 @@ export class EmpresaRepartidoresComponent implements OnInit {
 
   iniciarEdicion(item: RepartidorItem): void {
     this.editingId = item.id;
-    const telefonoSuffix = this.extractTelefonoSuffix(item.usuario.telefono);
+    const telefonoSuffix = this.extractTelefonoSuffix(item.telefono);
     this.editForm.reset({
-      nombre: item.usuario.nombre,
-      apellido: item.usuario.apellido ?? '',
+      nombre: item.nombre,
+      apellido: item.apellido ?? '',
       rut: this.prepareRut(item.rut),
-      email: item.usuario.email,
+      email: item.email,
       telefono: telefonoSuffix,
-      contrasena: '',
       disponible: item.disponible,
     });
     this.successMsg = '';
@@ -236,7 +254,7 @@ export class EmpresaRepartidoresComponent implements OnInit {
 
     const payload: Record<string, unknown> = {
       nombre: (value.nombre ?? '').trim(),
-      apellido: value.apellido ? value.apellido.trim() : null,
+      apellido: (value.apellido ?? '').trim(),
       rut,
       email: (value.email ?? '').trim(),
       disponible: value.disponible ?? true,
@@ -246,11 +264,6 @@ export class EmpresaRepartidoresComponent implements OnInit {
       payload['telefono'] = null;
     } else if (telefono !== null) {
       payload['telefono'] = telefono;
-    }
-
-    const password = value.contrasena ? value.contrasena.trim() : '';
-    if (password) {
-      payload['contrasena'] = password;
     }
 
     try {
@@ -273,7 +286,7 @@ export class EmpresaRepartidoresComponent implements OnInit {
 
   async eliminar(item: RepartidorItem): Promise<void> {
     const confirmado = window.confirm(
-      `¿Seguro que deseas eliminar al repartidor ${item.usuario.nombre || ''} ${item.usuario.apellido || ''}?`,
+      `¿Seguro que deseas eliminar al repartidor ${item.nombre || ''} ${item.apellido || ''}?`,
     );
 
     if (!confirmado) {
@@ -411,6 +424,110 @@ export class EmpresaRepartidoresComponent implements OnInit {
       return null;
     }
     return `569${digits}`;
+  }
+
+  async verPedidos(item: RepartidorItem): Promise<void> {
+    this.repartidorSeleccionado = item;
+    this.showPedidosModal = true;
+    this.loadingPedidos = true;
+    this.pedidosRepartidor = [];
+    this.errorMsg = '';
+    
+    try {
+      const res = await this.http
+        .get<any>(`${environment.apiUrl}/empresa/repartidores/${item.id}/pedidos`)
+        .toPromise();
+      
+      this.pedidosRepartidor = res?.reservas ?? [];
+    } catch (error: any) {
+      console.error('Error cargando pedidos del repartidor:', error);
+      this.errorMsg = error?.error?.message || 'Error al cargar los pedidos';
+      this.pedidosRepartidor = [];
+    } finally {
+      this.loadingPedidos = false;
+    }
+  }
+
+  cerrarPedidosModal(): void {
+    this.showPedidosModal = false;
+    this.repartidorSeleccionado = null;
+    this.pedidosRepartidor = [];
+    this.errorMsg = '';
+  }
+
+  async marcarEnRuta(pedidoId: number): Promise<void> {
+    if (this.saving) return;
+    
+    this.saving = true;
+    this.errorMsg = '';
+    
+    try {
+      await this.http
+        .post(`${environment.apiUrl}/reservas/${pedidoId}/en-ruta`, {})
+        .toPromise();
+      
+      // Recargar pedidos
+      if (this.repartidorSeleccionado) {
+        await this.verPedidos(this.repartidorSeleccionado);
+      }
+    } catch (error: any) {
+      console.error('Error marcando en ruta:', error);
+      this.errorMsg = error?.error?.message || 'Error al marcar como en ruta';
+    } finally {
+      this.saving = false;
+    }
+  }
+
+  async marcarEntregado(pedidoId: number): Promise<void> {
+    if (this.saving) return;
+    
+    this.saving = true;
+    this.errorMsg = '';
+    
+    try {
+      await this.http
+        .post(`${environment.apiUrl}/reservas/${pedidoId}/entregar`, {})
+        .toPromise();
+      
+      // Recargar pedidos
+      if (this.repartidorSeleccionado) {
+        await this.verPedidos(this.repartidorSeleccionado);
+      }
+    } catch (error: any) {
+      console.error('Error marcando como entregado:', error);
+      this.errorMsg = error?.error?.message || 'Error al marcar como entregado';
+    } finally {
+      this.saving = false;
+    }
+  }
+
+  getEstadoLogisticaLabel(estado: string): string {
+    const estados: Record<string, string> = {
+      'pendiente_repartidor': 'Pendiente',
+      'asignado': 'Asignado',
+      'en_camino': 'En camino',
+      'completado': 'Completado',
+    };
+    return estados[estado] || estado;
+  }
+
+  getEstadoLogisticaBadge(estado: string): string {
+    const badges: Record<string, string> = {
+      'pendiente_repartidor': 'badge-warning',
+      'asignado': 'badge-info',
+      'en_camino': 'badge-primary',
+      'completado': 'badge-success',
+    };
+    return badges[estado] || 'badge-secondary';
+  }
+
+  puedeMarcarEnRuta(pedido: PedidoRepartidor): boolean {
+    return pedido.estado === 'pendiente' && 
+           (pedido.logistica_estado === 'asignado' || pedido.logistica_estado === 'pendiente_repartidor');
+  }
+
+  puedeMarcarEntregado(pedido: PedidoRepartidor): boolean {
+    return pedido.logistica_estado === 'en_camino' || pedido.logistica_estado === 'asignado';
   }
 }
 

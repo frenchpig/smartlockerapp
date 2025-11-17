@@ -176,24 +176,6 @@ class DemoDataSeeder extends Seeder
         // Registrar creación de cuenta en historial
         HistorialEmpresaService::registrarCreacionCuenta($empresa2->id, $datosEmpresa2->nombre);
 
-        $repUser1 = Usuario::create([
-            'nombre' => 'Laura',
-            'apellido' => 'Campos',
-            'email' => 'repartidor1@example.com',
-            'contrasena' => '123456',
-            'telefono' => '56928889999',
-            'rol' => 'repartidor',
-        ]);
-
-        $repUser2 = Usuario::create([
-            'nombre' => 'Pedro',
-            'apellido' => 'Saez',
-            'email' => 'repartidor2@example.com',
-            'contrasena' => '123456',
-            'telefono' => '56927778888',
-            'rol' => 'repartidor',
-        ]);
-
         $admin = Usuario::create([
             'nombre' => 'Admin',
             'apellido' => 'Sistema',
@@ -223,16 +205,25 @@ class DemoDataSeeder extends Seeder
 
         $tecnicos = [$tecnico1, $tecnico2];
 
+        // Crear repartidores como datos de empresa (sin usuarios)
         $repartidores = [
             Repartidor::create([
-                'usuario_id' => $repUser1->id,
                 'empresa_id' => $empresa1->id,
+                'nombre' => 'Laura',
+                'apellido' => 'Campos',
+                'email' => 'laura.campos@empresa1.com',
+                'telefono' => '56928889999',
                 'rut' => '111111111',
+                'disponible' => true,
             ]),
             Repartidor::create([
-                'usuario_id' => $repUser2->id,
                 'empresa_id' => $empresa2->id,
+                'nombre' => 'Pedro',
+                'apellido' => 'Saez',
+                'email' => 'pedro.saez@empresa2.com',
+                'telefono' => '56927778888',
                 'rut' => '22222222K',
+                'disponible' => true,
             ]),
         ];
 

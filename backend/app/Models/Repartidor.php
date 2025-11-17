@@ -12,8 +12,11 @@ class Repartidor extends Model
     protected $table = 'repartidores';
 
     protected $fillable = [
-        'usuario_id',
         'empresa_id',
+        'nombre',
+        'apellido',
+        'email',
+        'telefono',
         'rut',
         'disponible',
     ];
@@ -24,11 +27,6 @@ class Repartidor extends Model
         'updated_at' => 'datetime',
     ];
 
-    public function usuario()
-    {
-        return $this->belongsTo(Usuario::class, 'usuario_id');
-    }
-
     public function empresa()
     {
         return $this->belongsTo(Usuario::class, 'empresa_id');
@@ -37,5 +35,13 @@ class Repartidor extends Model
     public function reservas()
     {
         return $this->hasMany(Reserva::class, 'repartidor_id');
+    }
+
+    /**
+     * Obtener el nombre completo del repartidor
+     */
+    public function getNombreCompletoAttribute(): string
+    {
+        return trim($this->nombre . ' ' . $this->apellido);
     }
 }

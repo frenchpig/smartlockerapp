@@ -39,7 +39,7 @@ class Reserva extends Model
 
     protected $with = [
         'locker.ubicacion',
-        'repartidor.usuario',
+        'repartidor',
         'articulos',
     ];
 

@@ -31,7 +31,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reservas/mis-historicas', [ReservaController::class, 'myHistory']);
     Route::get('/reservas/empresa/mis-ultimas', [ReservaController::class, 'companyLatest']);
     Route::post('/reservas/empresa/solicitudes', [ReservaController::class, 'createForCompany']);
-    Route::get('/reservas/repartidor/mis', [ReservaController::class, 'repartidorAssignments']);
     Route::post('/reservas/{reserva}/en-ruta', [ReservaController::class, 'marcarEnRuta']);
     Route::post('/reservas/{reserva}/entregar', [ReservaController::class, 'marcarEntregado']);
     // Generar codigo temporal de 6 digitos para una reserva
@@ -44,6 +43,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Repartidores de empresa
     Route::get('/empresa/repartidores', [EmpresaRepartidorController::class, 'index']);
     Route::post('/empresa/repartidores', [EmpresaRepartidorController::class, 'store']);
+    Route::get('/empresa/repartidores/{repartidor}/pedidos', [EmpresaRepartidorController::class, 'pedidosRepartidor']);
     Route::put('/empresa/repartidores/{repartidor}', [EmpresaRepartidorController::class, 'update']);
     Route::patch('/empresa/repartidores/{repartidor}', [EmpresaRepartidorController::class, 'update']);
     Route::delete('/empresa/repartidores/{repartidor}', [EmpresaRepartidorController::class, 'destroy']);

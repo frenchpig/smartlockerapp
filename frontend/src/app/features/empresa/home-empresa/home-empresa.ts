@@ -216,11 +216,11 @@ export class HomeEmpresa implements OnInit {
     const logisticaEstado = String(data?.logistica_estado ?? 'pendiente_repartidor');
     const { label: logisticaLabel, badgeClass: logisticaBadge } = this.mapLogisticaEstado(logisticaEstado);
 
-    const repartidorUsuario = data?.repartidor?.usuario;
-    const repartidorNombre = repartidorUsuario
-      ? [repartidorUsuario?.nombre, repartidorUsuario?.apellido].filter(Boolean).join(' ').trim()
+    const repartidor = data?.repartidor;
+    const repartidorNombre = repartidor
+      ? [repartidor?.nombre, repartidor?.apellido].filter(Boolean).join(' ').trim()
       : '';
-    const repartidorEmail = repartidorUsuario?.email ?? 'Sin asignar';
+    const repartidorEmail = repartidor?.email ?? 'Sin asignar';
     const repartidorNombreFinal = repartidorNombre || repartidorEmail || 'Sin asignar';
 
     return {
