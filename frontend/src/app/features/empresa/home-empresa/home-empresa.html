@@ -5,6 +5,13 @@
         <div class="row justify-content-center">
             <div class="col-12 col-lg-11 col-xl-10">
 
+                <!-- Alerta si no tiene ubicaciones seleccionadas -->
+                <div class="alert alert-warning alert-dismissible fade show" role="alert" *ngIf="!cargandoUbicaciones && !tieneUbicacionesSeleccionadas">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>¡Atención!</strong> Debes seleccionar las ubicaciones donde utilizarás lockers antes de crear reservas.
+                    <a routerLink="/empresa/ubicaciones" class="alert-link ms-2">Seleccionar ubicaciones ahora</a>
+                </div>
+
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-md-6 col-lg-4" *ngFor="let kpi of kpis">
                         <div class="card border-0 shadow-sm h-100">
@@ -23,12 +30,17 @@
                         <small class="text-muted">Total: {{ total }} registros (últimos 7 días)</small>
                     </div>
                     <div class="d-flex flex-wrap gap-2">
-                        <a class="btn btn-primary btn-sm" routerLink="/empresa/reservas/nueva">
+                        <a class="btn btn-primary btn-sm" routerLink="/empresa/reservas/nueva" 
+                           [class.disabled]="!tieneUbicacionesSeleccionadas"
+                           [attr.aria-disabled]="!tieneUbicacionesSeleccionadas">
                             <i class="bi bi-plus-lg me-1"></i> Nueva reserva
                         </a>
                         <button class="btn btn-outline-success btn-sm" type="button"
                             (click)="refrescar()">Refrescar</button>
                         <a class="btn btn-success btn-sm" routerLink="/empresa/pedidos">Ver todos</a>
+                        <a class="btn btn-outline-info btn-sm" routerLink="/empresa/ubicaciones">
+                            <i class="bi bi-geo-alt me-1"></i> Ubicaciones
+                        </a>
                     </div>
                 </div>
 

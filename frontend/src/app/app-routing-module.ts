@@ -27,6 +27,7 @@ import { EmpresaRepartidoresComponent } from './features/empresa/repartidores/re
 import { PerfilEmpresa } from "./features/empresa/perfilEmpresa/perfilEmpresa";
 import { EmpresaTarifas } from "./features/empresa/tarifa/tarifaEmpresa";
 import { EmpresaIncidencias } from "./features/empresa/incidenciasEmpresa/incidenciasEmpresa";
+import { UbicacionesEmpresa } from "./features/empresa/ubicaciones/ubicaciones";
 import { ClienteIncidencias  } from "./features/cliente/incidenciasCliente/incidenciasCliente";
 
 
@@ -91,6 +92,7 @@ const routes: Routes = [
       { path: 'PerfilEmpresa', component: PerfilEmpresa },
       { path: 'tarifaEmpresa', component: EmpresaTarifas },
       { path: 'EmpresaIncidencias', component: EmpresaIncidencias },
+      { path: 'ubicaciones', component: UbicacionesEmpresa },
 
 
     ],

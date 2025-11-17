@@ -54,4 +54,8 @@ class Usuario extends Authenticatable
     public function historialEnvios(){ return $this->hasMany(HistorialEnvio::class, 'usuario_id'); }
     public function datosEmpresa()   { return $this->hasOne(DatosEmpresa::class, 'usuario_id'); }
     public function historialEmpresa(){ return $this->hasMany(HistorialEmpresa::class, 'usuario_id'); }
+    
+    // Relaciones para empresas (cuando rol = 'empresa')
+    public function ubicacionesAsignadas() { return $this->hasMany(EmpresaUbicacion::class, 'empresa_id'); }
+    public function reservasComoEmpresa() { return $this->hasMany(Reserva::class, 'empresa_id'); }
 }

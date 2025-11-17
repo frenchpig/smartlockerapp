@@ -7,7 +7,10 @@ use App\Models\DatosEmpresa;
 use App\Models\Region;
 use App\Models\Comuna;
 use App\Models\HistorialEmpresa;
+use App\Models\Ubicacion;
+use App\Models\EmpresaUbicacion;
 use App\Services\HistorialEmpresaService;
+use App\Services\TarifaLimitacionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -231,6 +234,136 @@ class EmpresaController extends Controller
         $historial = $query->paginate($perPage);
 
         return response()->json($historial);
+    }
+
+    /**
+     * Obtener las ubicaciones seleccionadas de la empresa autenticada
+     */
+    public function misUbicaciones(Request $request)
+    {
+        $user = $request->user();
+        
+        if (!$user || $user->rol !== 'empresa') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $ubicaciones = EmpresaUbicacion::where('empresa_id', $user->id)
+            ->with('ubicacion')
+            ->get()
+            ->map(function ($empresaUbicacion) {
+                return [
+                    'id' => $empresaUbicacion->ubicacion_id,
+                    'nombre' => $empresaUbicacion->ubicacion->nombre,
+                    'latitud' => $empresaUbicacion->ubicacion->latitud,
+                    'longitud' => $empresaUbicacion->ubicacion->longitud,
+                ];
+            });
+
+        // Obtener información de limitaciones
+        $limitaciones = TarifaLimitacionService::obtenerInfoLimitaciones($user);
+
+        return response()->json([
+            'ubicaciones' => $ubicaciones,
+            'limitaciones' => $limitaciones,
+        ]);
+    }
+
+    /**
+     * Seleccionar/actualizar las ubicaciones de la empresa autenticada
+     */
+    public function seleccionarUbicaciones(Request $request)
+    {
+        $user = $request->user();
+        
+        if (!$user || $user->rol !== 'empresa') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $data = $request->validate([
+            'ubicaciones' => ['required', 'array', 'min:1'],
+            'ubicaciones.*' => ['required', 'integer', 'exists:ubicaciones,id'],
+        ]);
+
+        // Verificar que la empresa tenga tarifa
+        $datosEmpresa = $user->datosEmpresa;
+        if (!$datosEmpresa || !$datosEmpresa->tarifa) {
+            return response()->json([
+                'message' => 'La empresa no tiene una tarifa asignada'
+            ], 422);
+        }
+
+        $tarifa = $datosEmpresa->tarifa;
+        $ubicacionesIds = $data['ubicaciones'];
+        $cantidadUbicaciones = count($ubicacionesIds);
+
+        // Validar que no exceda el límite de sedes permitidas
+        if ($cantidadUbicaciones > $tarifa->sedes_permitidas) {
+            return response()->json([
+                'message' => "Tu tarifa '{$tarifa->nombre_publico}' permite máximo {$tarifa->sedes_permitidas} sede(s). Has seleccionado {$cantidadUbicaciones}."
+            ], 422);
+        }
+
+        // Validar que todas las ubicaciones existan
+        $ubicacionesExistentes = Ubicacion::whereIn('id', $ubicacionesIds)->pluck('id')->toArray();
+        $ubicacionesInvalidas = array_diff($ubicacionesIds, $ubicacionesExistentes);
+        
+        if (!empty($ubicacionesInvalidas)) {
+            return response()->json([
+                'message' => 'Algunas ubicaciones no existen',
+                'ubicaciones_invalidas' => $ubicacionesInvalidas
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Eliminar ubicaciones anteriores
+            EmpresaUbicacion::where('empresa_id', $user->id)->delete();
+
+            // Crear nuevas asignaciones
+            foreach ($ubicacionesIds as $ubicacionId) {
+                EmpresaUbicacion::create([
+                    'empresa_id' => $user->id,
+                    'ubicacion_id' => $ubicacionId,
+                ]);
+            }
+
+            DB::commit();
+
+            // Obtener las ubicaciones actualizadas
+            $ubicaciones = EmpresaUbicacion::where('empresa_id', $user->id)
+                ->with('ubicacion')
+                ->get()
+                ->map(function ($empresaUbicacion) {
+                    return [
+                        'id' => $empresaUbicacion->ubicacion_id,
+                        'nombre' => $empresaUbicacion->ubicacion->nombre,
+                        'latitud' => $empresaUbicacion->ubicacion->latitud,
+                        'longitud' => $empresaUbicacion->ubicacion->longitud,
+                    ];
+                });
+
+            return response()->json([
+                'message' => 'Ubicaciones seleccionadas correctamente',
+                'ubicaciones' => $ubicaciones,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Error al seleccionar ubicaciones',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener todas las ubicaciones disponibles
+     */
+    public function ubicacionesDisponibles()
+    {
+        $ubicaciones = Ubicacion::orderBy('nombre')->get(['id', 'nombre', 'latitud', 'longitud']);
+        
+        return response()->json($ubicaciones);
     }
 }
 

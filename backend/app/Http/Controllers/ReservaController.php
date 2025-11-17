@@ -9,6 +9,7 @@ use App\Models\Locker;
 use App\Models\HistorialLocker;
 use App\Services\HistorialEmpresaService;
 use App\Services\HistorialLockerService;
+use App\Services\TarifaLimitacionService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Cache;
@@ -125,6 +126,16 @@ class ReservaController extends Controller
             'articulos.*.sku' => ['nullable', 'string', 'max:100'],
             'articulos.*.peso' => ['nullable', 'numeric', 'min:0'],
         ]);
+
+        // Validar limitaciones de tarifa antes de crear la reserva
+        $locker = Locker::with('ubicacion')->findOrFail($data['locker_id']);
+        try {
+            TarifaLimitacionService::validarYAsignarUbicacion($user, $locker);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 422);
+        }
 
         $payload = array_merge($data, [
             'empresa_id' => $user->id,
@@ -249,6 +260,20 @@ class ReservaController extends Controller
         ]);
 
         $data['logistica_estado'] = $data['logistica_estado'] ?? 'pendiente_repartidor';
+
+        // Validar limitaciones de tarifa si la reserva es para una empresa
+        if (!empty($data['empresa_id'])) {
+            $empresa = \App\Models\Usuario::findOrFail($data['empresa_id']);
+            $locker = Locker::with('ubicacion')->findOrFail($data['locker_id']);
+            
+            try {
+                TarifaLimitacionService::validarYAsignarUbicacion($empresa, $locker);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'message' => $e->getMessage()
+                ], 422);
+            }
+        }
 
         $reserva = DB::transaction(function () use ($data) {
             $reserva = Reserva::create($data);

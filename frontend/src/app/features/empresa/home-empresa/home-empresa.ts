@@ -60,6 +60,9 @@ export class HomeEmpresa implements OnInit {
   filtroEmail = '';
   filtroLogistica = '';
 
+  tieneUbicacionesSeleccionadas = false;
+  cargandoUbicaciones = false;
+
   private readonly auth = inject(AuthService);
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
@@ -72,7 +75,21 @@ export class HomeEmpresa implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.auth.fetchMe().catch(() => undefined);
+    await this.verificarUbicaciones();
     await this.cargarPedidos();
+  }
+
+  private async verificarUbicaciones(): Promise<void> {
+    this.cargandoUbicaciones = true;
+    try {
+      const res = await this.http.get<any>(`${environment.apiUrl}/empresa/mis-ubicaciones`).toPromise();
+      this.tieneUbicacionesSeleccionadas = (res?.ubicaciones?.length ?? 0) > 0;
+    } catch (error) {
+      console.error('Error verificando ubicaciones:', error);
+      this.tieneUbicacionesSeleccionadas = false;
+    } finally {
+      this.cargandoUbicaciones = false;
+    }
   }
 
   aplicarFiltros() {

@@ -47,4 +47,12 @@ class Ubicacion extends Authenticatable
     {
         return $this->hasMany(Locker::class, 'ubicacion_id');
     }
+
+    /**
+     * Relación: una ubicación puede ser usada por muchas empresas
+     */
+    public function empresasAsignadas()
+    {
+        return $this->hasMany(EmpresaUbicacion::class, 'ubicacion_id');
+    }
 }

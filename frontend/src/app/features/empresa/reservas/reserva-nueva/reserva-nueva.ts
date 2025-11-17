@@ -61,11 +61,12 @@ export class ReservaNuevaComponent implements OnInit {
   async cargarDatosIniciales(): Promise<void> {
     this.loadingData = true;
     try {
-      const [clientesRes, lockersRes] = await Promise.all([
+      const [clientesRes, lockersRes, misUbicacionesRes] = await Promise.all([
         this.http
           .get<any>(`${environment.apiUrl}/usuarios`, { params: { rol: "usuario", per_page: 100 } })
           .toPromise(),
         this.http.get<any>(`${environment.apiUrl}/lockers`, { params: { per_page: 100 } }).toPromise(),
+        this.http.get<any>(`${environment.apiUrl}/empresa/mis-ubicaciones`).toPromise().catch(() => ({ ubicaciones: [] })),
       ]);
 
       this.clientes = (clientesRes?.data ?? []).map((c: any) => ({
@@ -75,7 +76,11 @@ export class ReservaNuevaComponent implements OnInit {
       }));
       this.clientesFiltrados = [...this.clientes];
 
-      this.lockers = (lockersRes?.data ?? []).map((l: any) => ({
+      // Obtener IDs de ubicaciones seleccionadas
+      const ubicacionesSeleccionadasIds = (misUbicacionesRes?.ubicaciones ?? []).map((u: any) => u.id);
+
+      // Filtrar lockers solo de ubicaciones seleccionadas
+      const todosLockers = (lockersRes?.data ?? []).map((l: any) => ({
         id: l.id,
         label: `Locker #${l.numero ?? l.id} - ${l.ubicacion?.nombre ?? "Sin ubicacion"}`,
         numero: Number(l.numero ?? l.id),
@@ -84,6 +89,15 @@ export class ReservaNuevaComponent implements OnInit {
         estado: l.estado ?? "desconocido",
       }));
 
+      // Si hay ubicaciones seleccionadas, filtrar; si no, mostrar todas pero con advertencia
+      if (ubicacionesSeleccionadasIds.length > 0) {
+        this.lockers = todosLockers.filter((l: LockerOption) => ubicacionesSeleccionadasIds.includes(l.ubicacionId));
+      } else {
+        this.lockers = todosLockers;
+        this.errorMsg = "Debes seleccionar ubicaciones antes de crear reservas. Ve a la sección de ubicaciones.";
+      }
+
+      // Obtener ubicaciones solo de las seleccionadas
       this.ubicaciones = this.lockers
         .reduce<{ id: number; nombre: string }[]>((acc, locker) => {
           if (!locker.ubicacionId) {
