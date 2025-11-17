@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('rut', 20)->nullable();
             $table->string('direccion', 255)->nullable();
             $table->foreignId('comuna_id')->nullable()->constrained('comunas')->nullOnDelete();
+            $table->foreignId('tarifa_id')->nullable()->constrained('tarifas')->nullOnDelete();
             $table->timestamps();
         });
     }

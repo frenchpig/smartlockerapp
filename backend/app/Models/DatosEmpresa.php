@@ -18,6 +18,7 @@ class DatosEmpresa extends Model
         'rut',
         'direccion',
         'comuna_id',
+        'tarifa_id',
     ];
 
     protected $casts = [
@@ -39,6 +40,14 @@ class DatosEmpresa extends Model
     public function comuna()
     {
         return $this->belongsTo(Comuna::class, 'comuna_id');
+    }
+
+    /**
+     * Relación: datos_empresa pertenece a una tarifa
+     */
+    public function tarifa()
+    {
+        return $this->belongsTo(Tarifa::class, 'tarifa_id');
     }
 
     /**

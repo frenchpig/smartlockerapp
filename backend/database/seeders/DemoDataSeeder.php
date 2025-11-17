@@ -89,11 +89,13 @@ class DemoDataSeeder extends Seeder
             ],
         ];
 
+        $tarifasCreadas = [];
         foreach ($tarifas as $attributes) {
-            Tarifa::query()->updateOrCreate(
+            $tarifa = Tarifa::query()->updateOrCreate(
                 ['codigo_interno' => $attributes['codigo_interno']],
                 $attributes
             );
+            $tarifasCreadas[$attributes['codigo_interno']] = $tarifa;
         }
 
         // Usuarios
@@ -145,7 +147,7 @@ class DemoDataSeeder extends Seeder
             ['nombre' => 'Santiago', 'region_id' => $regionRM->id]
         );
         
-        // Datos empresa 1: Locker Solutions
+        // Datos empresa 1: Locker Solutions (asignar tarifa Smart Pro)
         $datosEmpresa1 = DatosEmpresa::create([
             'usuario_id' => $empresa1->id,
             'nombre' => 'Locker Solutions S.A.',
@@ -153,12 +155,13 @@ class DemoDataSeeder extends Seeder
             'rut' => '761234567', // Solo números
             'direccion' => 'Av. Providencia 1234, Oficina 501',
             'comuna_id' => $comunaSantiago->id,
+            'tarifa_id' => $tarifasCreadas['smart-pro']->id,
         ]);
 
         // Registrar creación de cuenta en historial
         HistorialEmpresaService::registrarCreacionCuenta($empresa1->id, $datosEmpresa1->nombre);
 
-        // Datos empresa 2: Smart Logistics (con RUT que termina en K como ejemplo)
+        // Datos empresa 2: Smart Logistics (con RUT que termina en K como ejemplo, asignar tarifa Smart Basic)
         $datosEmpresa2 = DatosEmpresa::create([
             'usuario_id' => $empresa2->id,
             'nombre' => 'Smart Logistics SpA',
@@ -166,6 +169,7 @@ class DemoDataSeeder extends Seeder
             'rut' => '77234567K', // Dígito verificador K
             'direccion' => 'Av. Las Condes 5678, Piso 12',
             'comuna_id' => $comunaSantiago->id,
+            'tarifa_id' => $tarifasCreadas['smart-basic']->id,
         ]);
 
         // Registrar creación de cuenta en historial

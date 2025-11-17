@@ -29,4 +29,12 @@ class Tarifa extends Model
         'incluye' => 'array',
         'no_incluye' => 'array',
     ];
+
+    /**
+     * Relación: una tarifa tiene muchas empresas
+     */
+    public function empresas()
+    {
+        return $this->hasMany(DatosEmpresa::class, 'tarifa_id');
+    }
 }

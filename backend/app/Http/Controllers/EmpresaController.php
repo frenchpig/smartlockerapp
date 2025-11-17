@@ -69,6 +69,7 @@ class EmpresaController extends Controller
             'rut' => ['nullable', 'string', 'max:20'],
             'direccion' => ['nullable', 'string', 'max:255'],
             'comuna_id' => ['nullable', 'integer', 'exists:comunas,id'],
+            'tarifa_id' => ['nullable', 'integer', 'exists:tarifas,id'],
         ]);
 
         try {
@@ -92,6 +93,7 @@ class EmpresaController extends Controller
                 'rut' => $this->limpiarRut($data['rut'] ?? null),
                 'direccion' => $data['direccion'] ?? null,
                 'comuna_id' => $data['comuna_id'] ?? null,
+                'tarifa_id' => $data['tarifa_id'] ?? null,
             ]);
 
             // Registrar evento en historial
@@ -101,7 +103,7 @@ class EmpresaController extends Controller
 
             return response()->json([
                 'usuario' => $usuario,
-                'datos_empresa' => $datosEmpresa->load('comuna.region'),
+                'datos_empresa' => $datosEmpresa->load('comuna.region', 'tarifa'),
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -135,6 +137,7 @@ class EmpresaController extends Controller
             'rut' => ['sometimes', 'nullable', 'string', 'max:20'],
             'direccion' => ['sometimes', 'nullable', 'string', 'max:255'],
             'comuna_id' => ['sometimes', 'nullable', 'integer', 'exists:comunas,id'],
+            'tarifa_id' => ['sometimes', 'nullable', 'integer', 'exists:tarifas,id'],
         ]);
 
         try {
@@ -157,6 +160,7 @@ class EmpresaController extends Controller
                     'rut' => null,
                     'direccion' => null,
                     'comuna_id' => null,
+                    'tarifa_id' => null,
                 ]
             );
 
@@ -165,6 +169,7 @@ class EmpresaController extends Controller
             if (isset($data['rut'])) $datosEmpresa->rut = $this->limpiarRut($data['rut']);
             if (isset($data['direccion'])) $datosEmpresa->direccion = $data['direccion'];
             if (isset($data['comuna_id'])) $datosEmpresa->comuna_id = $data['comuna_id'];
+            if (isset($data['tarifa_id'])) $datosEmpresa->tarifa_id = $data['tarifa_id'];
             $datosEmpresa->save();
 
             // Registrar evento en historial si hubo cambios
@@ -178,6 +183,7 @@ class EmpresaController extends Controller
             if (isset($data['rut'])) $camposModificados['rut'] = $data['rut'];
             if (isset($data['direccion'])) $camposModificados['direccion'] = $data['direccion'];
             if (isset($data['comuna_id'])) $camposModificados['comuna_id'] = $data['comuna_id'];
+            if (isset($data['tarifa_id'])) $camposModificados['tarifa_id'] = $data['tarifa_id'];
 
             if (!empty($camposModificados)) {
                 HistorialEmpresaService::registrarDatosActualizados($usuario->id, $camposModificados);
@@ -187,7 +193,7 @@ class EmpresaController extends Controller
 
             return response()->json([
                 'usuario' => $usuario,
-                'datos_empresa' => $datosEmpresa->load('comuna.region'),
+                'datos_empresa' => $datosEmpresa->load('comuna.region', 'tarifa'),
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
