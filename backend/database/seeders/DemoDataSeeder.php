@@ -236,42 +236,89 @@ class DemoDataSeeder extends Seeder
             ]),
         ];
 
-        $metroNunoa = Ubicacion::create([
-            'nombre' => 'Metro Nunoa',
-            'latitud' => -33.456,
-            'longitud' => -70.648,
-            'device_username' => 'totem-nunoa',
-            'device_password' => '123456', // se encripta por mutator SHA-256
-        ]);
+        // Crear múltiples ubicaciones para demostrar el funcionamiento de las tarifas
+        $ubicaciones = [
+            [
+                'nombre' => 'Metro Nunoa',
+                'latitud' => -33.456,
+                'longitud' => -70.648,
+                'device_username' => 'totem-nunoa',
+            ],
+            [
+                'nombre' => 'Metro Nuble',
+                'latitud' => -33.476,
+                'longitud' => -70.628,
+                'device_username' => 'totem-nuble',
+            ],
+            [
+                'nombre' => 'Metro Los Leones',
+                'latitud' => -33.418,
+                'longitud' => -70.606,
+                'device_username' => 'totem-los-leones',
+            ],
+            [
+                'nombre' => 'Metro Tobalaba',
+                'latitud' => -33.420,
+                'longitud' => -70.600,
+                'device_username' => 'totem-tobalaba',
+            ],
+            [
+                'nombre' => 'Metro Baquedano',
+                'latitud' => -33.432,
+                'longitud' => -70.632,
+                'device_username' => 'totem-baquedano',
+            ],
+            [
+                'nombre' => 'Metro Universidad de Chile',
+                'latitud' => -33.448,
+                'longitud' => -70.664,
+                'device_username' => 'totem-uchile',
+            ],
+            [
+                'nombre' => 'Metro Estación Central',
+                'latitud' => -33.451,
+                'longitud' => -70.682,
+                'device_username' => 'totem-estacion-central',
+            ],
+            [
+                'nombre' => 'Metro La Moneda',
+                'latitud' => -33.444,
+                'longitud' => -70.650,
+                'device_username' => 'totem-la-moneda',
+            ],
+        ];
 
-        $metroNuble = Ubicacion::create([
-            'nombre' => 'Metro Nuble',
-            'latitud' => -33.476,
-            'longitud' => -70.628,
-            'device_username' => 'totem-nuble',
-            'device_password' => '123456', // se encripta por mutator SHA-256
-        ]);
+        $ubicacionesCreadas = [];
+        foreach ($ubicaciones as $ubicacionData) {
+            $ubicacion = Ubicacion::create([
+                'nombre' => $ubicacionData['nombre'],
+                'latitud' => $ubicacionData['latitud'],
+                'longitud' => $ubicacionData['longitud'],
+                'device_username' => $ubicacionData['device_username'],
+                'device_password' => '123456', // se encripta por mutator SHA-256
+            ]);
+            $ubicacionesCreadas[] = $ubicacion;
+        }
 
         // Asignar ubicaciones a las empresas según su tarifa
-        // Empresa 1 (Smart Pro): puede usar hasta 6 sedes, asignamos 2 para el ejemplo
-        // Empresa 2 (Smart Basic): puede usar hasta 2 sedes, asignamos 2 (todas las disponibles)
-        EmpresaUbicacion::create([
-            'empresa_id' => $empresa1->id,
-            'ubicacion_id' => $metroNunoa->id,
-        ]);
-        EmpresaUbicacion::create([
-            'empresa_id' => $empresa1->id,
-            'ubicacion_id' => $metroNuble->id,
-        ]);
+        // Empresa 1 (Smart Pro): puede usar hasta 6 sedes, asignamos 5 para demostrar la diferencia
+        // Empresa 2 (Smart Basic): puede usar hasta 2 sedes, asignamos 2 (su máximo)
+        $empresa1Ubicaciones = array_slice($ubicacionesCreadas, 0, 5); // Primeras 5 ubicaciones
+        $empresa2Ubicaciones = array_slice($ubicacionesCreadas, 0, 2); // Primeras 2 ubicaciones
         
-        EmpresaUbicacion::create([
-            'empresa_id' => $empresa2->id,
-            'ubicacion_id' => $metroNunoa->id,
-        ]);
-        EmpresaUbicacion::create([
-            'empresa_id' => $empresa2->id,
-            'ubicacion_id' => $metroNuble->id,
-        ]);
+        foreach ($empresa1Ubicaciones as $ubicacion) {
+            EmpresaUbicacion::create([
+                'empresa_id' => $empresa1->id,
+                'ubicacion_id' => $ubicacion->id,
+            ]);
+        }
+        
+        foreach ($empresa2Ubicaciones as $ubicacion) {
+            EmpresaUbicacion::create([
+                'empresa_id' => $empresa2->id,
+                'ubicacion_id' => $ubicacion->id,
+            ]);
+        }
 
         $now = Carbon::now();
         
@@ -279,70 +326,27 @@ class DemoDataSeeder extends Seeder
         // Los lockers deben existir antes de las reservas para que tenga sentido cronológicamente
         $fechaCreacionLockers = $now->copy()->subDays(30); // 30 días antes del presente
         
-        $l1 = new Locker([
-            'numero' => 1,
-            'ubicacion_id' => $metroNunoa->id,
-            'estado' => 'activo',
-            'tamano' => 'M',
-        ]);
-        $l1->created_at = $fechaCreacionLockers;
-        $l1->updated_at = $fechaCreacionLockers;
-        $l1->save();
-
-        $l2 = new Locker([
-            'numero' => 2,
-            'ubicacion_id' => $metroNunoa->id,
-            'estado' => 'activo',
-            'tamano' => 'L',
-        ]);
-        $l2->created_at = $fechaCreacionLockers;
-        $l2->updated_at = $fechaCreacionLockers;
-        $l2->save();
-
-        $l3 = new Locker([
-            'numero' => 1,
-            'ubicacion_id' => $metroNuble->id,
-            'estado' => 'activo',
-            'tamano' => 'S',
-        ]);
-        $l3->created_at = $fechaCreacionLockers;
-        $l3->updated_at = $fechaCreacionLockers;
-        $l3->save();
-
-        // Crear más lockers para que las empresas puedan tener reservas según sus tarifas
-        // Empresa 1 (Smart Pro): 20 lockers por sede
-        // Empresa 2 (Smart Basic): 10 lockers por sede
-        // Crear lockers adicionales en ambas ubicaciones
-        $lockers = [$l1, $l2, $l3];
+        // Crear lockers en todas las ubicaciones
+        // Empresa 1 (Smart Pro): 20 lockers por sede (puede usar hasta 6 sedes)
+        // Empresa 2 (Smart Basic): 10 lockers por sede (puede usar hasta 2 sedes)
+        // Crear 25 lockers por ubicación para tener suficiente capacidad
+        $lockers = [];
+        $tamanos = ['S', 'M', 'L'];
         
-        // Crear más lockers en Metro Nunoa (hasta 20 para que ambas empresas puedan usar)
-        for ($i = 3; $i <= 20; $i++) {
-            $tamano = ['S', 'M', 'L'][($i - 1) % 3];
-            $l = new Locker([
-                'numero' => $i,
-                'ubicacion_id' => $metroNunoa->id,
-                'estado' => 'activo',
-                'tamano' => $tamano,
-            ]);
-            $l->created_at = $fechaCreacionLockers;
-            $l->updated_at = $fechaCreacionLockers;
-            $l->save();
-            $lockers[] = $l;
-        }
-        
-        // Crear más lockers en Metro Nuble (hasta 20 para que ambas empresas puedan usar)
-        for ($i = 2; $i <= 20; $i++) {
-            $tamano = ['S', 'M', 'L'][($i - 1) % 3];
-            $l = new Locker([
-                'numero' => $i,
-                'ubicacion_id' => $metroNuble->id,
-                'estado' => 'activo',
-                'tamano' => $tamano,
-            ]);
-            $l->created_at = $fechaCreacionLockers;
-            $l->updated_at = $fechaCreacionLockers;
-            $l->save();
-            $lockers[] = $l;
+        foreach ($ubicacionesCreadas as $ubicacion) {
+            for ($i = 1; $i <= 25; $i++) {
+                $tamano = $tamanos[($i - 1) % 3];
+                $l = new Locker([
+                    'numero' => $i,
+                    'ubicacion_id' => $ubicacion->id,
+                    'estado' => 'activo',
+                    'tamano' => $tamano,
+                ]);
+                $l->created_at = $fechaCreacionLockers;
+                $l->updated_at = $fechaCreacionLockers;
+                $l->save();
+                $lockers[] = $l;
+            }
         }
 
         // Crear historial de creación de lockers inmediatamente después de crearlos
