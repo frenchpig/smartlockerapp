@@ -205,3 +205,63 @@ footer {
     font-weight: 600;
     color: var(--muted);
 }
+
+.empresa-table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th,
+    td {
+        white-space: nowrap;
+    }
+
+    @media (max-width: 768px) {
+        thead {
+            display: none;
+        }
+
+        tbody {
+            display: block;
+        }
+
+        tr {
+            display: block;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: .75rem;
+            margin-bottom: .75rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .04);
+            overflow: hidden;
+        }
+
+        td {
+            display: block;
+            width: 100%;
+            padding: .55rem .9rem;
+            border-bottom: 1px solid #f3f4f6;
+            white-space: normal; // permitir salto de línea en mobile
+            text-align: left;
+        }
+
+        td:last-child {
+            border-bottom: none;
+            text-align: right;
+        }
+
+        td::before {
+            content: attr(data-label);
+            display: block;
+            font-size: .75rem;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: .15rem;
+        }
+    }
+}
+
+/* Aseguramos que el contenedor no haga scroll horizontal en mobile */
+.table-responsive {
+    @media (max-width: 768px) {
+        overflow-x: visible;
+    }
+}

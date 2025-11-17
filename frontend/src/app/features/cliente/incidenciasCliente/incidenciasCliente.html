@@ -1,0 +1,138 @@
+<app-header-cliente></app-header-cliente>
+
+<main class="incidencias-wrap">
+    <div class="container">
+        <div class="toolbar">
+            <h1 class="page-title">Mis incidencias</h1>
+
+            <div class="toolbar-actions">
+                <button class="btn btn-success" (click)="abrirFormulario()">
+                    Nueva incidencia
+                </button>
+            </div>
+        </div>
+
+        <!-- Formulario de reporte -->
+        <section class="form-card" *ngIf="mostrarFormulario()">
+            <header class="form-card-header">
+                <h2>Reportar nueva incidencia</h2>
+                <button class="btn btn-light" type="button" (click)="cerrarFormulario()">
+                    Cancelar
+                </button>
+            </header>
+
+            <form [formGroup]="incidenciaForm" (ngSubmit)="enviarIncidencia()">
+                <div class="form-grid">
+                    <!-- TÍTULO -->
+                    <div class="form-group">
+                        <label for="titulo">Título</label>
+                        <input id="titulo" type="text" class="input" formControlName="titulo"
+                            placeholder="Ej: No puedo abrir el locker" />
+                        <small class="error"
+                            *ngIf="incidenciaForm.get('titulo')?.invalid && incidenciaForm.get('titulo')?.touched">
+                            El título es obligatorio.
+                        </small>
+                    </div>
+
+                    <!-- TIPO / QUÉ SE ROMPIÓ -->
+                    <div class="form-group">
+                        <label for="tipo">Tipo de incidencia</label>
+                        <select id="tipo" class="input" formControlName="tipo">
+                            <option value="Locker">Locker</option>
+                            <option value="Sede">Sede</option>
+                            <option value="App">App</option>
+                            <option value="Pago">Pago</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+
+                    <!-- LOCKER OPCIONAL -->
+                    <div class="form-group">
+                        <label for="locker">Locker (opcional)</label>
+                        <input id="locker" type="text" class="input" formControlName="locker"
+                            placeholder="Código o número de locker" />
+                    </div>
+
+                    <!-- SEDE OPCIONAL -->
+                    <div class="form-group">
+                        <label for="sede">Sede (opcional)</label>
+                        <input id="sede" type="text" class="input" formControlName="sede"
+                            placeholder="Nombre de la sede" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="descripcion">Descripción</label>
+                    <textarea id="descripcion" rows="4" class="input" formControlName="descripcion"
+                        placeholder="Describe el problema con el mayor detalle posible"></textarea>
+                    <small class="error" *ngIf="
+                incidenciaForm.get('descripcion')?.invalid &&
+                incidenciaForm.get('descripcion')?.touched">
+                        La descripción es obligatoria (mínimo 5 caracteres).
+                    </small>
+                </div>
+
+                <footer class="form-card-footer">
+                    <span class="error" *ngIf="errorMsg()">{{ errorMsg() }}</span>
+
+                    <button class="btn btn-success" type="submit"
+                        [disabled]="incidenciaForm.invalid || cargandoEnvio()">
+                        {{ cargandoEnvio() ? 'Enviando…' : 'Enviar incidencia' }}
+                    </button>
+                </footer>
+            </form>
+        </section>
+
+        <!-- Tabla de incidencias propias (solo lectura) -->
+        <section class="table-card tabla-incidencias">
+            <div class="table-responsive">
+                <table class="table">
+                    <colgroup>
+                        <col class="col-id" />
+                        <col class="col-titulo" />
+                        <col class="col-tipo" />
+                        <col class="col-locker" />
+                        <col class="col-sede" />
+                        <col class="col-prioridad" />
+                        <col class="col-estado" />
+                    </colgroup>
+
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Título</th>
+                            <th>Tipo</th>
+                            <th>Locker</th>
+                            <th>Sede</th>
+                            <!-- <th>Prioridad</th> -->
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr *ngFor="let inc of incidencias(); trackBy: trackById">
+                            <td>#{{ inc.id }}</td>
+
+                            <td>
+                                <div class="title-cell">
+                                    <strong>{{ inc.titulo }}</strong>
+                                    <small class="muted">{{ inc.fecha | date: 'short' }}</small>
+                                </div>
+                            </td>
+
+                            <td>{{ inc.tipo || '—' }}</td>
+                            <td>{{ inc.locker || '—' }}</td>
+                            <td>{{ inc.sede || '—' }}</td>
+                            <!-- <td>{{ inc.prioridad }}</td> -->
+                            <td>{{ inc.estado }}</td>
+                        </tr>
+
+                        <tr *ngIf="!incidencias().length">
+                            <td colspan="7" class="empty">No has reportado incidencias.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</main>

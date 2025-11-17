@@ -1,0 +1,84 @@
+<app-header-empresa></app-header-empresa>
+
+<main class="tarifas-wrap">
+  <div class="container">
+    <div class="toolbar">
+      <h1 class="page-title">Planes</h1>
+      <div class="toolbar-actions">
+        <button class="btn btn-outline" (click)="resetFiltros()">
+          Limpiar filtros
+        </button>
+      </div>
+    </div>
+
+    <!-- filtros -->
+    <section class="filters">
+      <input class="input" type="text" placeholder="Buscar por nombre o código…" [value]="busqueda()"
+        (input)="onBuscar($event)" />
+
+      <select class="input" [value]="estadoFiltro()" (change)="onChangeEstado($event)">
+        <option value="Todos">Todos</option>
+        <option value="Activo">Activos</option>
+        <option value="Inactivo">Inactivos</option>
+      </select>
+    </section>
+
+    <!-- cards -->
+    <section class="plans-grid">
+      <ng-container *ngFor="let p of planesFiltrados(); trackBy: trackById">
+        <article class="plan-card" [class.inactive]="p.estado === 'Inactivo'">
+          <header class="plan-header">
+            <div class="plan-title">
+              <h2>{{ p.nombre }}</h2>
+              <small>{{ p.descripcion }}</small>
+            </div>
+            <span class="badge" [class.badge-success]="p.estado === 'Activo'"
+              [class.badge-danger]="p.estado === 'Inactivo'">
+              {{ p.estado }}
+            </span>
+          </header>
+
+          <div class="plan-meta">
+            <div>
+              <strong>Sedes:</strong>
+              <span>{{ p.maxSedes }}</span>
+            </div>
+            <div>
+              <strong>Lockers por sede:</strong>
+              <span>{{ p.maxLockersPorSede }}</span>
+            </div>
+          </div>
+
+          <div class="plan-body">
+            <h3>Incluye</h3>
+            <ul class="list">
+              <li *ngFor="let i of p.incluye">
+                <span class="dot success"></span>
+                {{ i }}
+              </li>
+            </ul>
+
+            <h3 *ngIf="p.noIncluye.length">No incluye</h3>
+            <ul class="list muted" *ngIf="p.noIncluye.length">
+              <li *ngFor="let x of p.noIncluye">
+                <span class="dot danger"></span>
+                {{ x }}
+              </li>
+            </ul>
+          </div>
+
+          <!-- Acciones -->
+          <footer class="plan-actions">
+            <button class="btn btn-success" (click)="pagar(p)" [disabled]="p.estado !== 'Activo'">
+              Pagar
+            </button>
+          </footer>
+        </article>
+      </ng-container>
+
+      <p class="empty" *ngIf="planesFiltrados().length === 0">
+        No hay planes con esos filtros.
+      </p>
+    </section>
+  </div>
+</main>

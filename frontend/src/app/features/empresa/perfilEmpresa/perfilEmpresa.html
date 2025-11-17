@@ -1,0 +1,246 @@
+<app-header-empresa titulo="Mi Perfil Empresa"></app-header-empresa>
+
+<main class="perfil-main">
+    <div class="perfil-card">
+        <div class="d-flex justify-content-center py-4" *ngIf="loading">
+            <div class="spinner-border text-success" role="status" aria-label="Cargando">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+
+        <ng-container *ngIf="!loading">
+            <section aria-labelledby="info-empresa-title" class="perfil-section">
+                <header class="perfil-section-header">
+                    <div>
+                        <h2 id="info-empresa-title" class="section-title">Información de la empresa</h2>
+                        <p class="section-hint">Estos son los datos asociados a tu cuenta de empresa</p>
+                    </div>
+
+                    <div class="section-actions">
+                        <button class="btn btn-outline-secondary btn-sm" (click)="editarEmpresa()">
+                            Editar datos de empresa
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" (click)="cambiarPassword()">
+                            Cambiar contraseña
+                        </button>
+                    </div>
+                </header>
+
+                <dl class="perfil-datos">
+                    <div class="dato-row">
+                        <dt>Nombre de la empresa</dt>
+                        <dd>{{ empresa.nombre }}</dd>
+                    </div>
+
+                    <div class="dato-row">
+                        <dt>RUT</dt>
+                        <dd>{{ empresa.rut || 'No especificado' }}</dd>
+                    </div>
+
+                    <div class="dato-row">
+                        <dt>Razón social</dt>
+                        <dd>{{ empresa.razonSocial || 'No especificado' }}</dd>
+                    </div>
+
+                    <div class="dato-row">
+                        <dt>Dirección</dt>
+                        <dd>{{ empresa.direccion || 'No especificada' }}</dd>
+                    </div>
+
+                    <div class="dato-row">
+                        <dt>Región / Ciudad</dt>
+                        <dd>
+                            <ng-container *ngIf="empresa.region || empresa.ciudad; else sinRegionCiudad">
+                                {{ empresa.region || 'Sin región' }} <span
+                                    *ngIf="empresa.region && empresa.ciudad">·</span>
+                                {{ empresa.ciudad || 'Sin ciudad' }}
+                            </ng-container>
+                            <ng-template #sinRegionCiudad>Sin información</ng-template>
+                        </dd>
+                    </div>
+
+                    <div class="dato-row">
+                        <dt>Correo empresa</dt>
+                        <dd>{{ empresa.correo || 'No especificado' }}</dd>
+                    </div>
+
+                    <div class="dato-row">
+                        <dt>Teléfono empresa</dt>
+                        <dd>{{ empresa.telefono || 'No especificado' }}</dd>
+                    </div>
+
+                    <div class="dato-row">
+                        <dt>Estado</dt>
+                        <dd>
+                            <span class="estado-pill" [class.estado-activa]="empresa.estado === 'Activa'"
+                                [class.estado-inactiva]="empresa.estado === 'Inactiva'">
+                                {{ empresa.estado }}
+                            </span>
+                        </dd>
+                    </div>
+                </dl>
+            </section>
+
+            <section aria-labelledby="session-title" class="perfil-section">
+                <header class="perfil-section-header">
+                    <div>
+                        <h2 id="session-title" class="section-title">Sesión</h2>
+                        <p class="section-hint">Puedes cerrar tu sesión de forma segura</p>
+                    </div>
+                </header>
+
+                <button class="btn btn-danger w-100" (click)="logout()">
+                    Cerrar sesión
+                </button>
+            </section>
+        </ng-container>
+    </div>
+
+    <footer class="perfil-footer text-center text-muted">
+        <small>&copy; 2025 Smart Lockers - Empresa</small>
+    </footer>
+</main>
+
+<div class="modal-overlay" *ngIf="showEditModal()" (click)="cerrarModales()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <h3 class="modal-title">Editar datos de empresa</h3>
+            <button type="button" class="btn-close" (click)="cerrarModales()" aria-label="Cerrar"></button>
+        </div>
+
+        <div class="modal-body">
+            <form [formGroup]="editForm">
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label for="nombre" class="form-label">Nombre de la empresa</label>
+                        <input type="text" id="nombre" class="form-control" formControlName="nombre"
+                            [class.is-invalid]="editForm.get('nombre')?.invalid && editForm.get('nombre')?.touched" />
+                        <div class="invalid-feedback"
+                            *ngIf="editForm.get('nombre')?.invalid && editForm.get('nombre')?.touched">
+                            Nombre es requerido
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label for="rut" class="form-label">RUT</label>
+                        <input type="text" id="rut" class="form-control" formControlName="rut" />
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label for="razonSocial" class="form-label">Razón social</label>
+                        <input type="text" id="razonSocial" class="form-control" formControlName="razonSocial" />
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label for="direccion" class="form-label">Dirección</label>
+                        <input type="text" id="direccion" class="form-control" formControlName="direccion" />
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label for="region" class="form-label">Región</label>
+                        <input type="text" id="region" class="form-control" formControlName="region" />
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label for="ciudad" class="form-label">Ciudad</label>
+                        <input type="text" id="ciudad" class="form-control" formControlName="ciudad" />
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label for="correo" class="form-label">Correo empresa</label>
+                        <input type="email" id="correo" class="form-control" formControlName="correo"
+                            [class.is-invalid]="editForm.get('correo')?.invalid && editForm.get('correo')?.touched" />
+                        <div class="invalid-feedback"
+                            *ngIf="editForm.get('correo')?.invalid && editForm.get('correo')?.touched">
+                            Email válido es requerido
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label for="telefono" class="form-label">Teléfono empresa</label>
+                        <input type="tel" id="telefono" class="form-control" formControlName="telefono" />
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">Estado</label>
+                        <p class="form-control-plaintext mb-0">
+                            <span class="badge"
+                                [ngClass]="empresa.estado === 'Activa' ? 'badge-success' : 'badge-danger'">
+                                {{ empresa.estado }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="alert alert-danger mt-3" *ngIf="errorMsg()" role="alert">
+                    {{ errorMsg() }}
+                </div>
+            </form>
+        </div>
+
+
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="cerrarModales()">Cancelar</button>
+            <button type="button" class="btn btn-primary" (click)="guardarEmpresa()" [disabled]="saving()">
+                <span *ngIf="!saving()">Guardar</span>
+                <span *ngIf="saving()">Guardando...</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" *ngIf="showPasswordModal()" (click)="cerrarModales()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <h3 class="modal-title">Cambiar contraseña</h3>
+            <button type="button" class="btn-close" (click)="cerrarModales()" aria-label="Cerrar"></button>
+        </div>
+
+        <div class="modal-body">
+            <form [formGroup]="passwordForm">
+                <div class="mb-3">
+                    <label for="current_password" class="form-label">Contraseña actual</label>
+                    <input type="password" id="current_password" class="form-control" formControlName="current_password"
+                        [class.is-invalid]="passwordForm.get('current_password')?.invalid && passwordForm.get('current_password')?.touched" />
+                    <div class="invalid-feedback"
+                        *ngIf="passwordForm.get('current_password')?.invalid && passwordForm.get('current_password')?.touched">
+                        Contraseña actual es requerida
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="new_password" class="form-label">Nueva contraseña</label>
+                    <input type="password" id="new_password" class="form-control" formControlName="new_password"
+                        [class.is-invalid]="passwordForm.get('new_password')?.invalid && passwordForm.get('new_password')?.touched" />
+                    <div class="invalid-feedback"
+                        *ngIf="passwordForm.get('new_password')?.invalid && passwordForm.get('new_password')?.touched">
+                        La contraseña debe tener al menos 6 caracteres
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="confirm_password" class="form-label">Confirmar nueva contraseña</label>
+                    <input type="password" id="confirm_password" class="form-control" formControlName="confirm_password"
+                        [class.is-invalid]="passwordForm.get('confirm_password')?.invalid && passwordForm.get('confirm_password')?.touched" />
+                    <div class="invalid-feedback"
+                        *ngIf="passwordForm.get('confirm_password')?.invalid && passwordForm.get('confirm_password')?.touched">
+                        Confirmación de contraseña es requerida
+                    </div>
+                </div>
+
+                <div class="alert alert-danger" *ngIf="errorMsg()" role="alert">
+                    {{ errorMsg() }}
+                </div>
+            </form>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="cerrarModales()">Cancelar</button>
+            <button type="button" class="btn btn-primary" (click)="guardarPassword()" [disabled]="saving()">
+                <span *ngIf="!saving()">Actualizar</span>
+                <span *ngIf="saving()">Actualizando...</span>
+            </button>
+        </div>
+    </div>
+</div>

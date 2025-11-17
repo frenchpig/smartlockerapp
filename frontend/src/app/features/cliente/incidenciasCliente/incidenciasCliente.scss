@@ -1,0 +1,238 @@
+$green: #18884b;
+$bg-soft: #f6faf7;
+$border: #e5e7eb;
+$text: #133024;
+$muted: #6b7280;
+
+/* Layout */
+.incidencias-wrap {
+    background: $bg-soft;
+    min-height: 100vh;
+    padding: 1.25rem 0 2rem;
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1rem;
+    }
+}
+
+/* Toolbar */
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: .75rem;
+    margin-bottom: 1rem;
+
+    .page-title {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: $text;
+        margin: 0;
+    }
+
+    .toolbar-actions {
+        display: flex;
+        gap: .5rem;
+        flex-wrap: wrap;
+    }
+}
+
+/* Botones */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 0.6rem;
+    padding: 0.45rem 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease-in-out;
+    min-width: 90px;
+    text-align: center;
+
+    &:hover {
+        transform: translateY(-2px);
+    }
+
+    &.btn-light {
+        background: #ffffff;
+        border: 1px solid $green;
+        color: $green;
+
+        &:hover {
+            background: #f5fff5;
+            border-color: #4cbf4c;
+        }
+    }
+
+    &.btn-success {
+        background: $green;
+        color: #fff;
+
+        &:hover {
+            background: #12743d;
+        }
+    }
+}
+
+//    FORMULARIO INCIDENCIA
+
+.form-card {
+    background: #fff;
+    border: 1px solid $border;
+    border-radius: 1rem;
+    padding: 1.2rem 1.4rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+
+    .form-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+
+        h2 {
+            font-size: 1.1rem;
+            margin: 0;
+            color: $text;
+            font-weight: 700;
+        }
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: .35rem;
+
+        label {
+            font-size: .85rem;
+            font-weight: 600;
+            color: $text;
+        }
+
+        .input {
+            background: #fff;
+            border: 1px solid $border;
+            border-radius: .6rem;
+            padding: .55rem .7rem;
+            font-size: .88rem;
+            outline: none;
+
+            &:focus {
+                border-color: rgba($green, .4);
+                box-shadow: 0 0 0 3px rgba($green, .08);
+            }
+        }
+
+        textarea.input {
+            resize: none;
+        }
+
+        .error {
+            color: #dc2626;
+            font-size: .75rem;
+            margin-top: -2px;
+        }
+    }
+
+    .form-card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: .5rem;
+
+        .error {
+            color: #dc2626;
+            font-size: .8rem;
+        }
+    }
+}
+
+//    TABLA PRINCIPAL
+
+.table-card {
+    background: #fff;
+    border: 1px solid $border;
+    border-radius: 1rem;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+
+        th {
+            background: #f9fafb;
+            padding: .6rem .75rem;
+            font-size: .8rem;
+            text-align: left;
+            color: $muted;
+            border-bottom: 1px solid $border;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: .65rem .75rem;
+            font-size: .82rem;
+            border-bottom: 1px solid #f1f3f4;
+            color: #1f2937;
+
+            &.empty {
+                text-align: center;
+                padding: 1.2rem 0;
+                font-size: .9rem;
+                color: $muted;
+            }
+        }
+    }
+}
+
+.title-cell {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+        font-size: .9rem;
+        color: #111827;
+    }
+
+    .muted {
+        color: $muted;
+        font-size: .7rem;
+    }
+}
+
+//    UTILIDADES
+
+.text-muted {
+    color: $muted;
+}
+
+.empty {
+    padding: 1rem 0;
+    text-align: center;
+    color: $muted;
+    font-size: .9rem;
+}
+
+@media (max-width: 640px) {
+    .toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
