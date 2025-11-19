@@ -12,15 +12,20 @@ class Incidencia extends Model
     protected $table = 'incidencias';
 
     public const ESTADOS = ['resuelto', 'pendiente', 'anulada'];
+    public const TIPOS = ['locker', 'pedido', 'otro'];
 
     protected $fillable = [
+        'tipo',
         'locker_id',
+        'reserva_id',
         'usuario_id',
         'descripcion',
         'estado',
+        'datos_pedido',
     ];
 
     protected $casts = [
+        'datos_pedido' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -29,6 +34,11 @@ class Incidencia extends Model
     public function locker()
     {
         return $this->belongsTo(Locker::class, 'locker_id');
+    }
+
+    public function reserva()
+    {
+        return $this->belongsTo(Reserva::class, 'reserva_id');
     }
 
     public function usuario()
