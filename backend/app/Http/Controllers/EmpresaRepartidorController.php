@@ -190,6 +190,7 @@ class EmpresaRepartidorController extends Controller
         $query = Reserva::with(['usuario', 'locker.ubicacion', 'articulos'])
             ->where('repartidor_id', $repartidor->id)
             ->where('empresa_id', $empresa->id)
+            ->where('logistica_estado', '!=', 'completado') // Solo pedidos no entregados
             ->orderByDesc('created_at');
 
         if ($estado) {
@@ -197,10 +198,13 @@ class EmpresaRepartidorController extends Controller
         }
 
         if ($logisticaEstado) {
-            $query->where('logistica_estado', $logisticaEstado);
-        } else {
-            // Por defecto, mostrar solo pedidos activos (no completados)
-            $query->whereIn('logistica_estado', ['pendiente_repartidor', 'asignado', 'en_camino']);
+            // Si se especifica logistica_estado, aún así excluimos completados
+            if ($logisticaEstado !== 'completado') {
+                $query->where('logistica_estado', $logisticaEstado);
+            } else {
+                // Si específicamente piden completados, no retornar nada
+                $query->whereRaw('1 = 0');
+            }
         }
 
         $reservas = $query->paginate($perPage);

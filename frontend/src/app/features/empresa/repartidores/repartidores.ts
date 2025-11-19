@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
+import { Router, RouterModule } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 
@@ -27,37 +28,11 @@ interface PaginatedResponse<T> {
   total: number;
 }
 
-interface PedidoRepartidor {
-  id: number;
-  estado: string;
-  logistica_estado: string;
-  fecha_reserva: string;
-  hora_inicio: string;
-  locker: {
-    id: number;
-    numero: number;
-    ubicacion: {
-      id: number;
-      nombre: string;
-    };
-  };
-  usuario: {
-    id: number;
-    nombre: string;
-    apellido: string;
-    email: string;
-  };
-  articulos: Array<{
-    id: number;
-    nombre: string;
-    cantidad: number;
-  }>;
-}
 
 @Component({
   standalone: true,
   selector: 'app-empresa-repartidores',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, HeaderEmpresaComponent, DatePipe],
+  imports: [CommonModule, RouterModule, FormsModule, ReactiveFormsModule, HeaderEmpresaComponent, DatePipe],
   templateUrl: './repartidores.html',
   styleUrls: ['./repartidores.scss'],
 })
@@ -65,6 +40,7 @@ export class EmpresaRepartidoresComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
 
   repartidores: RepartidorItem[] = [];
   loading = false;
@@ -72,10 +48,17 @@ export class EmpresaRepartidoresComponent implements OnInit {
   editingId: number | null = null;
   showEditModal = false;
   showCreateForm = false;
-  showPedidosModal = false;
-  repartidorSeleccionado: RepartidorItem | null = null;
-  pedidosRepartidor: PedidoRepartidor[] = [];
-  loadingPedidos = false;
+  
+  // Modal de confirmación/alerta
+  showConfirmModal = false;
+  confirmTitle = '';
+  confirmMessage = '';
+  confirmType: 'alert' | 'confirm' = 'alert';
+  confirmCallback: (() => void) | null = null;
+  showAlertModal = false;
+  alertTitle = '';
+  alertMessage = '';
+  alertType: 'success' | 'error' | 'info' = 'info';
   page = 1;
   perPage = 10;
   lastPage = 1;
@@ -285,13 +268,14 @@ export class EmpresaRepartidoresComponent implements OnInit {
   }
 
   async eliminar(item: RepartidorItem): Promise<void> {
-    const confirmado = window.confirm(
+    this.mostrarConfirmacion(
+      'Confirmar eliminación',
       `¿Seguro que deseas eliminar al repartidor ${item.nombre || ''} ${item.apellido || ''}?`,
+      () => this.confirmarEliminar(item)
     );
+  }
 
-    if (!confirmado) {
-      return;
-    }
+  async confirmarEliminar(item: RepartidorItem): Promise<void> {
 
     this.saving = true;
     this.errorMsg = '';
@@ -426,108 +410,59 @@ export class EmpresaRepartidoresComponent implements OnInit {
     return `569${digits}`;
   }
 
-  async verPedidos(item: RepartidorItem): Promise<void> {
-    this.repartidorSeleccionado = item;
-    this.showPedidosModal = true;
-    this.loadingPedidos = true;
-    this.pedidosRepartidor = [];
-    this.errorMsg = '';
-    
-    try {
-      const res = await this.http
-        .get<any>(`${environment.apiUrl}/empresa/repartidores/${item.id}/pedidos`)
-        .toPromise();
-      
-      this.pedidosRepartidor = res?.reservas ?? [];
-    } catch (error: any) {
-      console.error('Error cargando pedidos del repartidor:', error);
-      this.errorMsg = error?.error?.message || 'Error al cargar los pedidos';
-      this.pedidosRepartidor = [];
-    } finally {
-      this.loadingPedidos = false;
+  verPedidos(item: RepartidorItem): void {
+    this.router.navigate(['/empresa/repartidores', item.id, 'pedidos']);
+  }
+
+  verTodosLosPedidos(): void {
+    this.router.navigate(['/empresa/repartidores/todos-pedidos']);
+  }
+
+  mostrarConfirmacion(titulo: string, mensaje: string, callback: () => void): void {
+    this.confirmTitle = titulo;
+    this.confirmMessage = mensaje;
+    this.confirmType = 'confirm';
+    this.confirmCallback = callback;
+    this.showConfirmModal = true;
+  }
+
+  mostrarAlerta(titulo: string, mensaje: string, tipo: 'success' | 'error' | 'info' = 'info'): void {
+    this.alertTitle = titulo;
+    this.alertMessage = mensaje;
+    this.alertType = tipo;
+    this.showAlertModal = true;
+  }
+
+  cerrarConfirmModal(): void {
+    this.showConfirmModal = false;
+    this.confirmCallback = null;
+    this.confirmTitle = '';
+    this.confirmMessage = '';
+  }
+
+  confirmarAccion(): void {
+    const callback = this.confirmCallback;
+    this.cerrarConfirmModal();
+    if (callback) {
+      // Ejecutar después de cerrar el modal para evitar conflictos
+      setTimeout(() => {
+        callback();
+      }, 100);
     }
   }
 
-  cerrarPedidosModal(): void {
-    this.showPedidosModal = false;
-    this.repartidorSeleccionado = null;
-    this.pedidosRepartidor = [];
-    this.errorMsg = '';
+  cerrarAlertModal(): void {
+    this.showAlertModal = false;
+    this.alertTitle = '';
+    this.alertMessage = '';
   }
 
-  async marcarEnRuta(pedidoId: number): Promise<void> {
-    if (this.saving) return;
-    
-    this.saving = true;
-    this.errorMsg = '';
-    
-    try {
-      await this.http
-        .post(`${environment.apiUrl}/reservas/${pedidoId}/en-ruta`, {})
-        .toPromise();
-      
-      // Recargar pedidos
-      if (this.repartidorSeleccionado) {
-        await this.verPedidos(this.repartidorSeleccionado);
-      }
-    } catch (error: any) {
-      console.error('Error marcando en ruta:', error);
-      this.errorMsg = error?.error?.message || 'Error al marcar como en ruta';
-    } finally {
-      this.saving = false;
-    }
+  get confirmMessageFormatted(): string {
+    return this.confirmMessage.replace(/\n/g, '<br>');
   }
 
-  async marcarEntregado(pedidoId: number): Promise<void> {
-    if (this.saving) return;
-    
-    this.saving = true;
-    this.errorMsg = '';
-    
-    try {
-      await this.http
-        .post(`${environment.apiUrl}/reservas/${pedidoId}/entregar`, {})
-        .toPromise();
-      
-      // Recargar pedidos
-      if (this.repartidorSeleccionado) {
-        await this.verPedidos(this.repartidorSeleccionado);
-      }
-    } catch (error: any) {
-      console.error('Error marcando como entregado:', error);
-      this.errorMsg = error?.error?.message || 'Error al marcar como entregado';
-    } finally {
-      this.saving = false;
-    }
-  }
-
-  getEstadoLogisticaLabel(estado: string): string {
-    const estados: Record<string, string> = {
-      'pendiente_repartidor': 'Pendiente',
-      'asignado': 'Asignado',
-      'en_camino': 'En camino',
-      'completado': 'Completado',
-    };
-    return estados[estado] || estado;
-  }
-
-  getEstadoLogisticaBadge(estado: string): string {
-    const badges: Record<string, string> = {
-      'pendiente_repartidor': 'badge-warning',
-      'asignado': 'badge-info',
-      'en_camino': 'badge-primary',
-      'completado': 'badge-success',
-    };
-    return badges[estado] || 'badge-secondary';
-  }
-
-  puedeMarcarEnRuta(pedido: PedidoRepartidor): boolean {
-    return pedido.estado === 'pendiente' && 
-           (pedido.logistica_estado === 'asignado' || pedido.logistica_estado === 'pendiente_repartidor');
-  }
-
-  puedeMarcarEntregado(pedido: PedidoRepartidor): boolean {
-    return pedido.logistica_estado === 'en_camino' || pedido.logistica_estado === 'asignado';
+  get alertMessageFormatted(): string {
+    return this.alertMessage.replace(/\n/g, '<br>');
   }
 }
 

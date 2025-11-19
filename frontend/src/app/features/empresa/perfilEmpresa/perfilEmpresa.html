@@ -244,3 +244,21 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de Alerta -->
+<div class="modal-overlay" *ngIf="showAlertModal()" (click)="cerrarAlertModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header" [ngClass]="{'bg-success text-white': alertType === 'success', 'bg-danger text-white': alertType === 'error', 'bg-info text-white': alertType === 'info'}">
+            <h3 class="modal-title">{{ alertTitle() }}</h3>
+            <button type="button" class="btn-close" [ngClass]="{'btn-close-white': alertType !== 'info'}" (click)="cerrarAlertModal()" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+            <p class="mb-0">{{ alertMessage() }}</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-success" (click)="cerrarAlertModal()">
+                Aceptar
+            </button>
+        </div>
+    </div>
+</div>

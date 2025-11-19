@@ -55,6 +55,12 @@ export class PerfilEmpresa implements OnInit {
     showPasswordModal = signal(false);
     saving = signal(false);
     errorMsg = signal('');
+    
+    // Modal de alerta
+    showAlertModal = signal(false);
+    alertTitle = signal('');
+    alertMessage = signal('');
+    alertType: 'success' | 'error' | 'info' = 'info';
 
     editForm: FormGroup;
     passwordForm: FormGroup;
@@ -247,7 +253,7 @@ export class PerfilEmpresa implements OnInit {
                 .toPromise();
 
             this.showPasswordModal.set(false);
-            alert('Contraseña actualizada correctamente');
+            this.mostrarAlerta('Éxito', 'Contraseña actualizada correctamente', 'success');
             this.passwordForm.reset();
         } catch (err: any) {
             console.error('Error al cambiar la contraseña:', err);
@@ -263,6 +269,19 @@ export class PerfilEmpresa implements OnInit {
         this.showEditModal.set(false);
         this.showPasswordModal.set(false);
         this.errorMsg.set('');
+    }
+    
+    mostrarAlerta(titulo: string, mensaje: string, tipo: 'success' | 'error' | 'info' = 'info'): void {
+        this.alertTitle.set(titulo);
+        this.alertMessage.set(mensaje);
+        this.alertType = tipo;
+        this.showAlertModal.set(true);
+    }
+    
+    cerrarAlertModal(): void {
+        this.showAlertModal.set(false);
+        this.alertTitle.set('');
+        this.alertMessage.set('');
     }
 
     async logout() {

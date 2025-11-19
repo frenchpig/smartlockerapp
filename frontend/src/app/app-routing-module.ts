@@ -23,6 +23,8 @@ import { PerfilRepartidor } from './features/repartidor/perfil/perfil';
 import { ReservaNuevaComponent } from './features/empresa/reservas/reserva-nueva/reserva-nueva';
 import { EmpresaPedidoDetalle } from './features/empresa/pedidoDetalle/pedido-detalle';
 import { EmpresaRepartidoresComponent } from './features/empresa/repartidores/repartidores';
+import { PedidosRepartidorComponent } from './features/empresa/pedidos-repartidor/pedidos-repartidor';
+import { TodosPedidosComponent } from './features/empresa/todos-pedidos/todos-pedidos';
 import { PerfilEmpresa } from "./features/empresa/perfilEmpresa/perfilEmpresa";
 import { EmpresaTarifas } from "./features/empresa/tarifa/tarifaEmpresa";
 import { EmpresaIncidencias } from "./features/empresa/incidenciasEmpresa/incidenciasEmpresa";
@@ -87,6 +89,8 @@ const routes: Routes = [
       { path: 'pedidos/:id', component: EmpresaPedidoDetalle },
       { path: 'reservas/nueva', component: ReservaNuevaComponent },
       { path: 'repartidores', component: EmpresaRepartidoresComponent },
+      { path: 'repartidores/:id/pedidos', component: PedidosRepartidorComponent },
+      { path: 'repartidores/todos-pedidos', component: TodosPedidosComponent },
       { path: 'PerfilEmpresa', component: PerfilEmpresa },
       { path: 'tarifaEmpresa', component: EmpresaTarifas },
       { path: 'EmpresaIncidencias', component: EmpresaIncidencias },

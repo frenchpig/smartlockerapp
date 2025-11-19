@@ -67,6 +67,10 @@ class ReservaController extends Controller
 
         $query = Reserva::with(['usuario', 'locker.ubicacion', 'repartidor'])
             ->where('empresa_id', $user->id)
+            ->where('logistica_estado', '!=', 'completado') // Solo pedidos no entregados
+            ->whereHas('repartidor', function ($q) use ($user) {
+                $q->where('empresa_id', $user->id);
+            }) // Solo pedidos de repartidores de la empresa
             ->orderByDesc('created_at');
 
         if ($estado = $request->query('estado')) {
@@ -80,7 +84,13 @@ class ReservaController extends Controller
         }
 
         if ($logistica = trim((string) $request->query('logistica_estado', ''))) {
-            $query->where('logistica_estado', $logistica);
+            // Si se especifica logistica_estado, aún así excluimos completados
+            if ($logistica !== 'completado') {
+                $query->where('logistica_estado', $logistica);
+            } else {
+                // Si específicamente piden completados, no retornar nada
+                $query->whereRaw('1 = 0');
+            }
         }
 
         if ($email = trim((string) $request->query('email', ''))) {
@@ -440,8 +450,9 @@ class ReservaController extends Controller
             return response()->json(['message' => 'La reserva ya fue finalizada'], 422);
         }
 
-        if (!in_array($reserva->logistica_estado, ['en_camino', 'asignado'], true)) {
-            return response()->json(['message' => 'La reserva no está en un estado válido para marcar como entregada'], 422);
+        // Solo se puede marcar como entregado si está en ruta (en_camino)
+        if ($reserva->logistica_estado !== 'en_camino') {
+            return response()->json(['message' => 'La reserva debe estar en ruta antes de marcarla como entregada. Primero márcala como en ruta.'], 422);
         }
 
         $reserva = DB::transaction(function () use ($reserva) {
@@ -745,6 +756,205 @@ class ReservaController extends Controller
         if ($reserva->repartidor_id) {
             Repartidor::where('id', $reserva->repartidor_id)->update(['disponible' => true]);
         }
+    }
+
+    public function marcarEnRutaMasivo(Request $request)
+    {
+        $user = $request->user();
+        
+        if (!$user || $user->rol !== 'empresa') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $data = $request->validate([
+            'reserva_ids' => ['required', 'array', 'min:1'],
+            'reserva_ids.*' => ['required', 'integer', 'exists:reservas,id'],
+        ]);
+
+        $reservasIds = $data['reserva_ids'];
+        $resultados = [
+            'exitosos' => [],
+            'fallidos' => []
+        ];
+
+        foreach ($reservasIds as $reservaId) {
+            try {
+                $reserva = Reserva::find($reservaId);
+                
+                if (!$reserva) {
+                    $resultados['fallidos'][] = [
+                        'id' => $reservaId,
+                        'mensaje' => 'Reserva no encontrada'
+                    ];
+                    continue;
+                }
+
+                // Verificar que pertenece a la empresa
+                if ($reserva->empresa_id !== $user->id) {
+                    $resultados['fallidos'][] = [
+                        'id' => $reservaId,
+                        'mensaje' => 'No tienes acceso a esta reserva'
+                    ];
+                    continue;
+                }
+
+                // Verificar que tiene repartidor asignado
+                if (!$reserva->repartidor_id) {
+                    $resultados['fallidos'][] = [
+                        'id' => $reservaId,
+                        'mensaje' => 'La reserva no tiene repartidor asignado'
+                    ];
+                    continue;
+                }
+
+                // Verificar que el repartidor pertenece a la empresa
+                $repartidor = Repartidor::where('id', $reserva->repartidor_id)
+                    ->where('empresa_id', $user->id)
+                    ->first();
+                    
+                if (!$repartidor) {
+                    $resultados['fallidos'][] = [
+                        'id' => $reservaId,
+                        'mensaje' => 'El repartidor no pertenece a tu empresa'
+                    ];
+                    continue;
+                }
+
+                // Verificar estado
+                if ($reserva->estado !== 'pendiente') {
+                    $resultados['fallidos'][] = [
+                        'id' => $reservaId,
+                        'mensaje' => 'La reserva no puede actualizarse'
+                    ];
+                    continue;
+                }
+
+                if (!in_array($reserva->logistica_estado, ['asignado', 'pendiente_repartidor'], true)) {
+                    $resultados['fallidos'][] = [
+                        'id' => $reservaId,
+                        'mensaje' => 'La reserva ya fue marcada en ruta o finalizada'
+                    ];
+                    continue;
+                }
+
+                // Marcar como en ruta
+                $reserva->logistica_estado = 'en_camino';
+                $reserva->save();
+
+                $resultados['exitosos'][] = $reservaId;
+            } catch (\Exception $e) {
+                $resultados['fallidos'][] = [
+                    'id' => $reservaId,
+                    'mensaje' => $e->getMessage()
+                ];
+            }
+        }
+
+        return response()->json([
+            'message' => count($resultados['exitosos']) . ' reservas marcadas en ruta exitosamente',
+            'resultados' => $resultados
+        ]);
+    }
+
+    public function marcarEntregadoMasivo(Request $request)
+    {
+        $user = $request->user();
+        
+        if (!$user || $user->rol !== 'empresa') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $data = $request->validate([
+            'reserva_ids' => ['required', 'array', 'min:1'],
+            'reserva_ids.*' => ['required', 'integer', 'exists:reservas,id'],
+        ]);
+
+        $reservasIds = $data['reserva_ids'];
+        $resultados = [
+            'exitosos' => [],
+            'fallidos' => []
+        ];
+
+        foreach ($reservasIds as $reservaId) {
+            try {
+                $reserva = Reserva::find($reservaId);
+                
+                if (!$reserva) {
+                    $resultados['fallidos'][] = [
+                        'id' => $reservaId,
+                        'mensaje' => 'Reserva no encontrada'
+                    ];
+                    continue;
+                }
+
+                // Verificar que pertenece a la empresa
+                if ($reserva->empresa_id !== $user->id) {
+                    $resultados['fallidos'][] = [
+                        'id' => $reservaId,
+                        'mensaje' => 'No tienes acceso a esta reserva'
+                    ];
+                    continue;
+                }
+
+                // Verificar que tiene repartidor asignado
+                if (!$reserva->repartidor_id) {
+                    $resultados['fallidos'][] = [
+                        'id' => $reservaId,
+                        'mensaje' => 'La reserva no tiene repartidor asignado'
+                    ];
+                    continue;
+                }
+
+                // Verificar que el repartidor pertenece a la empresa
+                $repartidor = Repartidor::where('id', $reserva->repartidor_id)
+                    ->where('empresa_id', $user->id)
+                    ->first();
+                    
+                if (!$repartidor) {
+                    $resultados['fallidos'][] = [
+                        'id' => $reservaId,
+                        'mensaje' => 'El repartidor no pertenece a tu empresa'
+                    ];
+                    continue;
+                }
+
+                // Verificar estado - solo permitir si está en ruta
+                if ($reserva->estado === 'completado') {
+                    $resultados['fallidos'][] = [
+                        'id' => $reservaId,
+                        'mensaje' => 'La reserva ya fue finalizada'
+                    ];
+                    continue;
+                }
+
+                if ($reserva->logistica_estado !== 'en_camino') {
+                    $resultados['fallidos'][] = [
+                        'id' => $reservaId,
+                        'mensaje' => 'La reserva debe estar en ruta antes de marcarla como entregada'
+                    ];
+                    continue;
+                }
+
+                // Marcar como entregado
+                DB::transaction(function () use ($reserva) {
+                    $reserva->logistica_estado = 'completado';
+                    $reserva->save();
+                    $this->liberarRepartidor($reserva);
+                });
+
+                $resultados['exitosos'][] = $reservaId;
+            } catch (\Exception $e) {
+                $resultados['fallidos'][] = [
+                    'id' => $reservaId,
+                    'mensaje' => $e->getMessage()
+                ];
+            }
+        }
+
+        return response()->json([
+            'message' => count($resultados['exitosos']) . ' reservas marcadas como entregadas exitosamente',
+            'resultados' => $resultados
+        ]);
     }
 
     /**

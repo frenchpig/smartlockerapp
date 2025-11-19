@@ -7,12 +7,17 @@
         <div class="card-body d-flex flex-column">
           <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
             <h2 class="h5 fw-semibold mb-0">Repartidores</h2>
-            <button class="btn btn-outline-success btn-sm" type="button" (click)="cargarRepartidores()" [disabled]="loading">
-              <i class="bi bi-arrow-repeat me-1"></i> Actualizar
-            </button>
-            <button class="btn btn-success" type="button" (click)="openCreateForm()">
-              <i class="bi bi-person-plus me-1"></i> Nuevo repartidor
-            </button>
+            <div class="d-flex gap-2 flex-wrap">
+              <button class="btn btn-outline-primary btn-sm" type="button" routerLink="/empresa/repartidores/todos-pedidos" [disabled]="loading">
+                <i class="bi bi-box-seam me-1"></i> Ver todos los pedidos
+              </button>
+              <button class="btn btn-outline-success btn-sm" type="button" (click)="cargarRepartidores()" [disabled]="loading">
+                <i class="bi bi-arrow-repeat me-1"></i> Actualizar
+              </button>
+              <button class="btn btn-success" type="button" (click)="openCreateForm()">
+                <i class="bi bi-person-plus me-1"></i> Nuevo repartidor
+              </button>
+            </div>
           </div>
 
           <ng-container *ngIf="successMsg">
@@ -106,13 +111,13 @@
                   </td>
                   <td class="text-end">
                     <div class="d-flex justify-content-end flex-wrap gap-2">
-                      <button
-                        type="button"
-                        class="btn btn-outline-primary btn-sm"
-                        (click)="verPedidos(item)"
-                        [disabled]="saving || loading">
-                        <i class="bi bi-box-seam me-1"></i> Ver pedidos
-                      </button>
+              <button
+                type="button"
+                class="btn btn-outline-primary btn-sm"
+                [routerLink]="['/empresa/repartidores', item.id, 'pedidos']"
+                [disabled]="saving || loading">
+                <i class="bi bi-box-seam me-1"></i> Ver pedidos
+              </button>
                       <button
                         type="button"
                         class="btn btn-outline-success btn-sm"
@@ -374,104 +379,46 @@
   </div>
 </div>
 
-<!-- Modal de Pedidos del Repartidor -->
-<div class="repartidor-modal-backdrop" *ngIf="showPedidosModal" (click)="cerrarPedidosModal()"></div>
-<div class="repartidor-modal" *ngIf="showPedidosModal">
-  <div class="repartidor-modal__dialog repartidor-modal__dialog--large">
+<!-- Modal de Confirmación -->
+<div class="repartidor-modal-backdrop confirm-alert-backdrop" *ngIf="showConfirmModal" (click)="cerrarConfirmModal()"></div>
+<div class="repartidor-modal confirm-alert-modal" *ngIf="showConfirmModal">
+  <div class="repartidor-modal__dialog">
     <div class="repartidor-modal__header">
-      <div>
-        <h3 class="h6 fw-semibold mb-0 text-success">
-          Pedidos de {{ repartidorSeleccionado?.nombre }} {{ repartidorSeleccionado?.apellido }}
-        </h3>
-        <p class="text-muted small mb-0">Gestiona los pedidos asignados a este repartidor</p>
-      </div>
-      <button type="button" class="btn btn-link text-muted p-0" (click)="cerrarPedidosModal()" [disabled]="saving">
+      <h3 class="h6 fw-semibold mb-0 text-success">{{ confirmTitle }}</h3>
+      <button type="button" class="btn btn-link text-muted p-0" (click)="cerrarConfirmModal()">
         <i class="bi bi-x-lg fs-5"></i>
       </button>
     </div>
     <div class="repartidor-modal__body">
-      <ng-container *ngIf="errorMsg">
-        <div class="alert alert-danger py-2 mb-3">{{ errorMsg }}</div>
-      </ng-container>
-
-      <div class="d-flex justify-content-center py-4" *ngIf="loadingPedidos">
-        <div class="spinner-border text-success" role="status" aria-label="Cargando"></div>
-      </div>
-
-      <div *ngIf="!loadingPedidos && pedidosRepartidor.length === 0" class="text-center text-muted py-4">
-        <p class="mb-0">Este repartidor no tiene pedidos asignados.</p>
-      </div>
-
-      <div class="table-responsive" *ngIf="!loadingPedidos && pedidosRepartidor.length > 0">
-        <table class="table align-middle">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Destinatario</th>
-              <th>Locker</th>
-              <th>Ubicación</th>
-              <th>Estado</th>
-              <th>Logística</th>
-              <th>Fecha</th>
-              <th class="text-end">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let pedido of pedidosRepartidor">
-              <td>#{{ pedido.id }}</td>
-              <td>
-                <div class="fw-semibold">{{ pedido.usuario.nombre }} {{ pedido.usuario.apellido }}</div>
-                <small class="text-muted">{{ pedido.usuario.email }}</small>
-              </td>
-              <td>#{{ pedido.locker.numero }}</td>
-              <td>{{ pedido.locker.ubicacion.nombre }}</td>
-              <td>
-                <span class="badge" [ngClass]="pedido.estado === 'pendiente' ? 'badge-warning' : pedido.estado === 'completado' ? 'badge-success' : 'badge-danger'">
-                  {{ pedido.estado }}
-                </span>
-              </td>
-              <td>
-                <span class="badge" [ngClass]="getEstadoLogisticaBadge(pedido.logistica_estado)">
-                  {{ getEstadoLogisticaLabel(pedido.logistica_estado) }}
-                </span>
-              </td>
-              <td>
-                <small>{{ pedido.fecha_reserva | date:'dd/MM/yy' }}</small><br>
-                <small class="text-muted" *ngIf="pedido.hora_inicio">{{ pedido.hora_inicio | date:'HH:mm' }}</small>
-              </td>
-              <td class="text-end">
-                <div class="d-flex justify-content-end gap-2">
-                  <button
-                    type="button"
-                    class="btn btn-outline-primary btn-sm"
-                    (click)="marcarEnRuta(pedido.id)"
-                    *ngIf="puedeMarcarEnRuta(pedido)"
-                    [disabled]="saving">
-                    <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
-                    En ruta
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-success btn-sm"
-                    (click)="marcarEntregado(pedido.id)"
-                    *ngIf="puedeMarcarEntregado(pedido)"
-                    [disabled]="saving">
-                    <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
-                    Entregado
-                  </button>
-                  <span class="text-muted small" *ngIf="pedido.logistica_estado === 'completado'">
-                    Completado
-                  </span>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <p class="mb-0" [innerHTML]="confirmMessageFormatted"></p>
     </div>
     <div class="repartidor-modal__footer">
-      <button type="button" class="btn btn-outline-secondary" (click)="cerrarPedidosModal()" [disabled]="saving">
-        Cerrar
+      <button type="button" class="btn btn-outline-secondary" (click)="cerrarConfirmModal()">
+        Cancelar
+      </button>
+      <button type="button" class="btn btn-success" (click)="confirmarAccion()">
+        Confirmar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Alerta -->
+<div class="repartidor-modal-backdrop confirm-alert-backdrop" *ngIf="showAlertModal" (click)="cerrarAlertModal()"></div>
+<div class="repartidor-modal confirm-alert-modal" *ngIf="showAlertModal">
+  <div class="repartidor-modal__dialog">
+    <div class="repartidor-modal__header" [ngClass]="{'bg-success text-white': alertType === 'success', 'bg-danger text-white': alertType === 'error', 'bg-info text-white': alertType === 'info'}">
+      <h3 class="h6 fw-semibold mb-0">{{ alertTitle }}</h3>
+      <button type="button" class="btn btn-link p-0" [ngClass]="{'text-white': alertType !== 'info'}" (click)="cerrarAlertModal()">
+        <i class="bi bi-x-lg fs-5"></i>
+      </button>
+    </div>
+    <div class="repartidor-modal__body">
+      <p class="mb-0" [innerHTML]="alertMessageFormatted"></p>
+    </div>
+    <div class="repartidor-modal__footer">
+      <button type="button" class="btn btn-success" (click)="cerrarAlertModal()">
+        Aceptar
       </button>
     </div>
   </div>
