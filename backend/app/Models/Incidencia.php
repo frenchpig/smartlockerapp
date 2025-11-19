@@ -14,8 +14,38 @@ class Incidencia extends Model
     public const ESTADOS = ['resuelto', 'pendiente', 'anulada'];
     public const TIPOS = ['locker', 'pedido', 'otro'];
 
+    // Tipos de problemas según el tipo de incidencia
+    public const PROBLEMAS_LOCKER = [
+        'no_se_abre',
+        'no_se_cierra',
+        'dañado',
+        'bloqueado',
+        'sin_energia',
+        'codigo_no_funciona',
+        'sensor_defectuoso',
+        'otro',
+    ];
+
+    public const PROBLEMAS_PEDIDO = [
+        'pedido_incorrecto',
+        'pedido_dañado',
+        'pedido_faltante',
+        'pedido_extraviado',
+        'pedido_no_es_el_solicitado',
+        'articulos_faltantes',
+        'articulos_dañados',
+        'pedido_retrasado',
+        'otro',
+    ];
+
+    public const PROBLEMAS_OTRO = [
+        'problema_general',
+        'otro',
+    ];
+
     protected $fillable = [
         'tipo',
+        'problema_tipo',
         'locker_id',
         'reserva_id',
         'usuario_id',
@@ -44,5 +74,18 @@ class Incidencia extends Model
     public function usuario()
     {
         return $this->belongsTo(Usuario::class, 'usuario_id');
+    }
+
+    /**
+     * Obtener los tipos de problemas válidos según el tipo de incidencia
+     */
+    public static function getProblemasByTipo(string $tipo): array
+    {
+        return match($tipo) {
+            'locker' => self::PROBLEMAS_LOCKER,
+            'pedido' => self::PROBLEMAS_PEDIDO,
+            'otro' => self::PROBLEMAS_OTRO,
+            default => [],
+        };
     }
 }

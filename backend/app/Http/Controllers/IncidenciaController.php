@@ -22,13 +22,25 @@ class IncidenciaController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'tipo'       => ['required', Rule::in(['locker', 'pedido', 'otro'])],
-            'locker_id'  => ['required','integer','exists:lockers,id'],
-            'reserva_id' => ['nullable','integer','exists:reservas,id'],
-            'usuario_id' => ['required','integer','exists:usuarios,id'],
-            'descripcion'=> ['required','string','max:1000'],
-            'estado'     => ['required', Rule::in(['resuelto','pendiente','anulada'])],
+            'tipo'         => ['required', Rule::in(Incidencia::TIPOS)],
+            'problema_tipo' => ['nullable', 'string', 'max:100'],
+            'locker_id'    => ['required','integer','exists:lockers,id'],
+            'reserva_id'   => ['nullable','integer','exists:reservas,id'],
+            'usuario_id'   => ['required','integer','exists:usuarios,id'],
+            'descripcion'  => ['required','string','max:1000'],
+            'estado'       => ['required', Rule::in(Incidencia::ESTADOS)],
         ]);
+
+        // Validar problema_tipo según el tipo de incidencia
+        if (!empty($data['problema_tipo'])) {
+            $problemasValidos = Incidencia::getProblemasByTipo($data['tipo']);
+            if (!in_array($data['problema_tipo'], $problemasValidos)) {
+                return response()->json([
+                    'message' => 'El problema_tipo no es válido para el tipo de incidencia seleccionado.',
+                    'problemas_validos' => $problemasValidos
+                ], 422);
+            }
+        }
 
         // Si es tipo pedido, validar que tenga reserva_id
         if ($data['tipo'] === 'pedido' && empty($data['reserva_id'])) {
@@ -93,13 +105,28 @@ class IncidenciaController extends Controller
     public function update(Request $request, Incidencia $incidencia)
     {
         $data = $request->validate([
-            'tipo'       => ['sometimes', Rule::in(['locker', 'pedido', 'otro'])],
-            'locker_id'  => ['sometimes','integer','exists:lockers,id'],
-            'reserva_id' => ['nullable','integer','exists:reservas,id'],
-            'usuario_id' => ['sometimes','integer','exists:usuarios,id'],
-            'descripcion'=> ['sometimes','string','max:1000'],
-            'estado'     => ['sometimes', Rule::in(['resuelto','pendiente','anulada'])],
+            'tipo'         => ['sometimes', Rule::in(Incidencia::TIPOS)],
+            'problema_tipo' => ['nullable', 'string', 'max:100'],
+            'locker_id'    => ['sometimes','integer','exists:lockers,id'],
+            'reserva_id'   => ['nullable','integer','exists:reservas,id'],
+            'usuario_id'   => ['sometimes','integer','exists:usuarios,id'],
+            'descripcion'  => ['sometimes','string','max:1000'],
+            'estado'       => ['sometimes', Rule::in(Incidencia::ESTADOS)],
         ]);
+
+        // Determinar el tipo a usar para validación (el nuevo o el existente)
+        $tipoParaValidar = $data['tipo'] ?? $incidencia->tipo;
+
+        // Validar problema_tipo según el tipo de incidencia
+        if (isset($data['problema_tipo']) && !empty($data['problema_tipo'])) {
+            $problemasValidos = Incidencia::getProblemasByTipo($tipoParaValidar);
+            if (!in_array($data['problema_tipo'], $problemasValidos)) {
+                return response()->json([
+                    'message' => 'El problema_tipo no es válido para el tipo de incidencia seleccionado.',
+                    'problemas_validos' => $problemasValidos
+                ], 422);
+            }
+        }
 
         // Si se actualiza el tipo a pedido o se agrega/modifica reserva_id, actualizar datos_pedido
         if (isset($data['tipo']) && $data['tipo'] === 'pedido' && empty($data['reserva_id']) && empty($incidencia->reserva_id)) {
