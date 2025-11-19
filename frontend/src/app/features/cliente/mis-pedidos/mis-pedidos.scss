@@ -165,3 +165,16 @@ footer.border-top {
     font-weight: 600;
     color: var(--muted);
 }
+
+// En móviles, agregar espacio al article para que el botón no se superponga con el footer
+@media (max-width: 576px) {
+    article.card-soft {
+        padding-bottom: 3.5rem !important; // Espacio adicional para el botón de incidencia
+    }
+
+    // Asegurar que el footer tenga suficiente espacio
+    article.card-soft footer {
+        margin-bottom: 0;
+        padding-bottom: 0.5rem;
+    }
+}

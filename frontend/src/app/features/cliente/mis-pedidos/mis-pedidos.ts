@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../core/auth/auth';
 import { environment } from '../../../../environments/environment';
 import { HeaderClienteComponent } from '../shared/header-cliente/header-cliente.component';
+import { ReportarIncidencia, PedidoIncidencia } from '../shared/reportar-incidencia/reportar-incidencia';
 
 type LogisticaEstado = 'pendiente_repartidor' | 'asignado' | 'en_camino' | 'completado';
 type EstadoVisual = 'Listo para recoger' | 'En camino' | 'Pendiente de repartidor' | 'Repartidor asignado' | 'Entregado' | 'Cancelado';
@@ -22,6 +23,7 @@ interface Pedido {
   logisticaBadge: string;
   canVerCodigo: boolean;
   locker: string;
+  lockerId?: number;
   sede: string;
   latitud?: number | null;
   longitud?: number | null;
@@ -43,7 +45,7 @@ interface PaginatedResponse<T> {
 @Component({
   standalone: true,
   selector: 'app-mis-pedidos',
-  imports: [CommonModule, RouterModule, DatePipe, HeaderClienteComponent],
+  imports: [CommonModule, RouterModule, DatePipe, HeaderClienteComponent, ReportarIncidencia],
   templateUrl: './mis-pedidos.html',
   styleUrls: ['./mis-pedidos.scss'],
 })
@@ -60,6 +62,14 @@ export class MisPedidos implements OnInit {
   private readonly http = inject(HttpClient);
 
   user = this.auth.user;
+
+  // Helper para convertir Pedido a PedidoIncidencia
+  getPedidoIncidencia(p: Pedido): PedidoIncidencia {
+    return {
+      id: p.id,
+      lockerId: p.lockerId
+    };
+  }
 
   ngOnInit(): void {
     this.auth.fetchMe().catch(() => {}).finally(() => {
@@ -152,6 +162,7 @@ export class MisPedidos implements OnInit {
           id: r.id,
           ...this.mapEstados(r.logistica_estado, r.estado),
           locker: `#${r.locker?.numero ?? r.locker?.id ?? r.locker_id ?? ''}`,
+          lockerId: r.locker?.id ?? r.locker_id ?? null,
           sede: r.locker?.ubicacion?.nombre ?? 'N/D',
           latitud: r.locker?.ubicacion?.latitud ?? null,
           longitud: r.locker?.ubicacion?.longitud ?? null,

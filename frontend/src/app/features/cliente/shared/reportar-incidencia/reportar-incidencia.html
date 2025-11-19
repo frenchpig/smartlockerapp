@@ -1,0 +1,58 @@
+<button class="btn-incidencia-triangle" type="button" (click)="abrirModal()" 
+    [attr.aria-label]="'Reportar incidencia' + (pedido ? ' para pedido #' + pedido.id : '')" 
+    [title]="'Reportar incidencia' + (pedido ? ' para pedido #' + pedido.id : '')"
+    [disabled]="!pedido">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+</button>
+
+<!-- Modal de Reportar Incidencia -->
+<div class="modal-overlay" *ngIf="showModal" (click)="cerrarModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <h3 class="modal-title">Reportar Incidencia</h3>
+            <button type="button" class="btn-close" (click)="cerrarModal()" aria-label="Cerrar">&times;</button>
+        </div>
+
+        <div class="modal-body">
+            <form (ngSubmit)="reportar()">
+                <div class="mb-3">
+                    <label for="tipo_incidencia" class="form-label">Tipo de Incidencia</label>
+                    <select id="tipo_incidencia" class="form-control" [(ngModel)]="form.tipo" name="tipo" required>
+                        <option value="pedido">Pedido</option>
+                        <option value="locker">Locker</option>
+                        <option value="otro">Otro</option>
+                    </select>
+                </div>
+
+                <div class="mb-3" *ngIf="form.tipo !== 'otro'">
+                    <label for="problema_tipo" class="form-label">Tipo de Problema</label>
+                    <select id="problema_tipo" class="form-control" [(ngModel)]="form.problema_tipo" name="problema_tipo" [required]="form.tipo === 'pedido'">
+                        <option value="">Selecciona un problema</option>
+                        <option *ngFor="let problema of problemasDisponibles" [value]="problema.value">
+                            {{ problema.label }}
+                        </option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="descripcion" class="form-label">Descripción del Problema</label>
+                    <textarea id="descripcion" class="form-control" rows="4" 
+                        [(ngModel)]="form.descripcion" name="descripcion" 
+                        placeholder="Describe detalladamente el problema que estás experimentando..."
+                        required maxlength="1000"></textarea>
+                    <small class="text-muted">{{ form.descripcion.length }}/1000 caracteres</small>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" (click)="cerrarModal()" [disabled]="loading">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-danger" [disabled]="loading">
+                        <span *ngIf="loading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        {{ loading ? 'Enviando...' : 'Reportar Incidencia' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

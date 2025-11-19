@@ -1,11 +1,11 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/auth/auth';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { HeaderClienteComponent } from '../shared/header-cliente/header-cliente.component';
+import { ReportarIncidencia, PedidoIncidencia } from '../shared/reportar-incidencia/reportar-incidencia';
 
 type LogisticaEstado = 'pendiente_repartidor' | 'asignado' | 'en_camino' | 'completado';
 type EstadoVisual = 'Listo para recoger' | 'En camino' | 'Pendiente de repartidor' | 'Repartidor asignado' | 'Cancelado';
@@ -37,7 +37,7 @@ interface Pedido {
 @Component({
   standalone: true,
   selector: 'app-home',
-  imports: [CommonModule, RouterModule, DatePipe, FormsModule, HeaderClienteComponent],
+  imports: [CommonModule, RouterModule, DatePipe, HeaderClienteComponent, ReportarIncidencia],
   templateUrl: './home.html',
   styleUrls: ['./home.scss']
 })
@@ -50,63 +50,19 @@ export class Home implements OnInit {
   total = 0;
   lastPage = 1;
 
-  // Modal de incidencia
-  showIncidenciaModal = false;
-  incidenciaLoading = false;
-  pedidoSeleccionado: Pedido | null = null;
-  incidenciaForm = {
-    tipo: 'pedido' as 'locker' | 'pedido' | 'otro',
-    problema_tipo: '',
-    descripcion: ''
-  };
-
-  // Tipos de problemas según el tipo de incidencia
-  problemasLocker = [
-    { value: 'no_se_abre', label: 'No se abre' },
-    { value: 'no_se_cierra', label: 'No se cierra' },
-    { value: 'dañado', label: 'Dañado' },
-    { value: 'bloqueado', label: 'Bloqueado' },
-    { value: 'sin_energia', label: 'Sin energía' },
-    { value: 'codigo_no_funciona', label: 'Código no funciona' },
-    { value: 'sensor_defectuoso', label: 'Sensor defectuoso' },
-    { value: 'otro', label: 'Otro' }
-  ];
-
-  problemasPedido = [
-    { value: 'pedido_incorrecto', label: 'Pedido incorrecto' },
-    { value: 'pedido_dañado', label: 'Pedido dañado' },
-    { value: 'pedido_faltante', label: 'Pedido faltante' },
-    { value: 'pedido_extraviado', label: 'Pedido extraviado' },
-    { value: 'pedido_no_es_el_solicitado', label: 'No es el pedido solicitado' },
-    { value: 'articulos_faltantes', label: 'Artículos faltantes' },
-    { value: 'articulos_dañados', label: 'Artículos dañados' },
-    { value: 'pedido_retrasado', label: 'Pedido retrasado' },
-    { value: 'otro', label: 'Otro' }
-  ];
-
-  problemasOtro = [
-    { value: 'problema_general', label: 'Problema general' },
-    { value: 'otro', label: 'Otro' }
-  ];
-
-  get problemasDisponibles() {
-    switch (this.incidenciaForm.tipo) {
-      case 'locker':
-        return this.problemasLocker;
-      case 'pedido':
-        return this.problemasPedido;
-      case 'otro':
-        return this.problemasOtro;
-      default:
-        return [];
-    }
-  }
-
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly http = inject(HttpClient);
   // Señal con el usuario autenticado
   user = this.auth.user;
+
+  // Helper para convertir Pedido a PedidoIncidencia
+  getPedidoIncidencia(p: Pedido): PedidoIncidencia {
+    return {
+      id: p.id,
+      lockerId: p.lockerId
+    };
+  }
 
   ngOnInit(): void {
     // Asegura que cargamos los datos del usuario al entrar
@@ -275,78 +231,6 @@ export class Home implements OnInit {
 
   verDetalle(p: Pedido) {
     this.router.navigate(['/cliente/pedido', p.id]);
-  }
-
-  abrirModalIncidencia(p: Pedido) {
-    this.pedidoSeleccionado = p;
-    this.incidenciaForm = {
-      tipo: 'pedido',
-      problema_tipo: '',
-      descripcion: ''
-    };
-    this.showIncidenciaModal = true;
-  }
-
-  cerrarModalIncidencia() {
-    this.showIncidenciaModal = false;
-    this.pedidoSeleccionado = null;
-    this.incidenciaForm = {
-      tipo: 'pedido',
-      problema_tipo: '',
-      descripcion: ''
-    };
-  }
-
-  async reportarIncidencia() {
-    if (!this.pedidoSeleccionado || !this.user()) {
-      return;
-    }
-
-    if (!this.incidenciaForm.descripcion.trim()) {
-      alert('Por favor, describe el problema.');
-      return;
-    }
-
-    if (this.incidenciaForm.tipo === 'pedido' && !this.incidenciaForm.problema_tipo) {
-      alert('Por favor, selecciona el tipo de problema.');
-      return;
-    }
-
-    if (!this.pedidoSeleccionado.lockerId) {
-      alert('No se pudo identificar el locker. Por favor, intenta nuevamente.');
-      return;
-    }
-
-    this.incidenciaLoading = true;
-
-    try {
-      const payload: any = {
-        tipo: this.incidenciaForm.tipo,
-        locker_id: this.pedidoSeleccionado.lockerId,
-        usuario_id: this.user()!.id,
-        descripcion: this.incidenciaForm.descripcion.trim(),
-        estado: 'pendiente'
-      };
-
-      if (this.incidenciaForm.problema_tipo) {
-        payload.problema_tipo = this.incidenciaForm.problema_tipo;
-      }
-
-      if (this.incidenciaForm.tipo === 'pedido') {
-        payload.reserva_id = this.pedidoSeleccionado.id;
-      }
-
-      await this.http.post(`${environment.apiUrl}/incidencias`, payload).toPromise();
-      
-      alert('Incidencia reportada exitosamente. Nos pondremos en contacto contigo pronto.');
-      this.cerrarModalIncidencia();
-    } catch (error: any) {
-      console.error('Error reportando incidencia:', error);
-      const mensaje = error?.error?.message || 'No se pudo reportar la incidencia. Intenta nuevamente.';
-      alert(mensaje);
-    } finally {
-      this.incidenciaLoading = false;
-    }
   }
 
   private mapEstados(logisticaEstado: string | undefined, estadoApi: string | undefined) {
