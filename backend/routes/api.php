@@ -77,10 +77,14 @@ Route::apiResources([
     'reservas'          => ReservaController::class,
     'notificaciones'    => NotificacionController::class,
     'mantenimientos'    => MantenimientoController::class,
-    'incidencias'       => IncidenciaController::class,
     'historial-envios'  => HistorialEnvioController::class,
     'tarifas'           => TarifaController::class,
 ]);
+
+// Rutas de incidencias protegidas
+Route::middleware('auth:sanctum')->group(function () {
+    Route::apiResource('incidencias', IncidenciaController::class);
+});
 
 // Rutas para empresas
 Route::prefix('empresas')->group(function () {
