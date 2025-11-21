@@ -17,6 +17,7 @@ use App\Models\Region;
 use App\Models\Tarifa;
 use App\Models\EmpresaUbicacion;
 use App\Models\Incidencia;
+use App\Models\ProductoEmpresa;
 use App\Services\HistorialLockerService;
 use App\Services\HistorialEmpresaService;
 use Carbon\Carbon;
@@ -359,8 +360,8 @@ class DemoDataSeeder extends Seeder
 
         $estadoSecuencia = ['pendiente', 'completado', 'anulado'];
 
-        // Artículos de ejemplo para los pedidos
-        $articulosDisponibles = [
+        // Plantillas de productos que se crearán para cada empresa
+        $plantillasProductos = [
             ['nombre' => 'Zapatos deportivos', 'descripcion' => 'Zapatillas running Nike', 'sku' => 'NIKE-001', 'peso' => 0.5],
             ['nombre' => 'Chaqueta impermeable', 'descripcion' => 'Chaqueta North Face talla M', 'sku' => 'NF-JAC-M', 'peso' => 0.8],
             ['nombre' => 'Libro "Desarrollo Web"', 'descripcion' => 'Manual de programación', 'sku' => 'BOOK-DEV-001', 'peso' => 0.6],
@@ -376,6 +377,22 @@ class DemoDataSeeder extends Seeder
         foreach ($usuariosEmpresas as $pair) {
             $usuario = $pair['usuario'];
             $empresa = $pair['empresa'];
+            
+            // Crear productos en productos_empresa para esta empresa
+            $productosEmpresa = [];
+            foreach ($plantillasProductos as $plantilla) {
+                // Agregar un prefijo único por empresa al SKU para evitar duplicados
+                $skuUnico = $empresa->id . '-' . $plantilla['sku'];
+                $producto = ProductoEmpresa::create([
+                    'empresa_id' => $empresa->id,
+                    'nombre' => $plantilla['nombre'],
+                    'descripcion' => $plantilla['descripcion'],
+                    'sku' => $skuUnico,
+                    'peso' => $plantilla['peso'],
+                    'activo' => true,
+                ]);
+                $productosEmpresa[] = $producto;
+            }
             
             // Obtener tarifa de la empresa
             $datosEmpresa = DatosEmpresa::where('usuario_id', $empresa->id)->first();
@@ -491,21 +508,22 @@ class DemoDataSeeder extends Seeder
                 $reserva->save();
 
                 // Agregar artículos a cada reserva (1 a 3 artículos aleatorios)
-                $numArticulos = rand(1, 3);
-                $articulosSeleccionados = array_rand($articulosDisponibles, $numArticulos);
-                if (!is_array($articulosSeleccionados)) {
-                    $articulosSeleccionados = [$articulosSeleccionados];
+                // Usar productos de productos_empresa
+                $numArticulos = rand(1, min(3, count($productosEmpresa)));
+                $indicesSeleccionados = array_rand($productosEmpresa, $numArticulos);
+                if (!is_array($indicesSeleccionados)) {
+                    $indicesSeleccionados = [$indicesSeleccionados];
                 }
                 
-                foreach ($articulosSeleccionados as $index) {
-                    $articulo = $articulosDisponibles[$index];
+                foreach ($indicesSeleccionados as $indice) {
+                    $producto = $productosEmpresa[$indice];
                     ArticuloReserva::create([
                         'reserva_id' => $reserva->id,
-                        'nombre' => $articulo['nombre'],
+                        'nombre' => $producto->nombre,
                         'cantidad' => rand(1, 3),
-                        'descripcion' => $articulo['descripcion'],
-                        'sku' => $articulo['sku'],
-                        'peso' => $articulo['peso'],
+                        'descripcion' => $producto->descripcion,
+                        'sku' => $producto->sku,
+                        'peso' => $producto->peso,
                     ]);
                 }
 
@@ -570,21 +588,22 @@ class DemoDataSeeder extends Seeder
                 $reserva->save();
 
                 // Agregar artículos a cada reserva antigua también
-                $numArticulos = rand(1, 4);
-                $articulosSeleccionados = array_rand($articulosDisponibles, $numArticulos);
-                if (!is_array($articulosSeleccionados)) {
-                    $articulosSeleccionados = [$articulosSeleccionados];
+                // Usar productos de productos_empresa
+                $numArticulos = rand(1, min(4, count($productosEmpresa)));
+                $indicesSeleccionados = array_rand($productosEmpresa, $numArticulos);
+                if (!is_array($indicesSeleccionados)) {
+                    $indicesSeleccionados = [$indicesSeleccionados];
                 }
                 
-                foreach ($articulosSeleccionados as $index) {
-                    $articulo = $articulosDisponibles[$index];
+                foreach ($indicesSeleccionados as $indice) {
+                    $producto = $productosEmpresa[$indice];
                     ArticuloReserva::create([
                         'reserva_id' => $reserva->id,
-                        'nombre' => $articulo['nombre'],
+                        'nombre' => $producto->nombre,
                         'cantidad' => rand(1, 2),
-                        'descripcion' => $articulo['descripcion'],
-                        'sku' => $articulo['sku'],
-                        'peso' => $articulo['peso'],
+                        'descripcion' => $producto->descripcion,
+                        'sku' => $producto->sku,
+                        'peso' => $producto->peso,
                     ]);
                 }
 

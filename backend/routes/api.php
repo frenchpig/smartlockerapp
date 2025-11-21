@@ -14,6 +14,7 @@ use App\Http\Controllers\TarifaController;
 use App\Http\Controllers\UbicacionController;
 use App\Http\Controllers\EmpresaRepartidorController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ProductoEmpresaController;
 
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
@@ -111,6 +112,9 @@ Route::middleware('auth:sanctum')->prefix('empresa')->group(function () {
     Route::get('/ubicaciones-disponibles', [App\Http\Controllers\EmpresaController::class, 'ubicacionesDisponibles']);
     Route::get('/plan-actual', [App\Http\Controllers\EmpresaController::class, 'planActual']);
     Route::post('/cambiar-tarifa', [App\Http\Controllers\EmpresaController::class, 'cambiarTarifa']);
+    
+    // Productos de empresa
+    Route::apiResource('productos', ProductoEmpresaController::class);
 });
 
 // Ruta adicional para historial de lockers con paginación

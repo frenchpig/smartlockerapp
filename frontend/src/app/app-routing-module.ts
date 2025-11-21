@@ -31,6 +31,7 @@ import { EmpresaTarifas } from "./features/empresa/tarifa/tarifaEmpresa";
 import { EmpresaIncidencias } from "./features/empresa/incidenciasEmpresa/incidenciasEmpresa";
 import { EmpresaIncidenciaDetalle } from "./features/empresa/incidenciaDetalle/incidencia-detalle";
 import { UbicacionesEmpresa } from "./features/empresa/ubicaciones/ubicaciones";
+import { ProductosEmpresa } from "./features/empresa/productos/productos";
 import { ClienteIncidencias  } from "./features/cliente/incidenciasCliente/incidenciasCliente";
 
 
@@ -99,6 +100,7 @@ const routes: Routes = [
       { path: 'EmpresaIncidencias', component: EmpresaIncidencias },
       { path: 'EmpresaIncidencias/:id', component: EmpresaIncidenciaDetalle },
       { path: 'ubicaciones', component: UbicacionesEmpresa },
+      { path: 'productos', component: ProductosEmpresa },
 
 
     ],
