@@ -1,8 +1,9 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { HeaderAdmin } from '../shared/header-admin/headerAdmin';
 import { environment } from '../../../../environments/environment';
 
@@ -22,16 +23,25 @@ interface GrupoUbicacion {
     lockers: LockerRow[];
 }
 
+interface Ubicacion {
+    id: number;
+    nombre: string;
+    latitud?: number | null;
+    longitud?: number | null;
+    lockers_count?: number;
+}
+
 @Component({
     standalone: true,
     selector: 'app-admin-lockers',
-    imports: [CommonModule, FormsModule, RouterModule, HeaderAdmin],
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, HeaderAdmin],
     templateUrl: './adminLockers.html',
     styleUrls: ['./adminLockers.scss']
 })
 export class AdminLockers implements OnInit {
     private router = inject(Router);
     private http = inject(HttpClient);
+    private fb = inject(FormBuilder);
 
     rows: LockerRow[] = [];
     loading = false;
@@ -55,24 +65,21 @@ export class AdminLockers implements OnInit {
     q = '';
     fEstado: LockerEstado | 'Todos' = 'Todos';
     fUbicacion: string | 'Todas' = 'Todas';
+    ubicacionesDisponibles: string[] = [];
+    cargandoUbicaciones = false;
 
-    get ubicaciones(): string[] {
-        const set = new Set(this.rows.map(r => r.ubicacion));
-        return [...set].sort((a, b) => a.localeCompare(b));
-    }
+    // Gestión de ubicaciones
+    mostrarGestionUbicaciones = false;
+    ubicaciones: Ubicacion[] = [];
+    cargandoUbicacionesLista = false;
+    editandoUbicacion: Ubicacion | null = null;
+    errorUbicacion = '';
+    successUbicacion = '';
+    ubicacionForm: FormGroup;
 
     get filtrados(): LockerRow[] {
-        const filtrados = this.rows.filter(r => {
-            const matchQ = this.q.trim()
-                ? [r.numero.toString(), r.ubicacion, r.empresa ?? '', r.estado].some(t =>
-                    t.toLowerCase().includes(this.q.trim().toLowerCase()))
-                : true;
-            const matchE = this.fEstado === 'Todos' ? true : r.estado === this.fEstado;
-            const matchU = this.fUbicacion === 'Todas' ? true : r.ubicacion === this.fUbicacion;
-            return matchQ && matchE && matchU;
-        });
-
-        return filtrados.sort((a, b) => {
+        // Los filtros ahora se aplican en el servidor, así que retornamos los rows directamente
+        return this.rows.sort((a, b) => {
             const ubicacionCompare = a.ubicacion.localeCompare(b.ubicacion);
             if (ubicacionCompare !== 0) return ubicacionCompare;
             return a.numero - b.numero;
@@ -101,12 +108,25 @@ export class AdminLockers implements OnInit {
     get countRevision() { return this.kpis.revision; }
     get countBloqueados() { return this.kpis.bloqueados; }
 
+    constructor() {
+        this.ubicacionForm = this.fb.group({
+            nombre: ['', [Validators.required, Validators.maxLength(255)]],
+            latitud: ['', [Validators.pattern(/^-?\d+\.?\d*$/)]],
+            longitud: ['', [Validators.pattern(/^-?\d+\.?\d*$/)]],
+        });
+    }
+
     limpiarFiltros() {
         this.q = '';
         this.fEstado = 'Todos';
         this.fUbicacion = 'Todas';
         this.currentPage = 1;
-        this.cargarLockers();
+        void this.cargarLockers();
+    }
+
+    aplicarFiltros() {
+        this.currentPage = 1;
+        void this.cargarLockers();
     }
 
     async marcarRevision(row: LockerRow) {
@@ -175,8 +195,171 @@ export class AdminLockers implements OnInit {
     ngOnInit(): void {
         Promise.all([
             this.cargarLockers(),
-            this.cargarKPIs()
+            this.cargarKPIs(),
+            this.cargarUbicaciones()
         ]);
+    }
+
+    // Gestión de ubicaciones
+    abrirGestionUbicaciones() {
+        this.mostrarGestionUbicaciones = true;
+        this.cargarListaUbicaciones();
+    }
+
+    cerrarGestionUbicaciones() {
+        this.mostrarGestionUbicaciones = false;
+        this.editandoUbicacion = null;
+        this.ubicacionForm.reset();
+        this.errorUbicacion = '';
+        this.successUbicacion = '';
+    }
+
+    async cargarListaUbicaciones() {
+        this.cargandoUbicacionesLista = true;
+        try {
+            const response: any = await firstValueFrom(
+                this.http.get(`${environment.apiUrl}/ubicaciones`, {
+                    params: { per_page: 1000 }
+                })
+            );
+            this.ubicaciones = response?.data || [];
+        } catch (error) {
+            console.error('Error cargando ubicaciones:', error);
+            this.errorUbicacion = 'No se pudieron cargar las ubicaciones.';
+        } finally {
+            this.cargandoUbicacionesLista = false;
+        }
+    }
+
+    abrirFormularioUbicacion(ubicacion?: Ubicacion) {
+        if (ubicacion) {
+            // Editar: navegar a página de edición
+            this.router.navigate(['/admin/ubicaciones/editar', ubicacion.id]);
+        } else {
+            // Crear: navegar a página de creación
+            this.router.navigate(['/admin/ubicaciones/nueva']);
+        }
+    }
+
+    cerrarFormularioUbicacion() {
+        this.editandoUbicacion = null;
+        this.ubicacionForm.reset();
+        this.errorUbicacion = '';
+        this.successUbicacion = '';
+    }
+
+    async guardarUbicacion() {
+        if (this.ubicacionForm.invalid) {
+            this.ubicacionForm.markAllAsTouched();
+            return;
+        }
+
+        this.cargandoUbicacionesLista = true;
+        this.errorUbicacion = '';
+        this.successUbicacion = '';
+
+        try {
+            const data = {
+                nombre: this.ubicacionForm.value.nombre,
+                latitud: this.ubicacionForm.value.latitud ? parseFloat(this.ubicacionForm.value.latitud) : null,
+                longitud: this.ubicacionForm.value.longitud ? parseFloat(this.ubicacionForm.value.longitud) : null,
+            };
+
+            if (this.editandoUbicacion) {
+                // Actualizar
+                await firstValueFrom(
+                    this.http.put(`${environment.apiUrl}/ubicaciones/${this.editandoUbicacion.id}`, data)
+                );
+                this.successUbicacion = 'Ubicación actualizada exitosamente.';
+            } else {
+                // Crear
+                await firstValueFrom(
+                    this.http.post(`${environment.apiUrl}/ubicaciones`, data)
+                );
+                this.successUbicacion = 'Ubicación creada exitosamente.';
+            }
+
+            // Recargar lista y ubicaciones del filtro
+            await Promise.all([
+                this.cargarListaUbicaciones(),
+                this.cargarUbicaciones()
+            ]);
+
+            // Cerrar formulario después de un breve delay
+            setTimeout(() => {
+                this.cerrarFormularioUbicacion();
+            }, 1500);
+        } catch (error: any) {
+            console.error('Error guardando ubicación:', error);
+            this.errorUbicacion = error?.error?.message || 
+                error?.error?.errors?.nombre?.[0] ||
+                'No se pudo guardar la ubicación. Intenta nuevamente.';
+        } finally {
+            this.cargandoUbicacionesLista = false;
+        }
+    }
+
+    async eliminarUbicacion(ubicacion: Ubicacion) {
+        if (!confirm(`¿Estás seguro de que deseas eliminar la ubicación "${ubicacion.nombre}"?\n\nNota: Solo se puede eliminar si no tiene lockers asociados.`)) {
+            return;
+        }
+
+        this.cargandoUbicacionesLista = true;
+        this.errorUbicacion = '';
+        this.successUbicacion = '';
+
+        try {
+            await firstValueFrom(
+                this.http.delete(`${environment.apiUrl}/ubicaciones/${ubicacion.id}`)
+            );
+
+            this.successUbicacion = 'Ubicación eliminada exitosamente.';
+            
+            // Recargar lista y ubicaciones del filtro
+            await Promise.all([
+                this.cargarListaUbicaciones(),
+                this.cargarUbicaciones()
+            ]);
+        } catch (error: any) {
+            console.error('Error eliminando ubicación:', error);
+            this.errorUbicacion = error?.error?.message || 
+                'No se pudo eliminar la ubicación. Verifica que no tenga lockers asociados.';
+        } finally {
+            this.cargandoUbicacionesLista = false;
+        }
+    }
+
+    hasError(ctrl: string, err: string): boolean {
+        const c = this.ubicacionForm.controls[ctrl];
+        return (c.touched || c.dirty) && c.hasError(err);
+    }
+
+    private async cargarUbicaciones(): Promise<void> {
+        this.cargandoUbicaciones = true;
+        try {
+            const response: any = await this.http
+                .get<any>(`${environment.apiUrl}/ubicaciones`, {
+                    params: {
+                        per_page: 1000 // Obtener todas las ubicaciones
+                    }
+                })
+                .toPromise();
+
+            const ubicaciones = response?.data || [];
+            const nombres = ubicaciones
+                .map((u: any) => u.nombre)
+                .filter((nombre: string) => nombre && nombre.trim() !== '')
+                .filter((nombre: string, index: number, self: string[]) => self.indexOf(nombre) === index); // Eliminar duplicados
+            
+            this.ubicacionesDisponibles = nombres.sort((a: string, b: string) => a.localeCompare(b));
+        } catch (error) {
+            console.error('Error cargando ubicaciones:', error);
+            // Fallback: extraer de los lockers cargados
+            const set = new Set(this.rows.map(r => r.ubicacion).filter(u => u && u !== 'Sin ubicación'));
+            this.ubicacionesDisponibles = [...set].sort((a, b) => a.localeCompare(b));
+        } finally {
+            this.cargandoUbicaciones = false;
+        }
     }
 
     private async cargarKPIs(): Promise<void> {
@@ -207,13 +390,33 @@ export class AdminLockers implements OnInit {
     private async cargarLockers(): Promise<void> {
         this.loading = true;
         try {
+            const params: Record<string, string | number> = {
+                per_page: this.perPage,
+                page: this.currentPage
+            };
+
+            // Agregar filtros al backend
+            if (this.q.trim()) {
+                params['busqueda'] = this.q.trim();
+            }
+
+            if (this.fEstado !== 'Todos') {
+                // Convertir estado del frontend al formato del backend
+                const estadoMap: Record<string, string> = {
+                    'Activo': 'activo',
+                    'Ocupado': 'ocupado',
+                    'En revisión': 'mantenimiento',
+                    'Bloqueado': 'bloqueado'
+                };
+                params['estado'] = estadoMap[this.fEstado] || this.fEstado.toLowerCase();
+            }
+
+            if (this.fUbicacion !== 'Todas') {
+                params['ubicacion_nombre'] = this.fUbicacion;
+            }
+
             const response: any = await this.http
-                .get<any>(`${environment.apiUrl}/lockers`, {
-                    params: {
-                        per_page: this.perPage,
-                        page: this.currentPage
-                    }
-                })
+                .get<any>(`${environment.apiUrl}/lockers`, { params })
                 .toPromise();
 
             const lockers = response?.data || [];

@@ -19,8 +19,41 @@ class LockerController extends Controller
 
         $query = Locker::with('ubicacion');
 
+        // Filtro por ubicación ID
         if ($ubicacionId = $request->query('ubicacion_id')) {
             $query->where('ubicacion_id', $ubicacionId);
+        }
+
+        // Filtro por nombre de ubicación
+        if ($ubicacionNombre = trim((string) $request->query('ubicacion_nombre', ''))) {
+            $query->whereHas('ubicacion', function ($q) use ($ubicacionNombre) {
+                $q->where('nombre', $ubicacionNombre);
+            });
+        }
+
+        // Filtro por estado
+        if ($estado = trim((string) $request->query('estado', ''))) {
+            $query->where('estado', $estado);
+        }
+
+        // Filtro de búsqueda (por número, ubicación, empresa)
+        if ($busqueda = trim((string) $request->query('busqueda', ''))) {
+            $query->where(function ($q) use ($busqueda) {
+                // Buscar por número
+                $q->where('numero', 'like', "%{$busqueda}%")
+                  // Buscar por nombre de ubicación
+                  ->orWhereHas('ubicacion', function ($ubicacionQuery) use ($busqueda) {
+                      $ubicacionQuery->where('nombre', 'like', "%{$busqueda}%");
+                  })
+                  // Buscar por empresa en reservas activas
+                  ->orWhereHas('reservas', function ($reservaQuery) use ($busqueda) {
+                      $reservaQuery->where('estado', 'pendiente')
+                          ->whereHas('empresa', function ($empresaQuery) use ($busqueda) {
+                              $empresaQuery->where('nombre', 'like', "%{$busqueda}%")
+                                          ->orWhere('apellido', 'like', "%{$busqueda}%");
+                          });
+                  });
+            });
         }
 
         $lockers = $query->get();

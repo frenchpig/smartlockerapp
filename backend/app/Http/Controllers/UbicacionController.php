@@ -14,7 +14,9 @@ class UbicacionController extends Controller
 
     public function show(Ubicacion $ubicacion)
     {
-        return $ubicacion->load('lockers');
+        $ubicacion->load('lockers');
+        $ubicacion->lockers_count = $ubicacion->lockers->count();
+        return $ubicacion;
     }
 
     public function store(Request $request)
@@ -23,6 +25,8 @@ class UbicacionController extends Controller
             'nombre' => ['required', 'string', 'max:255', 'unique:ubicaciones,nombre'],
             'latitud' => ['nullable', 'numeric'],
             'longitud' => ['nullable', 'numeric'],
+            'device_username' => ['nullable', 'string', 'max:255'],
+            'device_password' => ['nullable', 'string', 'max:255'],
         ]);
 
         $ubicacion = Ubicacion::create($data);
@@ -36,6 +40,8 @@ class UbicacionController extends Controller
             'nombre' => ['sometimes', 'string', 'max:255', 'unique:ubicaciones,nombre,' . $ubicacion->id],
             'latitud' => ['sometimes', 'nullable', 'numeric'],
             'longitud' => ['sometimes', 'nullable', 'numeric'],
+            'device_username' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'device_password' => ['sometimes', 'nullable', 'string', 'max:255'],
         ]);
 
         $ubicacion->update($data);

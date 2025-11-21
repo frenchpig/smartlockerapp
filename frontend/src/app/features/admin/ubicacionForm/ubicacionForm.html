@@ -1,0 +1,310 @@
+<app-header-admin></app-header-admin>
+
+<main class="py-4">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8">
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <h2 class="h5 mb-0">
+                            <i class="bi bi-geo-alt me-2"></i>
+                            {{ editando ? 'Editar Ubicación' : 'Nueva Ubicación' }}
+                        </h2>
+                        <span *ngIf="editando && ubicacion" class="badge bg-light text-dark">
+                            <i class="bi bi-box-seam me-1"></i>
+                            {{ ubicacion.lockers_count || lockers.length }} lockers
+                        </span>
+                    </div>
+                    <div class="card-body p-4">
+                        <!-- Mensajes -->
+                        <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            {{ error }}
+                            <button type="button" class="btn-close" (click)="error = ''" aria-label="Close"></button>
+                        </div>
+                        <div *ngIf="success" class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle-fill me-2"></i>
+                            {{ success }}
+                        </div>
+
+                        <!-- Formulario -->
+                        <form [formGroup]="ubicacionForm" (ngSubmit)="guardar()" *ngIf="!loading || editando">
+                            <div class="mb-3">
+                                <label for="nombre" class="form-label">
+                                    Nombre <span class="text-danger">*</span>
+                                </label>
+                                <input 
+                                    id="nombre"
+                                    type="text" 
+                                    class="form-control form-control-lg" 
+                                    formControlName="nombre"
+                                    [class.is-invalid]="hasError('nombre', 'required') || hasError('nombre', 'maxlength')"
+                                    placeholder="Ej: Metro Los Leones">
+                                <div class="invalid-feedback d-block" *ngIf="hasError('nombre', 'required')">
+                                    El nombre es obligatorio.
+                                </div>
+                                <div class="invalid-feedback d-block" *ngIf="hasError('nombre', 'maxlength')">
+                                    El nombre no puede exceder 255 caracteres.
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label for="latitud" class="form-label">Latitud</label>
+                                    <input 
+                                        id="latitud"
+                                        type="text" 
+                                        class="form-control" 
+                                        formControlName="latitud"
+                                        [class.is-invalid]="hasError('latitud', 'pattern')"
+                                        placeholder="Ej: -33.4489">
+                                    <div class="invalid-feedback d-block" *ngIf="hasError('latitud', 'pattern')">
+                                        Ingresa un número válido.
+                                    </div>
+                                    <small class="text-muted">Opcional. Coordenada de latitud.</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="longitud" class="form-label">Longitud</label>
+                                    <input 
+                                        id="longitud"
+                                        type="text" 
+                                        class="form-control" 
+                                        formControlName="longitud"
+                                        [class.is-invalid]="hasError('longitud', 'pattern')"
+                                        placeholder="Ej: -70.6693">
+                                    <div class="invalid-feedback d-block" *ngIf="hasError('longitud', 'pattern')">
+                                        Ingresa un número válido.
+                                    </div>
+                                    <small class="text-muted">Opcional. Coordenada de longitud.</small>
+                                </div>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <h5 class="mb-3">Credenciales del Dispositivo</h5>
+                            <p class="text-muted small mb-3">Configuración para autenticación del dispositivo/totem en esta ubicación.</p>
+
+                            <div class="mb-3">
+                                <label for="device_username" class="form-label">Usuario del Dispositivo</label>
+                                <input 
+                                    id="device_username"
+                                    type="text" 
+                                    class="form-control" 
+                                    formControlName="device_username"
+                                    [class.is-invalid]="hasError('device_username', 'maxlength')"
+                                    placeholder="Ej: totem_metroleones">
+                                <div class="invalid-feedback d-block" *ngIf="hasError('device_username', 'maxlength')">
+                                    El usuario no puede exceder 255 caracteres.
+                                </div>
+                                <small class="text-muted">Opcional. Usuario para autenticación del dispositivo.</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="device_password" class="form-label">Contraseña del Dispositivo</label>
+                                <div class="input-group">
+                                    <input 
+                                        id="device_password"
+                                        [type]="showDevicePassword ? 'text' : 'password'"
+                                        class="form-control" 
+                                        formControlName="device_password"
+                                        [class.is-invalid]="hasError('device_password', 'maxlength')"
+                                        placeholder="Contraseña del dispositivo">
+                                    <button 
+                                        class="btn btn-outline-secondary" 
+                                        type="button"
+                                        (click)="showDevicePassword = !showDevicePassword"
+                                        [attr.aria-label]="showDevicePassword ? 'Ocultar contraseña' : 'Mostrar contraseña'">
+                                        <i class="bi" [class.bi-eye]="!showDevicePassword" [class.bi-eye-slash]="showDevicePassword"></i>
+                                    </button>
+                                </div>
+                                <div class="invalid-feedback d-block" *ngIf="hasError('device_password', 'maxlength')">
+                                    La contraseña no puede exceder 255 caracteres.
+                                </div>
+                                <small class="text-muted">
+                                    Opcional. Contraseña para autenticación del dispositivo.
+                                    <span *ngIf="editando" class="text-warning d-block mt-1">
+                                        <i class="bi bi-info-circle"></i> Deja en blanco si no deseas cambiar la contraseña actual.
+                                    </span>
+                                </small>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2 mt-4">
+                                <button type="button" class="btn btn-outline-secondary" (click)="cancelar()">
+                                    Cancelar
+                                </button>
+                                <button type="submit" class="btn btn-success" [disabled]="loading || ubicacionForm.invalid">
+                                    <span *ngIf="loading" class="spinner-border spinner-border-sm me-2"></span>
+                                    {{ editando ? 'Actualizar' : 'Crear' }} Ubicación
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Estado de carga -->
+                        <div *ngIf="loading && !editando" class="text-center py-5">
+                            <div class="spinner-border text-success" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <p class="text-muted mt-3">Cargando ubicación...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección de Gestión de Lockers (solo al editar) -->
+                <div *ngIf="editando && ubicacionId" class="card border-0 shadow-sm mt-4">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <h3 class="h6 mb-0">
+                            <i class="bi bi-box-seam me-2"></i>
+                            Lockers de esta Ubicación
+                        </h3>
+                        <button class="btn btn-sm btn-light" (click)="abrirFormularioLocker()" type="button">
+                            <i class="bi bi-plus-circle"></i> Agregar Lockers
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <!-- Formulario de nuevo locker -->
+                        <div *ngIf="mostrarFormularioLocker" class="card bg-light mb-3">
+                            <div class="card-body">
+                                <h4 class="h6 mb-3">
+                                    <i class="bi bi-plus-circle"></i> Nuevo Locker
+                                </h4>
+                                <form [formGroup]="lockerForm" (ngSubmit)="guardarLocker()">
+                                    <div class="row g-3">
+                                        <div class="col-md-3">
+                                            <label for="numeroLocker" class="form-label">Número <span class="text-danger">*</span></label>
+                                            <input 
+                                                id="numeroLocker"
+                                                type="number" 
+                                                class="form-control" 
+                                                formControlName="numero"
+                                                [class.is-invalid]="hasErrorLocker('numero', 'required') || hasErrorLocker('numero', 'min')"
+                                                min="1">
+                                            <div class="invalid-feedback d-block" *ngIf="hasErrorLocker('numero', 'required')">
+                                                El número es obligatorio.
+                                            </div>
+                                            <small class="text-muted">Siguiente: {{ siguienteNumero }}</small>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="cantidadLocker" class="form-label">Cantidad <span class="text-danger">*</span></label>
+                                            <input 
+                                                id="cantidadLocker"
+                                                type="number" 
+                                                class="form-control" 
+                                                formControlName="cantidad"
+                                                [class.is-invalid]="hasErrorLocker('cantidad', 'required') || hasErrorLocker('cantidad', 'min')"
+                                                min="1" max="50">
+                                            <div class="invalid-feedback d-block" *ngIf="hasErrorLocker('cantidad', 'required')">
+                                                La cantidad es obligatoria.
+                                            </div>
+                                            <small class="text-muted" *ngIf="lockerForm.get('cantidad')?.value && lockerForm.get('numero')?.value">
+                                                Se crearán lockers: {{ lockerForm.get('numero')?.value }} a {{ (lockerForm.get('numero')?.value || 0) + (lockerForm.get('cantidad')?.value || 1) - 1 }}
+                                            </small>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="estadoLocker" class="form-label">Estado <span class="text-danger">*</span></label>
+                                            <select 
+                                                id="estadoLocker"
+                                                class="form-select" 
+                                                formControlName="estado">
+                                                <option value="activo">Activo</option>
+                                                <option value="bloqueado">Bloqueado</option>
+                                                <option value="mantenimiento">Mantenimiento</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="tamanoLocker" class="form-label">Tamaño <span class="text-danger">*</span></label>
+                                            <select 
+                                                id="tamanoLocker"
+                                                class="form-select" 
+                                                formControlName="tamano"
+                                                [class.is-invalid]="hasErrorLocker('tamano', 'required')">
+                                                <option value="">Selecciona un tamaño…</option>
+                                                <option value="S">Pequeño (S)</option>
+                                                <option value="M">Mediano (M)</option>
+                                                <option value="L">Grande (L)</option>
+                                                <option value="XL">Extra Grande (XL)</option>
+                                            </select>
+                                            <div class="invalid-feedback d-block" *ngIf="hasErrorLocker('tamano', 'required')">
+                                                El tamaño es obligatorio.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-end gap-2 mt-3">
+                                        <button type="button" class="btn btn-outline-secondary" (click)="cerrarFormularioLocker()">
+                                            Cancelar
+                                        </button>
+                                        <button type="submit" class="btn btn-success" [disabled]="cargandoLockers || lockerForm.invalid">
+                                            <span *ngIf="cargandoLockers" class="spinner-border spinner-border-sm me-2"></span>
+                                            Crear {{ lockerForm.get('cantidad')?.value || 1 }} Locker(s)
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Tabla de lockers -->
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Número</th>
+                                        <th>Estado</th>
+                                        <th>Tamaño</th>
+                                        <th class="text-end">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let locker of lockers">
+                                        <td><strong>#{{ locker.numero }}</strong></td>
+                                        <td>
+                                            <span class="badge" 
+                                                [class.bg-success-subtle]="locker.estado === 'activo'"
+                                                [class.text-success-emphasis]="locker.estado === 'activo'"
+                                                [class.bg-warning-subtle]="locker.estado === 'ocupado'"
+                                                [class.text-warning-emphasis]="locker.estado === 'ocupado'"
+                                                [class.bg-info-subtle]="locker.estado === 'mantenimiento'"
+                                                [class.text-info-emphasis]="locker.estado === 'mantenimiento'"
+                                                [class.bg-danger-subtle]="locker.estado === 'bloqueado'"
+                                                [class.text-danger-emphasis]="locker.estado === 'bloqueado'">
+                                                {{ locker.estado | titlecase }}
+                                            </span>
+                                        </td>
+                                        <td>{{ locker.tamano || '—' }}</td>
+                                        <td class="text-end">
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-primary" (click)="irDetalleLocker(locker)" title="Ver detalle">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <button 
+                                                    class="btn btn-outline-danger" 
+                                                    (click)="eliminarLocker(locker)"
+                                                    [disabled]="cargandoLockers"
+                                                    title="Eliminar">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr *ngIf="!cargandoLockers && !lockers.length">
+                                        <td colspan="4" class="text-center text-muted py-4">
+                                            No hay lockers en esta ubicación.
+                                        </td>
+                                    </tr>
+                                    <tr *ngIf="cargandoLockers">
+                                        <td colspan="4" class="text-center py-4">
+                                            <div class="spinner-border text-success" role="status">
+                                                <span class="visually-hidden">Cargando...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</main>
+

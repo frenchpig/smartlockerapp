@@ -50,6 +50,7 @@ import { CrearTarifa } from "./features/admin/crearTarifa/crearTarifa";
 import { AdminIncidencias } from "./features/admin/adminIncidencias/adminIncidencias";
 import { AdminIncidenciaDetalle } from "./features/admin/adminIncidenciaDetalle/adminIncidenciaDetalle";
 import { PerfilAdmin } from "./features/admin/perfilAdmin/perfilAdmin";
+import { UbicacionForm } from "./features/admin/ubicacionForm/ubicacionForm";
 
 
 const routes: Routes = [
@@ -138,6 +139,8 @@ const routes: Routes = [
       { path: 'AdminIncidencias', component: AdminIncidencias },
       { path: 'IncidenciaDetalle/:id', component: AdminIncidenciaDetalle },
       { path: 'perfilAdmin', component: PerfilAdmin },
+      { path: 'ubicaciones/nueva', component: UbicacionForm },
+      { path: 'ubicaciones/editar/:id', component: UbicacionForm },
 
     ]
   },

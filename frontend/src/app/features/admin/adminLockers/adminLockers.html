@@ -8,6 +8,9 @@
 
       <div class="toolbar-actions">
         <button class="btn btn-outline" (click)="limpiarFiltros()">Limpiar filtros</button>
+        <button class="btn btn-success" (click)="abrirGestionUbicaciones()">
+          <i class="bi bi-geo-alt"></i> Gestionar Ubicaciones
+        </button>
         <button class="btn btn-success" [routerLink]="['/admin/crear']">Nuevo locker</button>
       </div>
     </div>
@@ -43,9 +46,10 @@
         type="text"
         placeholder="Buscar por número, ubicación, empresa o estado…"
         [(ngModel)]="q"
+        (keyup.enter)="aplicarFiltros()"
       />
 
-      <select class="input" [(ngModel)]="fEstado">
+      <select class="input" [(ngModel)]="fEstado" (change)="aplicarFiltros()">
         <option>Todos</option>
         <option>Activo</option>
         <option>Ocupado</option>
@@ -53,11 +57,167 @@
         <option>Bloqueado</option>
       </select>
 
-      <select class="input" [(ngModel)]="fUbicacion">
+      <select class="input" [(ngModel)]="fUbicacion" [disabled]="cargandoUbicaciones" (change)="aplicarFiltros()">
         <option>Todas</option>
-        <option *ngFor="let u of ubicaciones" [value]="u">{{ u }}</option>
+        <option *ngFor="let u of ubicacionesDisponibles" [value]="u">{{ u }}</option>
       </select>
+
+      <button class="btn btn-outline" (click)="aplicarFiltros()" type="button">
+        <i class="bi bi-search"></i> Buscar
+      </button>
     </section>
+
+    <!-- Modal/Sección de Gestión de Ubicaciones -->
+    <div *ngIf="mostrarGestionUbicaciones" class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+        <h3 class="h6 mb-0">
+          <i class="bi bi-geo-alt me-2"></i>Gestión de Ubicaciones
+        </h3>
+        <button class="btn btn-sm btn-outline-light" (click)="cerrarGestionUbicaciones()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="card-body">
+        <!-- Mensajes -->
+        <div *ngIf="errorUbicacion" class="alert alert-danger alert-dismissible fade show" role="alert">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          {{ errorUbicacion }}
+          <button type="button" class="btn-close" (click)="errorUbicacion = ''" aria-label="Close"></button>
+        </div>
+        <div *ngIf="successUbicacion" class="alert alert-success alert-dismissible fade show" role="alert">
+          {{ successUbicacion }}
+          <button type="button" class="btn-close" (click)="successUbicacion = ''" aria-label="Close"></button>
+        </div>
+
+        <!-- Formulario de ubicación -->
+        <div *ngIf="editandoUbicacion !== null" class="card bg-light mb-3">
+          <div class="card-body">
+            <h4 class="h6 mb-3">
+              <i class="bi" [class.bi-plus-circle]="!editandoUbicacion" [class.bi-pencil]="editandoUbicacion"></i>
+              {{ editandoUbicacion ? 'Editar Ubicación' : 'Nueva Ubicación' }}
+            </h4>
+            <form [formGroup]="ubicacionForm" (ngSubmit)="guardarUbicacion()">
+              <div class="row g-3">
+                <div class="col-12 col-md-6">
+                  <label for="nombreUbicacion" class="form-label">Nombre <span class="text-danger">*</span></label>
+                  <input 
+                    id="nombreUbicacion"
+                    type="text" 
+                    class="form-control" 
+                    formControlName="nombre"
+                    [class.is-invalid]="hasError('nombre', 'required') || hasError('nombre', 'maxlength')"
+                    placeholder="Ej: Metro Los Leones">
+                  <div class="invalid-feedback d-block" *ngIf="hasError('nombre', 'required')">
+                    El nombre es obligatorio.
+                  </div>
+                  <div class="invalid-feedback d-block" *ngIf="hasError('nombre', 'maxlength')">
+                    El nombre no puede exceder 255 caracteres.
+                  </div>
+                </div>
+                <div class="col-12 col-md-3">
+                  <label for="latitud" class="form-label">Latitud</label>
+                  <input 
+                    id="latitud"
+                    type="text" 
+                    class="form-control" 
+                    formControlName="latitud"
+                    [class.is-invalid]="hasError('latitud', 'pattern')"
+                    placeholder="Ej: -33.4489">
+                  <div class="invalid-feedback d-block" *ngIf="hasError('latitud', 'pattern')">
+                    Ingresa un número válido.
+                  </div>
+                </div>
+                <div class="col-12 col-md-3">
+                  <label for="longitud" class="form-label">Longitud</label>
+                  <input 
+                    id="longitud"
+                    type="text" 
+                    class="form-control" 
+                    formControlName="longitud"
+                    [class.is-invalid]="hasError('longitud', 'pattern')"
+                    placeholder="Ej: -70.6693">
+                  <div class="invalid-feedback d-block" *ngIf="hasError('longitud', 'pattern')">
+                    Ingresa un número válido.
+                  </div>
+                </div>
+              </div>
+              <div class="d-flex justify-content-end gap-2 mt-3">
+                <button type="button" class="btn btn-outline-secondary" (click)="cerrarFormularioUbicacion()">
+                  Cancelar
+                </button>
+                <button type="submit" class="btn btn-success" [disabled]="cargandoUbicacionesLista || ubicacionForm.invalid">
+                  <span *ngIf="cargandoUbicacionesLista" class="spinner-border spinner-border-sm me-2"></span>
+                  {{ editandoUbicacion ? 'Actualizar' : 'Crear' }} Ubicación
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Botón para crear nueva ubicación -->
+        <div class="mb-3" *ngIf="editandoUbicacion === null">
+          <button class="btn btn-success" (click)="abrirFormularioUbicacion()" type="button">
+            <i class="bi bi-plus-circle"></i> Nueva Ubicación
+          </button>
+        </div>
+
+        <!-- Tabla de ubicaciones -->
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Coordenadas</th>
+                <th>Lockers</th>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let u of ubicaciones">
+                <td>#{{ u.id }}</td>
+                <td><strong>{{ u.nombre }}</strong></td>
+                <td>
+                  <span *ngIf="u.latitud && u.longitud">
+                    {{ u.latitud }}, {{ u.longitud }}
+                  </span>
+                  <span *ngIf="!u.latitud || !u.longitud" class="text-muted">—</span>
+                </td>
+                <td>
+                  <span class="badge bg-primary">{{ u.lockers_count || 0 }}</span>
+                </td>
+                <td class="text-end">
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary" (click)="abrirFormularioUbicacion(u)" title="Editar">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button 
+                      class="btn btn-outline-danger" 
+                      (click)="eliminarUbicacion(u)"
+                      [disabled]="cargandoUbicacionesLista || (u.lockers_count && u.lockers_count > 0)"
+                      [title]="u.lockers_count && u.lockers_count > 0 ? 'No se puede eliminar: tiene lockers asociados' : 'Eliminar'">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="!cargandoUbicacionesLista && !ubicaciones.length">
+                <td colspan="5" class="text-center text-muted py-4">
+                  No hay ubicaciones registradas.
+                </td>
+              </tr>
+              <tr *ngIf="cargandoUbicacionesLista">
+                <td colspan="5" class="text-center py-4">
+                  <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
 
     <div class="table-card">
       <div *ngIf="loading" class="text-center py-4">
