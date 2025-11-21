@@ -14,6 +14,44 @@ class IncidenciaController extends Controller
         return Incidencia::with(['locker', 'usuario', 'reserva.empresa', 'reserva.repartidor', 'reserva.articulos'])->paginate(20);
     }
 
+    /**
+     * Obtener incidencias relacionadas con pedidos enviados por la empresa autenticada
+     */
+    public function empresaIncidencias(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user || $user->rol !== 'empresa') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $perPage = (int) $request->query('per_page', 20);
+        $perPage = max(1, min(100, $perPage));
+
+        $query = Incidencia::with(['locker', 'usuario', 'reserva.empresa', 'reserva.repartidor', 'reserva.articulos'])
+            ->whereNotNull('reserva_id') // Solo incidencias relacionadas con pedidos
+            ->whereHas('reserva', function ($q) use ($user) {
+                $q->where('empresa_id', $user->id); // Solo pedidos de esta empresa
+            });
+
+        // Filtros
+        if ($estado = trim((string) $request->query('estado', ''))) {
+            $query->where('estado', $estado);
+        }
+
+        if ($tipo = trim((string) $request->query('tipo', ''))) {
+            $query->where('tipo', $tipo);
+        }
+
+        if ($problemaTipo = trim((string) $request->query('problema_tipo', ''))) {
+            $query->where('problema_tipo', $problemaTipo);
+        }
+
+        $query->orderByDesc('created_at');
+
+        return $query->paginate($perPage);
+    }
+
     public function show(Incidencia $incidencia)
     {
         return $incidencia->load(['locker', 'usuario', 'reserva.empresa', 'reserva.repartidor', 'reserva.articulos']);

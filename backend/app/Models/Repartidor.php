@@ -27,6 +27,10 @@ class Repartidor extends Model
         'updated_at' => 'datetime',
     ];
 
+    protected $appends = [
+        'nombre_completo',
+    ];
+
     public function empresa()
     {
         return $this->belongsTo(Usuario::class, 'empresa_id');

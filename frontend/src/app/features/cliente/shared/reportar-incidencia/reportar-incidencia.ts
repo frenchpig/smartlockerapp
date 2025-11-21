@@ -77,6 +77,11 @@ export class ReportarIncidencia {
     return this.auth.user();
   }
 
+  get soloLocker(): boolean {
+    // Si no hay pedido, es solo locker (aunque el botón está deshabilitado sin pedido)
+    return !this.pedido;
+  }
+
   abrirModal() {
     if (!this.pedido) return;
     this.resetForm();

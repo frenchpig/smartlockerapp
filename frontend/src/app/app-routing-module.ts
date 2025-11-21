@@ -28,6 +28,7 @@ import { TodosPedidosComponent } from './features/empresa/todos-pedidos/todos-pe
 import { PerfilEmpresa } from "./features/empresa/perfilEmpresa/perfilEmpresa";
 import { EmpresaTarifas } from "./features/empresa/tarifa/tarifaEmpresa";
 import { EmpresaIncidencias } from "./features/empresa/incidenciasEmpresa/incidenciasEmpresa";
+import { EmpresaIncidenciaDetalle } from "./features/empresa/incidenciaDetalle/incidencia-detalle";
 import { UbicacionesEmpresa } from "./features/empresa/ubicaciones/ubicaciones";
 import { ClienteIncidencias  } from "./features/cliente/incidenciasCliente/incidenciasCliente";
 
@@ -94,6 +95,7 @@ const routes: Routes = [
       { path: 'PerfilEmpresa', component: PerfilEmpresa },
       { path: 'tarifaEmpresa', component: EmpresaTarifas },
       { path: 'EmpresaIncidencias', component: EmpresaIncidencias },
+      { path: 'EmpresaIncidencias/:id', component: EmpresaIncidenciaDetalle },
       { path: 'ubicaciones', component: UbicacionesEmpresa },
 
 

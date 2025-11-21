@@ -9,13 +9,17 @@
 <div class="modal-overlay" *ngIf="showModal" (click)="cerrarModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
         <div class="modal-header">
-            <h3 class="modal-title">Reportar Incidencia</h3>
+            <h3 class="modal-title">Reportar Incidencia {{ soloLocker ? 'del Locker' : '' }}</h3>
             <button type="button" class="btn-close" (click)="cerrarModal()" aria-label="Cerrar">&times;</button>
         </div>
 
         <div class="modal-body">
+            <div class="alert alert-info mb-3" *ngIf="soloLocker">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Incidencia del Locker:</strong> Estás reportando un problema relacionado con el locker, no con el pedido.
+            </div>
             <form (ngSubmit)="reportar()">
-                <div class="mb-3">
+                <div class="mb-3" *ngIf="!soloLocker">
                     <label for="tipo_incidencia" class="form-label">Tipo de Incidencia</label>
                     <select id="tipo_incidencia" class="form-control" [(ngModel)]="form.tipo" name="tipo" required>
                         <option value="pedido">Pedido</option>
@@ -26,7 +30,7 @@
 
                 <div class="mb-3" *ngIf="form.tipo !== 'otro'">
                     <label for="problema_tipo" class="form-label">Tipo de Problema</label>
-                    <select id="problema_tipo" class="form-control" [(ngModel)]="form.problema_tipo" name="problema_tipo" [required]="form.tipo === 'pedido'">
+                    <select id="problema_tipo" class="form-control" [(ngModel)]="form.problema_tipo" name="problema_tipo" [required]="form.tipo === 'pedido' || form.tipo === 'locker'">
                         <option value="">Selecciona un problema</option>
                         <option *ngFor="let problema of problemasDisponibles" [value]="problema.value">
                             {{ problema.label }}

@@ -16,6 +16,7 @@ use App\Models\Comuna;
 use App\Models\Region;
 use App\Models\Tarifa;
 use App\Models\EmpresaUbicacion;
+use App\Models\Incidencia;
 use App\Services\HistorialLockerService;
 use App\Services\HistorialEmpresaService;
 use Carbon\Carbon;
@@ -679,6 +680,158 @@ class DemoDataSeeder extends Seeder
             } elseif (!$tieneReservasPendientes && $locker->estado !== 'bloqueado' && $locker->estado !== 'mantenimiento') {
                 $locker->estado = 'activo';
                 $locker->save();
+            }
+        }
+
+        // Crear incidencias relacionadas con pedidos de empresas
+        // Obtener todas las reservas de empresas (pedidos)
+        $reservasEmpresas = Reserva::whereNotNull('empresa_id')
+            ->with(['empresa', 'repartidor', 'usuario', 'articulos', 'locker.ubicacion'])
+            ->get();
+
+        if ($reservasEmpresas->count() > 0) {
+            // Tipos de problemas para incidencias de pedido
+            $problemasPedido = [
+                'pedido_incorrecto',
+                'pedido_dañado',
+                'pedido_faltante',
+                'pedido_extraviado',
+                'pedido_no_es_el_solicitado',
+                'articulos_faltantes',
+                'articulos_dañados',
+                'pedido_retrasado',
+                'otro',
+            ];
+
+            // Estados de incidencias
+            $estadosIncidencia = ['pendiente', 'resuelto', 'anulada'];
+
+            // Crear incidencias para algunas reservas (aproximadamente 15-20% de las reservas)
+            $numIncidencias = min(15, (int)($reservasEmpresas->count() * 0.15));
+            $reservasParaIncidencia = $reservasEmpresas->random(min($numIncidencias, $reservasEmpresas->count()));
+
+            foreach ($reservasParaIncidencia as $reserva) {
+                // Seleccionar un estado aleatorio
+                $estadoIncidencia = $estadosIncidencia[array_rand($estadosIncidencia)];
+                
+                // Seleccionar un problema aleatorio
+                $problemaTipo = $problemasPedido[array_rand($problemasPedido)];
+
+                // Descripciones de ejemplo según el tipo de problema
+                $descripciones = [
+                    'pedido_incorrecto' => 'El pedido recibido no corresponde al que se solicitó. Se esperaba otro artículo.',
+                    'pedido_dañado' => 'El pedido llegó con daños visibles en el empaque y algunos artículos están afectados.',
+                    'pedido_faltante' => 'El pedido no llegó al locker en la fecha acordada. Cliente reporta que no recibió notificación.',
+                    'pedido_extraviado' => 'El pedido fue marcado como entregado pero el cliente no lo encuentra en el locker asignado.',
+                    'pedido_no_es_el_solicitado' => 'El contenido del pedido no coincide con lo que se ordenó. Hay artículos diferentes.',
+                    'articulos_faltantes' => 'Faltan algunos artículos del pedido. El cliente recibió solo una parte de lo solicitado.',
+                    'articulos_dañados' => 'Algunos artículos del pedido llegaron dañados o en mal estado.',
+                    'pedido_retrasado' => 'El pedido tiene un retraso significativo respecto a la fecha de entrega prometida.',
+                    'otro' => 'Problema general con el pedido que requiere atención del equipo de soporte.',
+                ];
+
+                $descripcion = $descripciones[$problemaTipo] ?? 'Problema reportado con el pedido.';
+
+                // Fecha de la incidencia (puede ser reciente o antigua)
+                $diasAtras = rand(1, 20);
+                $fechaIncidencia = $now->copy()->subDays($diasAtras);
+
+                // Si la incidencia es resuelta, debe ser más antigua que si es pendiente
+                if ($estadoIncidencia === 'resuelto') {
+                    $fechaIncidencia = $now->copy()->subDays(rand(5, 20));
+                } elseif ($estadoIncidencia === 'pendiente') {
+                    $fechaIncidencia = $now->copy()->subDays(rand(1, 7));
+                }
+
+                // Cargar datos del pedido para almacenarlos en datos_pedido
+                $reserva->load(['empresa', 'repartidor', 'usuario', 'articulos', 'locker.ubicacion']);
+
+                $datosPedido = [
+                    'reserva_id' => $reserva->id,
+                    'empresa' => [
+                        'id' => $reserva->empresa->id ?? null,
+                        'nombre' => $reserva->empresa->nombre ?? null,
+                        'email' => $reserva->empresa->email ?? null,
+                    ],
+                    'repartidor' => $reserva->repartidor ? [
+                        'id' => $reserva->repartidor->id,
+                        'nombre' => $reserva->repartidor->nombre ?? null,
+                        'apellido' => $reserva->repartidor->apellido ?? null,
+                        'nombre_completo' => $reserva->repartidor->nombre_completo ?? null,
+                        'email' => $reserva->repartidor->email ?? null,
+                        'telefono' => $reserva->repartidor->telefono ?? null,
+                        'rut' => $reserva->repartidor->rut ?? null,
+                    ] : null,
+                    'usuario_destino' => [
+                        'id' => $reserva->usuario->id ?? null,
+                        'nombre' => $reserva->usuario->nombre ?? null,
+                        'email' => $reserva->usuario->email ?? null,
+                    ],
+                    'locker' => [
+                        'id' => $reserva->locker->id ?? null,
+                        'numero' => $reserva->locker->numero ?? null,
+                        'ubicacion' => $reserva->locker->ubicacion->nombre ?? null,
+                    ],
+                    'articulos' => $reserva->articulos->map(function ($articulo) {
+                        return [
+                            'id' => $articulo->id,
+                            'nombre' => $articulo->nombre,
+                            'cantidad' => $articulo->cantidad,
+                            'descripcion' => $articulo->descripcion,
+                            'sku' => $articulo->sku,
+                            'peso' => $articulo->peso,
+                        ];
+                    })->toArray(),
+                    'fecha_reserva' => $reserva->fecha_reserva?->toDateTimeString(),
+                    'estado_pedido' => $reserva->estado,
+                    'logistica_estado' => $reserva->logistica_estado,
+                ];
+
+                // Crear la incidencia
+                $incidencia = new Incidencia([
+                    'tipo' => 'pedido',
+                    'problema_tipo' => $problemaTipo,
+                    'locker_id' => $reserva->locker_id,
+                    'reserva_id' => $reserva->id,
+                    'usuario_id' => $reserva->usuario_id,
+                    'descripcion' => $descripcion,
+                    'estado' => $estadoIncidencia,
+                    'datos_pedido' => $datosPedido,
+                ]);
+
+                // Forzar los timestamps para que coincidan con la fecha retroactiva
+                $incidencia->created_at = $fechaIncidencia;
+                $incidencia->updated_at = $fechaIncidencia;
+                $incidencia->save();
+
+                // Registrar en historial del locker
+                $historialIncidencia = HistorialLockerService::registrarIncidenciaReportada(
+                    $reserva->locker_id,
+                    $incidencia->id,
+                    $descripcion,
+                    $reserva->usuario_id
+                );
+                // Ajustar fecha del historial
+                $historialIncidencia->created_at = $fechaIncidencia;
+                $historialIncidencia->updated_at = $fechaIncidencia;
+                $historialIncidencia->save();
+
+                // Si la incidencia está resuelta, registrar también la resolución
+                if ($estadoIncidencia === 'resuelto') {
+                    $fechaResolucion = $fechaIncidencia->copy()->addDays(rand(1, 5));
+                    $historialResolucion = HistorialLockerService::registrarIncidenciaResuelta(
+                        $reserva->locker_id,
+                        $incidencia->id,
+                        $admin->id
+                    );
+                    // Ajustar fecha del historial de resolución
+                    $historialResolucion->created_at = $fechaResolucion;
+                    $historialResolucion->updated_at = $fechaResolucion;
+                    $historialResolucion->save();
+                    
+                    $incidencia->updated_at = $fechaResolucion;
+                    $incidencia->save();
+                }
             }
         }
     }

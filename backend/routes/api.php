@@ -86,6 +86,7 @@ Route::apiResources([
 // Rutas de incidencias protegidas
 Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('incidencias', IncidenciaController::class);
+    Route::get('/incidencias/empresa/mis-incidencias', [IncidenciaController::class, 'empresaIncidencias']);
 });
 
 // Rutas para empresas

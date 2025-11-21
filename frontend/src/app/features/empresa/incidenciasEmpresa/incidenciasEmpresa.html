@@ -3,136 +3,204 @@
 <main class="incidencias-wrap">
     <div class="container">
         <div class="toolbar">
-            <h1 class="page-title">Incidencias</h1>
-
-            <div class="toolbar-actions">
-                <button class="btn btn-success" (click)="abrirFormulario()">
-                    Nueva incidencia
-                </button>
-            </div>
+            <h1 class="page-title">Incidencias de Pedidos</h1>
+            <p class="text-muted">Aquí puedes ver todas las incidencias relacionadas con los pedidos que has enviado.</p>
         </div>
 
-        <!-- Formulario de reporte -->
-        <section class="form-card" *ngIf="mostrarFormulario()">
-            <header class="form-card-header">
-                <h2>Reportar nueva incidencia</h2>
-                <button class="btn btn-light" type="button" (click)="cerrarFormulario()">
-                    Cancelar
-                </button>
-            </header>
-
-            <form [formGroup]="incidenciaForm" (ngSubmit)="enviarIncidencia()">
-                <div class="form-grid">
-                    <!-- TÍTULO -->
-                    <div class="form-group">
-                        <label for="titulo">Título</label>
-                        <input id="titulo" type="text" class="input" formControlName="titulo"
-                            placeholder="Ej: Locker no abre correctamente" />
-                        <small class="error"
-                            *ngIf="incidenciaForm.get('titulo')?.invalid && incidenciaForm.get('titulo')?.touched">
-                            El título es obligatorio.
-                        </small>
-                    </div>
-
-                    <!-- TIPO -->
-                    <div class="form-group">
-                        <label for="tipo">Tipo de incidencia</label>
-                        <select id="tipo" class="input" formControlName="tipo">
-                            <option value="Locker">Locker</option>
-                            <option value="Sede">Sede</option>
-                            <option value="App">App</option>
-                            <option value="Pago">Pago</option>
-                            <option value="Otro">Otro</option>
+        <!-- Filtros -->
+        <section class="card mb-3">
+            <div class="card-body">
+                <div class="row g-3">
+                    <!-- Filtros -->
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label for="fEstado" class="form-label text-muted mb-1">Estado</label>
+                        <select id="fEstado" class="form-select form-select-sm" [(ngModel)]="filtroEstado">
+                            <option *ngFor="let estado of estadosDisponibles" [value]="estado.value">
+                                {{ estado.label }}
+                            </option>
                         </select>
                     </div>
-
-                    <!-- LOCKER OPCIONAL -->
-                    <div class="form-group">
-                        <label for="locker">Locker (opcional)</label>
-                        <input id="Código Locker" type="text" class="input" formControlName="locker"
-                            placeholder="Ejemplo: 003" />
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label for="fTipo" class="form-label text-muted mb-1">Tipo</label>
+                        <select id="fTipo" class="form-select form-select-sm" [(ngModel)]="filtroTipo">
+                            <option *ngFor="let tipo of tiposDisponibles" [value]="tipo.value">
+                                {{ tipo.label }}
+                            </option>
+                        </select>
                     </div>
-
-                    <!-- SEDE OPCIONAL -->
-                    <div class="form-group">
-                        <label for="sede">Sede (opcional)</label>
-                        <input id="sede" type="text" class="input" formControlName="sede"
-                            placeholder="Ejemplo: Ñuble" />
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label for="fProblema" class="form-label text-muted mb-1">Problema</label>
+                        <select id="fProblema" class="form-select form-select-sm" [(ngModel)]="filtroProblema">
+                            <option *ngFor="let problema of problemasDisponibles" [value]="problema.value">
+                                {{ problema.label }}
+                            </option>
+                        </select>
+                    </div>
+                    <!-- Botones de acción -->
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label class="form-label text-muted mb-1 d-block">&nbsp;</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button class="btn btn-outline-secondary btn-sm flex-fill flex-md-grow-0" type="button" (click)="limpiarFiltros()">
+                                Limpiar
+                            </button>
+                            <button class="btn btn-success btn-sm flex-fill flex-md-grow-0" type="button" (click)="aplicarFiltros()">
+                                Aplicar
+                            </button>
+                        </div>
                     </div>
                 </div>
-
-                <div class="form-group">
-                    <label for="descripcion">Descripción</label>
-                    <textarea id="descripcion" rows="4" class="input" formControlName="descripcion"
-                        placeholder="Describe el problema con el mayor detalle posible"></textarea>
-                    <small class="error" *ngIf="
-                incidenciaForm.get('descripcion')?.invalid &&
-                incidenciaForm.get('descripcion')?.touched">
-                        La descripción es obligatoria (mínimo 5 caracteres).
-                    </small>
-                </div>
-
-                <footer class="form-card-footer">
-                    <span class="error" *ngIf="errorMsg()">{{ errorMsg() }}</span>
-
-                    <button class="btn btn-success" type="submit"
-                        [disabled]="incidenciaForm.invalid || cargandoEnvio()">
-                        {{ cargandoEnvio() ? 'Enviando…' : 'Enviar incidencia' }}
-                    </button>
-                </footer>
-            </form>
+            </div>
         </section>
+
+        <!-- Mensajes -->
+        <div *ngIf="errorMsg()" class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ errorMsg() }}
+            <button type="button" class="btn-close" (click)="errorMsg.set('')" aria-label="Close"></button>
+        </div>
+        <div *ngIf="successMsg()" class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ successMsg() }}
+            <button type="button" class="btn-close" (click)="successMsg.set('')" aria-label="Close"></button>
+        </div>
 
         <!-- Tabla de incidencias -->
         <section class="table-card tabla-incidencias">
+            <div class="d-flex justify-content-between align-items-center mb-2 px-3 pt-3">
+                <h3 class="h6 mb-0">Listado de Incidencias</h3>
+                <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cargarIncidencias()" title="Refrescar lista">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
             <div class="table-responsive">
                 <table class="table">
                     <colgroup>
                         <col class="col-id" />
-                        <col class="col-titulo" />
+                        <col class="col-descripcion" />
                         <col class="col-tipo" />
+                        <col class="col-problema" />
                         <col class="col-locker" />
-                        <col class="col-sede" />
-                        <col class="col-prioridad" />
+                        <col class="col-ubicacion" />
+                        <col class="col-pedido" />
                         <col class="col-estado" />
                     </colgroup>
 
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Título</th>
+                            <th>Descripción</th>
                             <th>Tipo</th>
+                            <th>Problema</th>
                             <th>Locker</th>
-                            <th>Sede</th>
-                            <!-- <th>Prioridad</th> -->
+                            <th>Ubicación</th>
+                            <th>Pedido</th>
                             <th>Estado</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
 
                     <tbody>
                         <tr *ngFor="let inc of incidencias(); trackBy: trackById">
-                            <td>#{{ inc.id }}</td>
+                            <td>
+                                <a [routerLink]="['/empresa/EmpresaIncidencias', inc.id]" class="text-decoration-none fw-bold">
+                                    #{{ inc.id }}
+                                </a>
+                            </td>
 
                             <td>
                                 <div class="title-cell">
-                                    <strong>{{ inc.titulo }}</strong>
-                                    <small class="muted">{{ inc.fecha | date: 'short' }}</small>
+                                    <a [routerLink]="['/empresa/EmpresaIncidencias', inc.id]" class="text-decoration-none">
+                                        <strong>{{ inc.descripcion }}</strong>
+                                    </a>
+                                    <small class="muted d-block">{{ inc.fecha | date: 'short' }}</small>
                                 </div>
                             </td>
 
-                            <td>{{ inc.tipo || '—' }}</td>
+                            <td>
+                                <span class="badge bg-primary-subtle text-primary-emphasis">{{ inc.tipo | titlecase }}</span>
+                            </td>
+                            <td>
+                                <span *ngIf="inc.problema_tipo" class="badge bg-info-subtle text-info-emphasis">
+                                    {{ inc.problema_tipo }}
+                                </span>
+                                <span *ngIf="!inc.problema_tipo" class="text-muted">—</span>
+                            </td>
                             <td>{{ inc.locker || '—' }}</td>
-                            <td>{{ inc.sede || '—' }}</td>
-                            <!-- <td>{{ inc.prioridad }}</td> -->
-                            <td>{{ inc.estado }}</td>
+                            <td>{{ inc.ubicacion || '—' }}</td>
+                            <td>
+                                <span *ngIf="inc.reserva">#{{ inc.reserva.id }}</span>
+                                <span *ngIf="!inc.reserva">—</span>
+                            </td>
+                            <td>
+                                <span class="badge" [class.bg-warning-subtle]="inc.estado === 'pendiente'"
+                                    [class.text-warning-emphasis]="inc.estado === 'pendiente'"
+                                    [class.bg-success-subtle]="inc.estado === 'resuelto'"
+                                    [class.text-success-emphasis]="inc.estado === 'resuelto'"
+                                    [class.bg-secondary-subtle]="inc.estado === 'anulada'"
+                                    [class.text-secondary-emphasis]="inc.estado === 'anulada'">
+                                    {{ inc.estadoLabel }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column gap-1">
+                                    <a [routerLink]="['/empresa/EmpresaIncidencias', inc.id]" 
+                                       class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-eye"></i> Ver Detalle
+                                    </a>
+                                    <div class="btn-group btn-group-sm" *ngIf="inc.estado === 'pendiente'">
+                                        <button class="btn btn-success btn-sm" 
+                                            (click)="actualizarEstado(inc, 'resuelto')"
+                                            title="Marcar como resuelta">
+                                            <i class="bi bi-check-circle"></i> Resolver
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm" 
+                                            (click)="actualizarEstado(inc, 'anulada')"
+                                            title="Anular incidencia">
+                                            <i class="bi bi-x-circle"></i> Anular
+                                        </button>
+                                    </div>
+                                    <span *ngIf="inc.estado !== 'pendiente'" class="text-muted small text-center">
+                                        {{ inc.estado === 'resuelto' ? 'Resuelta' : 'Anulada' }}
+                                    </span>
+                                </div>
+                            </td>
                         </tr>
 
-                        <tr *ngIf="!incidencias().length">
-                            <td colspan="7" class="empty">No has reportado incidencias.</td>
+                        <tr *ngIf="!incidencias().length && !cargandoListado()">
+                            <td colspan="9" class="empty">No hay incidencias relacionadas con tus pedidos.</td>
+                        </tr>
+
+                        <tr *ngIf="cargandoListado()">
+                            <td colspan="9" class="empty">Cargando incidencias...</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+
+            <!-- Paginación -->
+            <nav class="mt-3 d-flex justify-content-between align-items-center px-3 pb-3">
+                <div class="text-muted small">
+                    Mostrando {{ incidencias().length }} de {{ total }} incidencias
+                </div>
+
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item" [class.disabled]="page === 1">
+                        <button class="page-link" (click)="paginaAnterior()" [disabled]="page === 1">
+                            Anterior
+                        </button>
+                    </li>
+
+                    <li class="page-item disabled">
+                        <span class="page-link">
+                            Página {{ page }} / {{ totalPages() }}
+                        </span>
+                    </li>
+
+                    <li class="page-item" [class.disabled]="page === lastPage">
+                        <button class="page-link" (click)="paginaSiguiente()" [disabled]="page === lastPage">
+                            Siguiente
+                        </button>
+                    </li>
+                </ul>
+            </nav>
         </section>
     </div>
 </main>
