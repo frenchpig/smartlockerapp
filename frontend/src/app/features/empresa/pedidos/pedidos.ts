@@ -17,6 +17,10 @@ interface PedidoEmpresa {
   logisticaBadge: string;
   destinatario: string;
   fecha: string;
+  repartidor?: {
+    id: number;
+    nombre_completo?: string;
+  } | null;
 }
 
 interface PaginatedResponse<T> {
@@ -49,6 +53,8 @@ export class Pedidos {
   cargando = true;
   pedidos: PedidoEmpresa[] = [];
   pageItems: PedidoEmpresa[] = [];
+  asignandoRepartidor = new Set<number>(); // IDs de pedidos en proceso de asignación
+  mensaje = { texto: '', tipo: '' as 'success' | 'error' | '' };
 
   ngOnInit(): void {
     void this.cargarPedidos();
@@ -111,7 +117,14 @@ export class Pedidos {
       logisticaLabel,
       logisticaBadge,
       destinatario,
-      fecha
+      fecha,
+      repartidor: data?.repartidor ? {
+        id: data.repartidor.id,
+        nombre_completo: data.repartidor.nombre_completo || 
+          (data.repartidor.nombre && data.repartidor.apellido 
+            ? `${data.repartidor.nombre} ${data.repartidor.apellido}`.trim()
+            : data.repartidor.nombre || 'Sin nombre'),
+      } : null,
     };
   }
 
@@ -185,5 +198,52 @@ export class Pedidos {
       case 'Entregado':
         return 'badge rounded-pill bg-success-subtle text-success-emphasis px-3 py-2';
     }
+  }
+
+  async asignarRepartidor(pedido: PedidoEmpresa) {
+    if (this.asignandoRepartidor.has(pedido.id)) {
+      return;
+    }
+
+    if (!confirm(`¿Deseas asignar un repartidor disponible al pedido #${pedido.id}?`)) {
+      return;
+    }
+
+    this.asignandoRepartidor.add(pedido.id);
+    this.mensaje = { texto: '', tipo: '' };
+
+    try {
+      const res = await this.http
+        .post<any>(`${environment.apiUrl}/reservas/${pedido.id}/asignar-repartidor`, {})
+        .toPromise();
+
+      this.mensaje = {
+        texto: res?.message || 'Repartidor asignado exitosamente',
+        tipo: 'success'
+      };
+
+      // Recargar pedidos
+      await this.cargarPedidos(this.page);
+    } catch (error: any) {
+      console.error('Error asignando repartidor:', error);
+      this.mensaje = {
+        texto: error?.error?.message || 'No se pudo asignar el repartidor. Intenta nuevamente.',
+        tipo: 'error'
+      };
+    } finally {
+      this.asignandoRepartidor.delete(pedido.id);
+      // Ocultar mensaje después de 5 segundos
+      setTimeout(() => {
+        this.mensaje = { texto: '', tipo: '' };
+      }, 5000);
+    }
+  }
+
+  tieneRepartidor(pedido: PedidoEmpresa): boolean {
+    return !!pedido.repartidor;
+  }
+
+  estaAsignando(pedido: PedidoEmpresa): boolean {
+    return this.asignandoRepartidor.has(pedido.id);
   }
 }

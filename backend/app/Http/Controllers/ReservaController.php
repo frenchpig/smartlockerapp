@@ -68,9 +68,13 @@ class ReservaController extends Controller
         $query = Reserva::with(['usuario', 'locker.ubicacion', 'repartidor'])
             ->where('empresa_id', $user->id)
             ->where('logistica_estado', '!=', 'completado') // Solo pedidos no entregados
-            ->whereHas('repartidor', function ($q) use ($user) {
-                $q->where('empresa_id', $user->id);
-            }) // Solo pedidos de repartidores de la empresa
+            ->where(function ($q) use ($user) {
+                // Incluir pedidos sin repartidor (pendiente_repartidor) O pedidos con repartidor de la empresa
+                $q->whereNull('repartidor_id')
+                  ->orWhereHas('repartidor', function ($repQuery) use ($user) {
+                      $repQuery->where('empresa_id', $user->id);
+                  });
+            })
             ->orderByDesc('created_at');
 
         if ($estado = $request->query('estado')) {
@@ -749,6 +753,50 @@ class ReservaController extends Controller
         $reserva->save();
 
         $repartidor->update(['disponible' => false]);
+    }
+
+    /**
+     * Forzar asignación de repartidor a una reserva
+     */
+    public function asignarRepartidor(Request $request, Reserva $reserva)
+    {
+        $user = $request->user();
+
+        if (!$user || $user->rol !== 'empresa') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        // Verificar que la reserva pertenece a la empresa
+        if ($reserva->empresa_id !== $user->id) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        // Si ya tiene repartidor, no hacer nada
+        if ($reserva->repartidor_id) {
+            return response()->json([
+                'message' => 'La reserva ya tiene un repartidor asignado',
+                'reserva' => $reserva->load(['usuario', 'locker.ubicacion', 'repartidor', 'articulos'])
+            ]);
+        }
+
+        // Intentar asignar repartidor
+        $this->asignarRepartidorDisponible($reserva);
+
+        // Recargar la reserva
+        $reserva->refresh();
+        $reserva->load(['usuario', 'locker.ubicacion', 'repartidor', 'articulos']);
+
+        if ($reserva->repartidor_id) {
+            return response()->json([
+                'message' => 'Repartidor asignado exitosamente',
+                'reserva' => $reserva
+            ]);
+        } else {
+            return response()->json([
+                'message' => 'No hay repartidores disponibles en este momento',
+                'reserva' => $reserva
+            ], 422);
+        }
     }
 
     private function liberarRepartidor(Reserva $reserva): void
