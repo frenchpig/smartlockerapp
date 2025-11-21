@@ -1,0 +1,258 @@
+import { Component, Input, OnInit, inject, signal } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
+import { RouterModule } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+
+import { environment } from '../../../../environments/environment';
+
+type IncidenciaEstado = 'resuelto' | 'pendiente' | 'anulada' | string;
+type IncidenciaTipo = 'locker' | 'pedido' | 'otro' | string;
+
+export interface IncidenciaDetalle {
+    id: number;
+    tipo: IncidenciaTipo;
+    problema_tipo: string | null;
+    problema_tipo_label: string | null;
+    descripcion: string;
+    estado: IncidenciaEstado;
+    estadoLabel: string;
+    fecha: Date;
+    fechaActualizacion: Date | null;
+    locker: {
+        id: number;
+        numero: string;
+    } | null;
+    ubicacion: string | null;
+    usuario: {
+        id: number;
+        nombre: string;
+        email: string;
+    } | null;
+    reserva: {
+        id: number;
+        empresa?: { id: number; nombre: string; email: string } | null;
+        repartidor?: { 
+            id: number; 
+            nombre_completo?: string;
+            nombre?: string;
+            apellido?: string;
+            email: string; 
+            telefono?: string;
+        } | null;
+        usuario?: { id: number; nombre: string; email: string } | null;
+        articulos?: Array<{ id: number; nombre: string; cantidad: number; descripcion?: string; sku?: string; peso?: number }> | null;
+        fecha_reserva?: string;
+        estado?: string;
+        logistica_estado?: string;
+    } | null;
+    puedeGestionar?: boolean; // Para admin: solo true si es tipo 'locker'
+}
+
+interface IncidenciaResponse {
+    id: number;
+    tipo: string;
+    problema_tipo?: string | null;
+    descripcion: string;
+    estado: string;
+    created_at: string;
+    updated_at: string;
+    locker?: {
+        id: number;
+        numero: string;
+        ubicacion?: {
+            nombre: string;
+        } | null;
+    } | null;
+    usuario?: {
+        id: number;
+        nombre: string;
+        email: string;
+    } | null;
+    reserva?: {
+        id: number;
+        empresa?: { id: number; nombre: string; email: string } | null;
+        repartidor?: { 
+            id: number; 
+            nombre_completo?: string;
+            nombre?: string;
+            apellido?: string;
+            email: string; 
+            telefono?: string;
+        } | null;
+        usuario?: { id: number; nombre: string; email: string } | null;
+        articulos?: Array<{ id: number; nombre: string; cantidad: number; descripcion?: string; sku?: string; peso?: number }> | null;
+        fecha_reserva?: string;
+        estado?: string;
+        logistica_estado?: string;
+    } | null;
+}
+
+@Component({
+    standalone: true,
+    selector: 'app-incidencia-detalle',
+    imports: [CommonModule, RouterModule, DatePipe],
+    templateUrl: './incidencia-detalle.component.html',
+    styleUrls: ['./incidencia-detalle.component.scss'],
+})
+export class IncidenciaDetalleComponent implements OnInit {
+    private http = inject(HttpClient);
+
+    @Input() incidenciaId!: number;
+    @Input() mostrarAcciones: boolean = false; // Para mostrar botones de acción (admin)
+    @Input() rutaVolver: string = ''; // Ruta para el botón volver
+
+    incidencia = signal<IncidenciaDetalle | null>(null);
+    cargando = signal(true);
+    error = signal('');
+    successMsg = signal('');
+
+    async ngOnInit(): Promise<void> {
+        if (!this.incidenciaId) {
+            this.error.set('ID de incidencia no proporcionado.');
+            this.cargando.set(false);
+            return;
+        }
+        await this.cargarIncidencia();
+    }
+
+    async cargarIncidencia(): Promise<void> {
+        this.cargando.set(true);
+        this.error.set('');
+
+        try {
+            const res = await firstValueFrom(
+                this.http.get<IncidenciaResponse>(`${environment.apiUrl}/incidencias/${this.incidenciaId}`)
+            );
+
+            if (!res) {
+                this.error.set('No se pudo cargar la incidencia');
+                return;
+            }
+
+            this.incidencia.set(this.mapIncidencia(res));
+        } catch (err: any) {
+            console.error('Error al cargar incidencia', err);
+            this.error.set(err?.error?.message || 'No se pudo cargar la incidencia. Intenta nuevamente.');
+        } finally {
+            this.cargando.set(false);
+        }
+    }
+
+    private mapIncidencia(raw: IncidenciaResponse): IncidenciaDetalle {
+        const estadoLabels: Record<string, string> = {
+            'resuelto': 'Resuelta',
+            'pendiente': 'Pendiente',
+            'anulada': 'Anulada',
+        };
+
+        const problemaLabels: Record<string, string> = {
+            'pedido_incorrecto': 'Pedido Incorrecto',
+            'pedido_dañado': 'Pedido Dañado',
+            'pedido_faltante': 'Pedido Faltante',
+            'pedido_extraviado': 'Pedido Extraviado',
+            'pedido_no_es_el_solicitado': 'No es el Pedido Solicitado',
+            'articulos_faltantes': 'Artículos Faltantes',
+            'articulos_dañados': 'Artículos Dañados',
+            'pedido_retrasado': 'Pedido Retrasado',
+            'no_se_abre': 'No se Abre',
+            'no_se_cierra': 'No se Cierra',
+            'dañado': 'Dañado',
+            'bloqueado': 'Bloqueado',
+            'sin_energia': 'Sin Energía',
+            'codigo_no_funciona': 'Código no Funciona',
+            'sensor_defectuoso': 'Sensor Defectuoso',
+            'problema_general': 'Problema General',
+            'otro': 'Otro',
+        };
+
+        const tipo = (raw.tipo as IncidenciaTipo) || 'otro';
+        const puedeGestionar = tipo === 'locker'; // Solo admin puede gestionar lockers
+
+        return {
+            id: raw.id,
+            tipo,
+            problema_tipo: raw.problema_tipo ?? null,
+            problema_tipo_label: raw.problema_tipo 
+                ? (problemaLabels[raw.problema_tipo] || raw.problema_tipo.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()))
+                : null,
+            descripcion: raw.descripcion || '',
+            estado: (raw.estado as IncidenciaEstado) || 'pendiente',
+            estadoLabel: estadoLabels[raw.estado] || raw.estado,
+            fecha: raw.created_at ? new Date(raw.created_at) : new Date(),
+            fechaActualizacion: raw.updated_at ? new Date(raw.updated_at) : null,
+            locker: raw.locker ? {
+                id: raw.locker.id,
+                numero: raw.locker.numero,
+            } : null,
+            ubicacion: raw.locker?.ubicacion?.nombre ?? null,
+            usuario: raw.usuario ? {
+                id: raw.usuario.id,
+                nombre: raw.usuario.nombre,
+                email: raw.usuario.email,
+            } : null,
+            reserva: raw.reserva ? {
+                id: raw.reserva.id,
+                empresa: raw.reserva.empresa ?? null,
+                repartidor: raw.reserva.repartidor ? {
+                    id: raw.reserva.repartidor.id,
+                    nombre_completo: raw.reserva.repartidor.nombre_completo 
+                        || (raw.reserva.repartidor.nombre && raw.reserva.repartidor.apellido 
+                            ? `${raw.reserva.repartidor.nombre} ${raw.reserva.repartidor.apellido}`.trim()
+                            : raw.reserva.repartidor.nombre || 'Sin nombre'),
+                    email: raw.reserva.repartidor.email,
+                    telefono: raw.reserva.repartidor.telefono,
+                } : null,
+                usuario: raw.reserva.usuario ?? null,
+                articulos: raw.reserva.articulos ?? null,
+                fecha_reserva: raw.reserva.fecha_reserva,
+                estado: raw.reserva.estado,
+                logistica_estado: raw.reserva.logistica_estado,
+            } : null,
+            puedeGestionar,
+        };
+    }
+
+    tieneArticulosConSku(): boolean {
+        return this.incidencia()?.reserva?.articulos?.some(art => !!art.sku) ?? false;
+    }
+
+    tieneArticulosConPeso(): boolean {
+        return this.incidencia()?.reserva?.articulos?.some(art => !!art.peso) ?? false;
+    }
+
+    async actualizarEstado(nuevoEstado: 'resuelto' | 'pendiente' | 'anulada'): Promise<void> {
+        const incidencia = this.incidencia();
+        if (!incidencia || !incidencia.puedeGestionar) {
+            this.error.set('Solo puedes gestionar incidencias de tipo Locker.');
+            return;
+        }
+
+        if (!confirm(`¿Estás seguro de que deseas cambiar el estado a "${nuevoEstado === 'resuelto' ? 'Resuelta' : nuevoEstado === 'anulada' ? 'Anulada' : 'Pendiente'}"?`)) {
+            return;
+        }
+
+        this.error.set('');
+        this.successMsg.set('');
+
+        try {
+            await firstValueFrom(
+                this.http.patch<IncidenciaResponse>(
+                    `${environment.apiUrl}/incidencias/${incidencia.id}`,
+                    { estado: nuevoEstado }
+                )
+            );
+
+            this.successMsg.set(`Incidencia ${nuevoEstado === 'resuelto' ? 'marcada como resuelta' : nuevoEstado === 'anulada' ? 'anulada' : 'marcada como pendiente'} exitosamente.`);
+            
+            // Recargar incidencia
+            await this.cargarIncidencia();
+        } catch (err: any) {
+            console.error('Error actualizando incidencia:', err);
+            this.error.set(
+                err?.error?.message || 'No fue posible actualizar la incidencia. Intenta nuevamente.'
+            );
+        }
+    }
+}
+

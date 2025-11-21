@@ -9,9 +9,29 @@ use Illuminate\Validation\Rule;
 
 class IncidenciaController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return Incidencia::with(['locker', 'usuario', 'reserva.empresa', 'reserva.repartidor', 'reserva.articulos'])->paginate(20);
+        $perPage = (int) $request->query('per_page', 20);
+        $perPage = max(1, min(100, $perPage));
+
+        $query = Incidencia::with(['locker', 'usuario', 'reserva.empresa', 'reserva.repartidor', 'reserva.articulos']);
+
+        // Filtros
+        if ($estado = trim((string) $request->query('estado', ''))) {
+            $query->where('estado', $estado);
+        }
+
+        if ($tipo = trim((string) $request->query('tipo', ''))) {
+            $query->where('tipo', $tipo);
+        }
+
+        if ($problemaTipo = trim((string) $request->query('problema_tipo', ''))) {
+            $query->where('problema_tipo', $problemaTipo);
+        }
+
+        $query->orderByDesc('created_at');
+
+        return $query->paginate($perPage);
     }
 
     /**

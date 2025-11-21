@@ -834,5 +834,113 @@ class DemoDataSeeder extends Seeder
                 }
             }
         }
+
+        // Crear incidencias de lockers (no relacionadas con pedidos)
+        // Obtener todos los lockers disponibles
+        $lockersDisponibles = Locker::all();
+        $usuariosDisponibles = Usuario::where('rol', 'usuario')->get();
+
+        if ($lockersDisponibles->count() > 0 && $usuariosDisponibles->count() > 0) {
+            // Tipos de problemas para incidencias de locker
+            $problemasLocker = [
+                'no_se_abre',
+                'no_se_cierra',
+                'dañado',
+                'bloqueado',
+                'sin_energia',
+                'codigo_no_funciona',
+                'sensor_defectuoso',
+                'otro',
+            ];
+
+            // Estados de incidencias
+            $estadosIncidencia = ['pendiente', 'resuelto', 'anulada'];
+
+            // Crear aproximadamente 10-15 incidencias de lockers
+            $numIncidenciasLocker = min(15, $lockersDisponibles->count());
+
+            for ($i = 0; $i < $numIncidenciasLocker; $i++) {
+                // Seleccionar locker y usuario aleatorios
+                $locker = $lockersDisponibles->random();
+                $usuario = $usuariosDisponibles->random();
+
+                // Seleccionar un estado aleatorio
+                $estadoIncidencia = $estadosIncidencia[array_rand($estadosIncidencia)];
+                
+                // Seleccionar un problema aleatorio
+                $problemaTipo = $problemasLocker[array_rand($problemasLocker)];
+
+                // Descripciones de ejemplo según el tipo de problema
+                $descripciones = [
+                    'no_se_abre' => 'El locker no se abre con el código proporcionado. El usuario intentó varias veces sin éxito.',
+                    'no_se_cierra' => 'El locker no se cierra correctamente. La puerta queda abierta o no se traba.',
+                    'dañado' => 'El locker presenta daños físicos visibles. Hay signos de golpes o deterioro.',
+                    'bloqueado' => 'El locker está bloqueado y no responde a ningún comando. Parece estar fuera de servicio.',
+                    'sin_energia' => 'El locker no tiene energía. La pantalla no enciende y no responde.',
+                    'codigo_no_funciona' => 'El código de acceso no funciona. El sistema no reconoce el código válido.',
+                    'sensor_defectuoso' => 'El sensor de puerta está defectuoso. No detecta cuando la puerta está abierta o cerrada.',
+                    'otro' => 'Problema general con el locker que requiere revisión técnica.',
+                ];
+
+                $descripcion = $descripciones[$problemaTipo] ?? 'Problema reportado con el locker.';
+
+                // Fecha de la incidencia (puede ser reciente o antigua)
+                $diasAtras = rand(1, 25);
+                $fechaIncidencia = $now->copy()->subDays($diasAtras);
+
+                // Si la incidencia es resuelta, debe ser más antigua que si es pendiente
+                if ($estadoIncidencia === 'resuelto') {
+                    $fechaIncidencia = $now->copy()->subDays(rand(5, 25));
+                } elseif ($estadoIncidencia === 'pendiente') {
+                    $fechaIncidencia = $now->copy()->subDays(rand(1, 7));
+                }
+
+                // Crear la incidencia de locker (sin reserva_id)
+                $incidencia = new Incidencia([
+                    'tipo' => 'locker',
+                    'problema_tipo' => $problemaTipo,
+                    'locker_id' => $locker->id,
+                    'reserva_id' => null, // Incidencias de locker no tienen reserva
+                    'usuario_id' => $usuario->id,
+                    'descripcion' => $descripcion,
+                    'estado' => $estadoIncidencia,
+                    'datos_pedido' => null, // No hay datos de pedido para incidencias de locker
+                ]);
+
+                // Forzar los timestamps para que coincidan con la fecha retroactiva
+                $incidencia->created_at = $fechaIncidencia;
+                $incidencia->updated_at = $fechaIncidencia;
+                $incidencia->save();
+
+                // Registrar en historial del locker
+                $historialIncidencia = HistorialLockerService::registrarIncidenciaReportada(
+                    $locker->id,
+                    $incidencia->id,
+                    $descripcion,
+                    $usuario->id
+                );
+                // Ajustar fecha del historial
+                $historialIncidencia->created_at = $fechaIncidencia;
+                $historialIncidencia->updated_at = $fechaIncidencia;
+                $historialIncidencia->save();
+
+                // Si la incidencia está resuelta, registrar también la resolución
+                if ($estadoIncidencia === 'resuelto') {
+                    $fechaResolucion = $fechaIncidencia->copy()->addDays(rand(1, 5));
+                    $historialResolucion = HistorialLockerService::registrarIncidenciaResuelta(
+                        $locker->id,
+                        $incidencia->id,
+                        $admin->id
+                    );
+                    // Ajustar fecha del historial de resolución
+                    $historialResolucion->created_at = $fechaResolucion;
+                    $historialResolucion->updated_at = $fechaResolucion;
+                    $historialResolucion->save();
+                    
+                    $incidencia->updated_at = $fechaResolucion;
+                    $incidencia->save();
+                }
+            }
+        }
     }
 }
