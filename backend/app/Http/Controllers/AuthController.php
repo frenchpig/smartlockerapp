@@ -115,4 +115,40 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'Contraseña actualizada correctamente']);
     }
+
+    /**
+     * Registro público de usuarios (solo rol 'usuario')
+     */
+    public function register(Request $request)
+    {
+        $data = $request->validate([
+            'nombre'    => ['required', 'string', 'max:255', 'min:2'],
+            'apellido'  => ['required', 'string', 'max:255', 'min:2'],
+            'email'     => ['required', 'email', 'max:255', 'unique:usuarios,email'],
+            'telefono'  => ['nullable', 'string', 'max:50'],
+            'contrasena'=> ['required', 'string', 'min:6'],
+        ]);
+
+        // Crear usuario con rol 'usuario' y habilitado por defecto
+        $usuario = Usuario::create([
+            'nombre'    => $data['nombre'],
+            'apellido'  => $data['apellido'],
+            'email'     => $data['email'],
+            'telefono'  => $data['telefono'] ?? null,
+            'contrasena'=> $data['contrasena'], // El mutator aplica SHA-256
+            'rol'       => 'usuario',
+            'habilitado'=> true, // Los usuarios se registran habilitados por defecto
+        ]);
+
+        return response()->json([
+            'message' => 'Usuario registrado exitosamente',
+            'user' => [
+                'id'       => $usuario->id,
+                'nombre'   => $usuario->nombre,
+                'apellido' => $usuario->apellido,
+                'email'    => $usuario->email,
+                'rol'      => $usuario->rol,
+            ],
+        ], 201);
+    }
 }

@@ -3,6 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 
 import { TestBackend } from './features/test-backend/test-backend';
 import { LoginComponent } from './features/auth/login/login';
+import { RegisterComponent } from './features/auth/register/register';
 import { DashboardComponent } from './features/dashboard/dashboard/dashboard';
 import { authGuard } from './core/auth/auth-guard';
 import { deviceGuard } from './core/auth/device-guard';
@@ -53,6 +54,7 @@ import { PerfilAdmin } from "./features/admin/perfilAdmin/perfilAdmin";
 const routes: Routes = [
   { path: 'test-backend', component: TestBackend },
   { path: 'login', component: LoginComponent },
+  { path: 'register', component: RegisterComponent },
 
   // Totem routes
   { path: 'totem/device-login', component: DeviceLoginComponent },
