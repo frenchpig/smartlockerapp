@@ -60,6 +60,31 @@ $green: #18884b;
     font-weight: 700;
     color: #111827;
   }
+
+  .kpi-sub {
+    margin-top: .25rem;
+    font-size: .7rem;
+    color: #6b7280;
+  }
+}
+
+.stat-box {
+  text-align: center;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: .5rem;
+
+  .stat-label {
+    font-size: .75rem;
+    color: #6b7280;
+    margin-bottom: .5rem;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111827;
+  }
 }
 
 /* Secciones */
@@ -156,6 +181,21 @@ $green: #18884b;
 .chip-danger {
   background: #fee2e2;
   color: #b91c1c;
+}
+
+.chip-primary {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.chip-info {
+  background: #e0f2fe;
+  color: #0c4a6e;
+}
+
+.chip-secondary {
+  background: #f3f4f6;
+  color: #374151;
 }
 
 /* ===== Tablas dentro de las secciones del dashboard ===== */

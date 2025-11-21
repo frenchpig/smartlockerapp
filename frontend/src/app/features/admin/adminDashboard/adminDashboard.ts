@@ -1,25 +1,71 @@
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+
+import { environment } from '../../../../environments/environment';
 import { HeaderAdmin } from '../shared/header-admin/headerAdmin';
 
-type IncidenciaEstado = 'Abierta' | 'Iniciada' | 'Cerrada';
-type IncidenciaPrioridad = 'Baja' | 'Media' | 'Alta' | 'Crítica';
-type IncidenciaOrigen = 'Locker' | 'Empresa' | 'Sistema' | 'Cliente';
-
-interface IncidenciaResumen {
-    id: number;
-    titulo: string;
-    origen: IncidenciaOrigen;
-    prioridad: IncidenciaPrioridad;
-    estado: IncidenciaEstado;
-}
-
-interface EmpresaResumen {
-    id: number;
-    nombre: string;
-    correo: string;
-    ubicacion: string;
+interface DashboardStats {
+    lockers: {
+        totales: number;
+        activos: number;
+        ocupados: number;
+        en_revision: number;
+    };
+    empresas: {
+        totales: number;
+        activas: number;
+    };
+    usuarios: {
+        totales: number;
+        activos: number;
+    };
+    reservas: {
+        totales: number;
+        pendientes: number;
+        completadas: number;
+        hoy: number;
+        esta_semana: number;
+        este_mes: number;
+    };
+    incidencias: {
+        totales: number;
+        pendientes: number;
+        resueltas: number;
+        lockers: number;
+        pedidos: number;
+    };
+    mantenimientos: {
+        pendientes: number;
+    };
+    incidencias_recientes: Array<{
+        id: number;
+        tipo: string;
+        problema_tipo: string | null;
+        descripcion: string;
+        estado: string;
+        fecha: string;
+        locker: { id: number; numero: string; ubicacion: string | null } | null;
+        usuario: { id: number; nombre: string; email: string } | null;
+        empresa: { id: number; nombre: string } | null;
+    }>;
+    empresas_activas: Array<{
+        id: number;
+        nombre: string;
+        email: string;
+        reservas_recientes: number;
+    }>;
+    reservas_recientes: Array<{
+        id: number;
+        estado: string;
+        logistica_estado: string;
+        fecha: string;
+        usuario: { id: number; nombre: string; email: string } | null;
+        locker: { id: number; numero: string; ubicacion: string | null } | null;
+        empresa: { id: number; nombre: string } | null;
+    }>;
 }
 
 @Component({
@@ -27,48 +73,85 @@ interface EmpresaResumen {
     selector: 'app-admin-dashboard',
     templateUrl: './adminDashboard.html',
     styleUrls: ['./adminDashboard.scss'],
-    imports: [CommonModule, RouterModule, HeaderAdmin],
+    imports: [CommonModule, RouterModule, DatePipe, HeaderAdmin],
 })
-export class AdminDashboard {
+export class AdminDashboard implements OnInit {
     private router = inject(Router);
+    private http = inject(HttpClient);
 
-    // Lockers KPIs
-    lockersTotales = 3;
-    lockersActivos = 2;
-    lockersOcupados = 1;
-    lockersRevision = 0;
+    cargando = signal(true);
+    error = signal('');
 
-    // Incidencias
-    incidenciasRecientes: IncidenciaResumen[] = [
-        { id: 101, titulo: 'Locker no abre', origen: 'Locker', prioridad: 'Alta', estado: 'Abierta' },
-        { id: 102, titulo: 'Cobro duplicado', origen: 'Empresa', prioridad: 'Media', estado: 'Iniciada' },
-        { id: 103, titulo: 'Sensor de puerta', origen: 'Sistema', prioridad: 'Crítica', estado: 'Abierta' },
-    ];
+    stats = signal<DashboardStats | null>(null);
 
-    // Empresas
-    empresasActivas: EmpresaResumen[] = [
-        { id: 3, nombre: 'Locker Solutions SA', correo: 'empresa@example.com', ubicacion: 'Puente Alto' },
-        { id: 4, nombre: 'Smart Logistics SpA', correo: 'empresa2@example.com', ubicacion: 'Santiago' },
-    ];
+    async ngOnInit(): Promise<void> {
+        await this.cargarDashboard();
+    }
 
-    prioridadClase(p: IncidenciaPrioridad) {
+    async cargarDashboard(): Promise<void> {
+        this.cargando.set(true);
+        this.error.set('');
+
+        try {
+            const data = await firstValueFrom(
+                this.http.get<DashboardStats>(`${environment.apiUrl}/admin/dashboard`)
+            );
+            this.stats.set(data);
+        } catch (err: any) {
+            console.error('Error cargando dashboard:', err);
+            this.error.set('No fue posible cargar las estadísticas del dashboard.');
+        } finally {
+            this.cargando.set(false);
+        }
+    }
+
+    get problemaTipoLabel(): Record<string, string> {
         return {
-            'chip-low': p === 'Baja',
-            'chip-medium': p === 'Media',
-            'chip-high': p === 'Alta',
-            'chip-critical': p === 'Crítica',
+            'pedido_incorrecto': 'Pedido Incorrecto',
+            'pedido_dañado': 'Pedido Dañado',
+            'pedido_faltante': 'Pedido Faltante',
+            'pedido_extraviado': 'Pedido Extraviado',
+            'no_se_abre': 'No se Abre',
+            'no_se_cierra': 'No se Cierra',
+            'dañado': 'Dañado',
+            'bloqueado': 'Bloqueado',
+            'sin_energia': 'Sin Energía',
+            'codigo_no_funciona': 'Código no Funciona',
+            'sensor_defectuoso': 'Sensor Defectuoso',
+            'otro': 'Otro',
         };
     }
 
-    estadoClase(e: IncidenciaEstado) {
+    getProblemaLabel(problema: string | null): string {
+        if (!problema) return '—';
+        return this.problemaTipoLabel[problema] || problema.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+
+    tipoClase(tipo: string): Record<string, boolean> {
         return {
-            'chip-danger': e === 'Abierta',
-            'chip-warn': e === 'Iniciada',
-            'chip-success': e === 'Cerrada',
+            'chip-primary': tipo === 'locker',
+            'chip-info': tipo === 'pedido',
+            'chip-secondary': tipo === 'otro',
         };
     }
 
-    // navegación
+    estadoClase(estado: string): Record<string, boolean> {
+        return {
+            'chip-danger': estado === 'pendiente',
+            'chip-success': estado === 'resuelto',
+            'chip-secondary': estado === 'anulada',
+        };
+    }
+
+    estadoLabel(estado: string): string {
+        const labels: Record<string, string> = {
+            'pendiente': 'Pendiente',
+            'resuelto': 'Resuelta',
+            'anulada': 'Anulada',
+        };
+        return labels[estado] || estado;
+    }
+
     verIncidencia(id: number) {
         this.router.navigate(['/admin/IncidenciaDetalle', id]);
     }
@@ -84,4 +167,10 @@ export class AdminDashboard {
     irEmpresas() {
         this.router.navigate(['/admin/empresa']);
     }
+
+    verReserva(id: number) {
+        // TODO: Implementar vista de reserva si existe
+        console.log('Ver reserva:', id);
+    }
 }
+

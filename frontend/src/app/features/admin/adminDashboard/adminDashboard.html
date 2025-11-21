@@ -5,114 +5,278 @@
 
     <!-- Título -->
     <div class="toolbar">
-      <h1 class="page-title">Dashboard administrador</h1>
+      <h1 class="page-title">Dashboard Administrador</h1>
+      <button class="btn btn-outline-primary btn-sm" (click)="cargarDashboard()" [disabled]="cargando()">
+        <i class="bi bi-arrow-clockwise"></i> Actualizar
+      </button>
     </div>
 
-    <!-- KPIs -->
-    <section class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-label">Total de lockers</div>
-        <div class="kpi-value">{{ lockersTotales }}</div>
+    <!-- Estado de carga -->
+    <div *ngIf="cargando()" class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
       </div>
+      <p class="text-muted mt-3">Cargando estadísticas...</p>
+    </div>
 
-      <div class="kpi-card">
-        <div class="kpi-label">Lockers activos</div>
-        <div class="kpi-value">{{ lockersActivos }}</div>
-      </div>
+    <!-- Mensaje de error -->
+    <div *ngIf="!cargando() && error()" class="alert alert-danger" role="alert">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      {{ error() }}
+    </div>
 
-      <div class="kpi-card">
-        <div class="kpi-label">Lockers ocupados</div>
-        <div class="kpi-value">{{ lockersOcupados }}</div>
-      </div>
+    <!-- Contenido del dashboard -->
+    <div *ngIf="!cargando() && !error() && stats()">
+      
+      <!-- KPIs principales -->
+      <section class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Total de Lockers</div>
+          <div class="kpi-value">{{ stats()!.lockers.totales }}</div>
+          <div class="kpi-sub">
+            <span class="text-success">{{ stats()!.lockers.activos }} activos</span>
+          </div>
+        </div>
 
-      <div class="kpi-card">
-        <div class="kpi-label">Lockers en revisión</div>
-        <div class="kpi-value">{{ lockersRevision }}</div>
-      </div>
-    </section>
+        <div class="kpi-card">
+          <div class="kpi-label">Lockers Ocupados</div>
+          <div class="kpi-value">{{ stats()!.lockers.ocupados }}</div>
+          <div class="kpi-sub">
+            <span class="text-muted">{{ stats()!.lockers.totales - stats()!.lockers.ocupados }} disponibles</span>
+          </div>
+        </div>
 
-    <!-- INCIDENCIAS -->
-    <section class="dashboard-section dash-section-card">
-      <header class="section-head dash-section-header">
-        <h2>Incidencias recientes</h2>
-        <button class="btn btn-light" (click)="irIncidencias()">Ver todas</button>
-      </header>
+        <div class="kpi-card">
+          <div class="kpi-label">Lockers en Revisión</div>
+          <div class="kpi-value text-warning">{{ stats()!.lockers.en_revision }}</div>
+          <div class="kpi-sub">
+            <span class="text-muted">Con incidencias pendientes</span>
+          </div>
+        </div>
 
-      <div class="table-scroll">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Título</th>
-              <th>Origen</th>
-              <th>Prioridad</th>
-              <th>Estado</th>
-              <th class="text-end">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let i of incidenciasRecientes">
-              <td data-label="ID">#{{ i.id }}</td>
-              <td data-label="Título">{{ i.titulo }}</td>
-              <td data-label="Origen">{{ i.origen }}</td>
-              <td data-label="Prioridad">
-                <span class="chip" [ngClass]="prioridadClase(i.prioridad)">
-                  {{ i.prioridad }}
-                </span>
-              </td>
-              <td data-label="Estado">
-                <span class="chip" [ngClass]="estadoClase(i.estado)">
-                  {{ i.estado }}
-                </span>
-              </td>
-              <td data-label="Acciones" class="text-end">
-                <button class="btn btn-light" (click)="verIncidencia(i.id)">Detalle</button>
-              </td>
-            </tr>
+        <div class="kpi-card">
+          <div class="kpi-label">Incidencias Pendientes</div>
+          <div class="kpi-value text-danger">{{ stats()!.incidencias.pendientes }}</div>
+          <div class="kpi-sub">
+            <span class="text-muted">{{ stats()!.incidencias.lockers }} lockers, {{ stats()!.incidencias.pedidos }} pedidos</span>
+          </div>
+        </div>
 
-            <tr *ngIf="!incidenciasRecientes.length">
-              <td colspan="6" class="empty">No hay incidencias recientes.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+        <div class="kpi-card">
+          <div class="kpi-label">Empresas Activas</div>
+          <div class="kpi-value">{{ stats()!.empresas.activas }}</div>
+          <div class="kpi-sub">
+            <span class="text-muted">{{ stats()!.empresas.totales }} totales</span>
+          </div>
+        </div>
 
-    <!-- EMPRESAS -->
-    <section class="dashboard-section dash-section-card">
-      <header class="section-head dash-section-header">
-        <h2>Empresas activas</h2>
-        <button class="btn btn-light" (click)="irEmpresas()">Ver empresas</button>
-      </header>
+        <div class="kpi-card">
+          <div class="kpi-label">Usuarios Activos</div>
+          <div class="kpi-value">{{ stats()!.usuarios.activos }}</div>
+          <div class="kpi-sub">
+            <span class="text-muted">{{ stats()!.usuarios.totales }} totales</span>
+          </div>
+        </div>
 
-      <div class="table-scroll">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Empresa</th>
-              <th>Correo</th>
-              <th>Ubicación</th>
-              <th class="text-end">Acciones</th>
-            </tr>
-          </thead>
+        <div class="kpi-card">
+          <div class="kpi-label">Reservas Hoy</div>
+          <div class="kpi-value">{{ stats()!.reservas.hoy }}</div>
+          <div class="kpi-sub">
+            <span class="text-muted">{{ stats()!.reservas.esta_semana }} esta semana</span>
+          </div>
+        </div>
 
-          <tbody>
-            <tr *ngFor="let e of empresasActivas">
-              <td data-label="Empresa">{{ e.nombre }}</td>
-              <td data-label="Correo">{{ e.correo }}</td>
-              <td data-label="Ubicación">{{ e.ubicacion }}</td>
-              <td data-label="Acciones" class="text-end">
-                <button class="btn btn-light" (click)="verEmpresa(e.id)">Detalle</button>
-              </td>
-            </tr>
+        <div class="kpi-card">
+          <div class="kpi-label">Mantenimientos Pendientes</div>
+          <div class="kpi-value text-warning">{{ stats()!.mantenimientos.pendientes }}</div>
+          <div class="kpi-sub">
+            <span class="text-muted">Requieren atención</span>
+          </div>
+        </div>
+      </section>
 
-            <tr *ngIf="!empresasActivas.length">
-              <td colspan="4" class="empty">No hay empresas activas.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+      <!-- Estadísticas de Reservas -->
+      <section class="dashboard-section dash-section-card mb-4">
+        <header class="section-head dash-section-header">
+          <h2>Estadísticas de Reservas</h2>
+        </header>
+        <div class="row g-3 p-3">
+          <div class="col-md-3">
+            <div class="stat-box">
+              <div class="stat-label">Total</div>
+              <div class="stat-value">{{ stats()!.reservas.totales }}</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stat-box">
+              <div class="stat-label">Pendientes</div>
+              <div class="stat-value text-warning">{{ stats()!.reservas.pendientes }}</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stat-box">
+              <div class="stat-label">Completadas</div>
+              <div class="stat-value text-success">{{ stats()!.reservas.completadas }}</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stat-box">
+              <div class="stat-label">Este Mes</div>
+              <div class="stat-value">{{ stats()!.reservas.este_mes }}</div>
+            </div>
+          </div>
+        </div>
+      </section>
 
+      <!-- Incidencias Recientes -->
+      <section class="dashboard-section dash-section-card mb-4">
+        <header class="section-head dash-section-header">
+          <h2>Incidencias Pendientes Recientes</h2>
+          <button class="btn btn-light" (click)="irIncidencias()">Ver todas</button>
+        </header>
+
+        <div class="table-scroll">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Tipo</th>
+                <th>Problema</th>
+                <th>Descripción</th>
+                <th>Locker</th>
+                <th>Estado</th>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let i of stats()!.incidencias_recientes">
+                <td data-label="ID">#{{ i.id }}</td>
+                <td data-label="Tipo">
+                  <span class="chip" [ngClass]="tipoClase(i.tipo)">
+                    {{ i.tipo | titlecase }}
+                  </span>
+                </td>
+                <td data-label="Problema">
+                  <small>{{ getProblemaLabel(i.problema_tipo) }}</small>
+                </td>
+                <td data-label="Descripción">
+                  <small class="text-truncate d-inline-block" style="max-width: 200px;" [title]="i.descripcion">
+                    {{ i.descripcion }}
+                  </small>
+                </td>
+                <td data-label="Locker">
+                  <span *ngIf="i.locker">#{{ i.locker.numero }}</span>
+                  <span *ngIf="!i.locker" class="text-muted">—</span>
+                </td>
+                <td data-label="Estado">
+                  <span class="chip" [ngClass]="estadoClase(i.estado)">
+                    {{ estadoLabel(i.estado) }}
+                  </span>
+                </td>
+                <td data-label="Acciones" class="text-end">
+                  <button class="btn btn-light btn-sm" (click)="verIncidencia(i.id)">Detalle</button>
+                </td>
+              </tr>
+
+              <tr *ngIf="!stats()!.incidencias_recientes.length">
+                <td colspan="7" class="empty">No hay incidencias pendientes.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Empresas Activas -->
+      <section class="dashboard-section dash-section-card mb-4">
+        <header class="section-head dash-section-header">
+          <h2>Empresas Más Activas</h2>
+          <button class="btn btn-light" (click)="irEmpresas()">Ver todas</button>
+        </header>
+
+        <div class="table-scroll">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Empresa</th>
+                <th>Email</th>
+                <th>Reservas (30 días)</th>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let e of stats()!.empresas_activas">
+                <td data-label="Empresa">{{ e.nombre }}</td>
+                <td data-label="Email">{{ e.email }}</td>
+                <td data-label="Reservas">
+                  <span class="badge bg-primary">{{ e.reservas_recientes }}</span>
+                </td>
+                <td data-label="Acciones" class="text-end">
+                  <button class="btn btn-light btn-sm" (click)="verEmpresa(e.id)">Detalle</button>
+                </td>
+              </tr>
+
+              <tr *ngIf="!stats()!.empresas_activas.length">
+                <td colspan="4" class="empty">No hay empresas activas.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Reservas Recientes -->
+      <section class="dashboard-section dash-section-card">
+        <header class="section-head dash-section-header">
+          <h2>Reservas Recientes</h2>
+        </header>
+
+        <div class="table-scroll">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Usuario</th>
+                <th>Locker</th>
+                <th>Empresa</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let r of stats()!.reservas_recientes">
+                <td data-label="ID">#{{ r.id }}</td>
+                <td data-label="Usuario">
+                  <span *ngIf="r.usuario">{{ r.usuario.nombre }}</span>
+                  <span *ngIf="!r.usuario" class="text-muted">—</span>
+                </td>
+                <td data-label="Locker">
+                  <span *ngIf="r.locker">#{{ r.locker.numero }}</span>
+                  <span *ngIf="!r.locker" class="text-muted">—</span>
+                </td>
+                <td data-label="Empresa">
+                  <span *ngIf="r.empresa">{{ r.empresa.nombre }}</span>
+                  <span *ngIf="!r.empresa" class="text-muted">—</span>
+                </td>
+                <td data-label="Estado">
+                  <span class="badge" 
+                    [class.bg-warning]="r.estado === 'pendiente'"
+                    [class.bg-success]="r.estado === 'completado'"
+                    [class.bg-secondary]="r.estado === 'anulado'">
+                    {{ r.estado | titlecase }}
+                  </span>
+                </td>
+                <td data-label="Fecha">
+                  <small>{{ r.fecha | date: 'dd/MM/yy, h:mm a' }}</small>
+                </td>
+              </tr>
+
+              <tr *ngIf="!stats()!.reservas_recientes.length">
+                <td colspan="6" class="empty">No hay reservas recientes.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
   </div>
 </main>

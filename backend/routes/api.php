@@ -13,6 +13,7 @@ use App\Http\Controllers\HistorialEnvioController;
 use App\Http\Controllers\TarifaController;
 use App\Http\Controllers\UbicacionController;
 use App\Http\Controllers\EmpresaRepartidorController;
+use App\Http\Controllers\AdminController;
 
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
@@ -87,6 +88,9 @@ Route::apiResources([
 Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('incidencias', IncidenciaController::class);
     Route::get('/incidencias/empresa/mis-incidencias', [IncidenciaController::class, 'empresaIncidencias']);
+    
+    // Dashboard del administrador
+    Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
 });
 
 // Rutas para empresas
