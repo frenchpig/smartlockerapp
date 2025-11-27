@@ -396,9 +396,7 @@ class ReservaController extends Controller
             'usuario_id'   => ['required', 'integer', 'exists:usuarios,id'],
             'tamano_pedido' => ['required', 'string', Rule::in($tamanosValidos)],
             'ubicacion_destino_id' => ['required', 'integer', 'exists:ubicaciones,id'],
-            'fecha_reserva'=> ['required', 'date'],
-            'hora_inicio'  => ['nullable', 'date_format:H:i'],
-            'hora_fin'     => ['nullable', 'date_format:H:i'],
+            'fecha_reserva'=> ['required', 'date'], // Fecha estimada de llegada
             'tipo_acceso'  => ['nullable', Rule::in(['qr','codigo_temporal'])],
             'repartidor_id' => ['nullable', 'integer', 'exists:repartidores,id'],
             'articulos'    => ['required', 'array', 'min:1'],
@@ -448,8 +446,10 @@ class ReservaController extends Controller
             'logistica_estado' => !empty($data['repartidor_id']) ? 'asignado' : 'pendiente_repartidor',
             'tipo_acceso' => $data['tipo_acceso'] ?? 'codigo_temporal',
             'codigo_acceso' => null,
-            // Si no se proporciona hora_inicio, establecerla como null (ya no es requerida)
-            'hora_inicio' => $data['hora_inicio'] ?? null,
+            // hora_inicio se establecerá cuando el repartidor marque el pedido como 'en_camino'
+            'hora_inicio' => null,
+            // hora_fin se establecerá cuando el usuario retire el paquete del locker
+            'hora_fin' => null,
         ]);
 
         $reserva = DB::transaction(function () use ($payload, $data, $ubicacion) {
@@ -778,6 +778,10 @@ class ReservaController extends Controller
         }
 
         $reserva->logistica_estado = 'en_camino';
+        // Establecer hora_inicio cuando el repartidor marca el pedido como en ruta (llegó al locker)
+        if (!$reserva->hora_inicio) {
+            $reserva->hora_inicio = now();
+        }
         $reserva->save();
 
         return response()->json($reserva->load(['usuario','locker.ubicacion','repartidor']));
