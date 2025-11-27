@@ -1,0 +1,57 @@
+<div class="dropdown user-dropdown position-relative">
+    <button
+        class="btn-user-menu dropdown-toggle d-inline-flex align-items-center gap-2"
+        type="button"
+        data-bs-toggle="dropdown"
+        aria-expanded="false">
+        <div class="user-avatar">
+            <i [class]="avatarIcon"></i>
+        </div>
+        <div class="user-info d-none d-sm-flex flex-column align-items-start">
+            <span class="user-name">{{ displayName }}</span>
+            <span class="user-role">{{ userRole }}</span>
+        </div>
+        <i class="bi bi-chevron-down chevron-icon d-none d-sm-inline"></i>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-animated">
+        <li class="dropdown-header">
+            <div class="d-flex align-items-center gap-2">
+                <i [ngClass]="[headerIcon, 'fs-4']"></i>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="fw-semibold">{{ displayName }}</div>
+                    <small class="text-muted d-block">{{ displayEmail || 'usuario@email.com' }}</small>
+                </div>
+            </div>
+        </li>
+        <ng-container *ngFor="let item of menuItems">
+            <li *ngIf="item.divider">
+                <hr class="dropdown-divider">
+            </li>
+            <li *ngIf="!item.divider">
+                <a *ngIf="item.route && !item.action" 
+                   class="dropdown-item" 
+                   [class.text-danger]="item.danger"
+                   [routerLink]="item.route">
+                    <i [class]="item.icon"></i>
+                    <span class="flex-grow-1">{{ item.label }}</span>
+                </a>
+                <button *ngIf="!item.route || item.action" 
+                        class="dropdown-item" 
+                        [class.text-danger]="item.danger"
+                        type="button" 
+                        (click)="handleItemClick(item)">
+                    <i [class]="item.icon"></i>
+                    <span class="flex-grow-1">{{ item.label }}</span>
+                </button>
+            </li>
+        </ng-container>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+            <button class="dropdown-item text-danger" type="button" (click)="onLogout()">
+                <i class="bi bi-box-arrow-right"></i>
+                <span class="flex-grow-1">Cerrar sesión</span>
+            </button>
+        </li>
+    </ul>
+</div>
+

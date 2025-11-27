@@ -2,11 +2,12 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../../../core/auth/auth';
+import { UserMenuButtonComponent, MenuItem } from '../../../../shared/components/user-menu-button/user-menu-button.component';
 
 @Component({
     standalone: true,
     selector: 'app-header-admin',
-    imports: [CommonModule, RouterModule],
+    imports: [CommonModule, RouterModule, UserMenuButtonComponent],
     templateUrl: './headerAdmin.html',
     styleUrls: ['./headerAdmin.scss']
 })
@@ -33,6 +34,38 @@ export class HeaderAdmin {
         return u.nombre.charAt(0).toUpperCase();
     }
 
+    menuItems: MenuItem[] = [
+        {
+            action: () => this.irPerfil(),
+            icon: 'bi bi-person',
+            label: 'Perfil'
+        },
+        {
+            action: () => this.irHome(),
+            icon: 'bi bi-speedometer2',
+            label: 'Dashboard'
+        },
+        {
+            action: () => this.irLockers(),
+            icon: 'bi bi-box-seam',
+            label: 'Lockers'
+        },
+        {
+            action: () => this.irIncidencias(),
+            icon: 'bi bi-exclamation-triangle',
+            label: 'Incidencias'
+        },
+        {
+            action: () => this.irEmpresas(),
+            icon: 'bi bi-building',
+            label: 'Empresas'
+        },
+        {
+            action: () => this.irTarifas(),
+            icon: 'bi bi-currency-dollar',
+            label: 'Tarifas'
+        }
+    ];
 
     // ---- Navegación ----
     vistaActual: string = 'home';
