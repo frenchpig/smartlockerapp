@@ -18,8 +18,8 @@
             </nav>
         </div>
 
-        <div class="d-flex align-items-center gap-2">
-            <div class="dropdown user-dropdown">
+        <div class="d-flex align-items-center gap-2 ms-auto">
+            <div class="dropdown user-dropdown position-relative">
                 <button
                     class="btn-user-menu dropdown-toggle d-inline-flex align-items-center gap-2"
                     type="button"
@@ -32,7 +32,7 @@
                         <span class="user-name">{{ user()?.nombre || 'Usuario' }}</span>
                         <span class="user-role">Repartidor</span>
                     </div>
-                    <i class="bi bi-chevron-down chevron-icon"></i>
+                    <i class="bi bi-chevron-down chevron-icon d-none d-sm-inline"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end dropdown-menu-animated">
                     <li class="dropdown-header">
