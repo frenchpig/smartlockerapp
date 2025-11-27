@@ -41,11 +41,11 @@ export class AdminIncidenciaDetalle implements OnInit {
         this.id = idParam ? Number(idParam) : NaN;
 
         if (isNaN(this.id)) {
-            this.router.navigate(['/admin/incidencias']);
+            this.router.navigate(['/admin/AdminIncidencias']);
         }
     }
 
     volver() {
-        this.router.navigate(['/admin/incidencias']);
+        this.router.navigate(['/admin/AdminIncidencias']);
     }
 }

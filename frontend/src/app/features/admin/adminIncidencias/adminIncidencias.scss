@@ -1,370 +1,341 @@
+/* =======================================
+   Variables básicas
+======================================= */
 $green: #18884b;
+$bg-soft: #f6faf7;
+$border: #e5e7eb;
+$text: #0f172a;
+$muted: #6b7280;
 
+/* =======================================
+   Layout general
+======================================= */
 .incidencias-wrap {
-    background: #f8faf9;
-    padding: 1.25rem 0 2rem;
-}
+  background: $bg-soft;
+  min-height: 100vh;
+  padding: 1.5rem 0 2.5rem;
 
-.container {
-    max-width: 1280px;
+  .container {
+    max-width: 1360px;
     margin: 0 auto;
-    padding: 0 1rem;
+    padding: 0 1.25rem;
+  }
 }
 
-.toolbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    gap: .75rem;
-}
-
-.page-title {
-    margin: 0;
-    font-size: 1.35rem;
-    font-weight: 700;
-    color: #134e2b;
-}
-
-.btn {
-    border: 1px solid #e5e7eb;
-    background: #fff;
-    color: #111827;
-    padding: .45rem .75rem;
-    border-radius: .55rem;
-    font-weight: 600;
-    font-size: .85rem;
-    cursor: pointer;
-    transition: .2s;
-
-    &.btn-light {
-        background: #fff;
-        border-color: #e5e7eb;
-    }
-
-    &:hover {
-        transform: translateY(-1px);
-    }
-}
-
-.input {
-    background: #fff;
-    border: 1px solid #d1d5db;
-    border-radius: .5rem;
-    padding: .45rem .6rem;
-    font-size: .85rem;
-}
-
-.input-sm {
-    padding: .35rem .5rem;
-    font-size: .78rem;
-}
-
-/* Table */
-.table-card {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: .75rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
-}
-
-.table-responsive {
-    overflow: visible;
-}
-
-.col-id {
-    width: 70px;
-}
-
-.col-titulo {
-    min-width: 240px;
-}
-
-.col-acciones {
-    width: 120px;
-}
-
-.title-cell {
+/* =======================================
+   Header / título
+======================================= */
+.incidencias-wrap {
+  .toolbar {
+    margin-bottom: 1.25rem;
     display: flex;
     flex-direction: column;
-    gap: .2rem;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
 
-    .muted {
-        font-size: .7rem;
-        color: #9ca3af;
-    }
-}
-
-/* Chips */
-.cell-chip {
-    position: relative;
-    display: inline-flex;
-}
-
-.chip {
-    display: inline-flex;
-    align-items: center;
-    gap: .35rem;
-    padding: .35rem .7rem;
-    border-radius: 999px;
+  .page-title {
+    font-size: 1.7rem;
     font-weight: 700;
-    font-size: .78rem;
-    border: 1px solid transparent;
-    background: #f3f4f6;
-    color: #111827;
-    cursor: pointer;
-    transition: .15s ease;
+    color: $text;
+    margin: 0;
+  }
 
-    .chev {
-        opacity: .6;
-        font-weight: 400;
-    }
+  .toolbar .text-muted {
+    font-size: 0.86rem;
+    color: $muted !important;
+  }
+}
+
+/* =======================================
+   Card de filtros
+======================================= */
+.incidencias-wrap {
+  .card {
+    border-radius: 14px;
+    border-color: $border;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  }
+
+  .card-body {
+    padding: 1rem 1.25rem;
+  }
+
+  .form-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: $muted;
+  }
+
+  .form-select-sm {
+    font-size: 0.85rem;
+    border-radius: 0.6rem;
+  }
+
+  .btn-sm {
+    border-radius: 999px;
+    font-size: 0.8rem;
+    padding: 0.35rem 0.9rem;
+  }
+
+  .btn-primary {
+    background: $green;
+    border-color: $green;
 
     &:hover {
-        transform: translateY(-1px);
+      background: #13753f;
+      border-color: #13753f;
     }
+  }
 }
 
-/* prioridad */
-.chip-low {
-    background: #e0f2fe;
-    color: #075985;
-}
-
-.chip-medium {
-    background: #ede9fe;
-    color: #6b21a8;
-}
-
-.chip-high {
-    background: #fee2e2;
-    color: #b91c1c;
-}
-
-.chip-critical {
-    background: #ffedd5;
-    color: #c2410c;
-}
-
-/* estado */
-.chip-success {
-    background: #dcfce7;
-    color: #166534;
-}
-
-.chip-warn {
-    background: #fef3c7;
-    color: #92400e;
-}
-
-.chip-danger {
-    background: #fee2e2;
-    color: #b91c1c;
-}
-
-/* Menú de chip */
-.chip-menu {
-    position: absolute;
-    top: calc(100% + .35rem);
-    right: 0;
-    min-width: 10rem;
+/* =======================================
+   Tabla principal
+======================================= */
+.incidencias-wrap {
+  .table-card {
     background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: .6rem;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
-    padding: .35rem;
-    z-index: 50;
+    border-radius: 16px;
+    border: 1px solid $border;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
+    margin-top: 0.75rem;
+  }
 
-    .chip-opt {
-        width: 100%;
-        text-align: left;
-        background: #fff;
-        border: 1px solid transparent;
-        border-radius: .45rem;
-        padding: .45rem .55rem;
-        font-size: .85rem;
-        cursor: pointer;
+  .table-card > .table-responsive {
+    padding: 0 0.75rem 0.5rem;
+  }
 
-        &:hover {
-            background: #f9fafb;
-            border-color: #e5e7eb;
-        }
+  .table-card h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #111827;
+  }
 
-        &.is-active {
-            background: #f0fdf4;
-            border-color: #86efac;
-            color: #166534;
-            font-weight: 700;
-        }
-    }
-}
-
-/* Mobile cards */
-.cards-incidencias {
-    display: none;
-}
-
-@media (max-width: 768px) {
-    .tabla-incidencias {
-        display: none;
-    }
-
-    .cards-incidencias {
-        display: grid;
-        gap: .9rem;
-    }
-
-    .inc-card {
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: .75rem;
-        padding: .9rem;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
-    }
-
-    .inc-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: .75rem;
-
-        h2 {
-            margin: 0;
-            font-size: 1rem;
-            font-weight: 700;
-            color: #0f172a;
-        }
-
-        .inc-sub {
-            margin: .15rem 0 0;
-            font-size: .8rem;
-            color: #6b7280;
-        }
-    }
-
-    .inc-body {
-        margin-top: .6rem;
-
-        p {
-            margin: .25rem 0;
-            font-size: .9rem;
-        }
-
-        .row-inline {
-            display: flex;
-            align-items: center;
-            gap: .5rem;
-        }
-    }
-
-    .inc-actions {
-        margin-top: .75rem;
-        display: flex;
-        gap: .6rem;
-        flex-wrap: wrap;
-
-        .btn {
-            flex: 1 1 auto;
-        }
-    }
-}
-
-.table {
+  .table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-bottom: 0;
 
     thead th {
-        font-size: .75rem;
-        text-align: left;
-        color: #6b7280;
-        padding: .7rem .9rem;
-        border-bottom: 1px solid #e5e7eb;
-        white-space: nowrap;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: $muted;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid $border;
+      padding-top: 0.8rem;
+      padding-bottom: 0.6rem;
+      background: #f9fafb;
     }
 
     tbody tr {
-        border-bottom: 1px solid #f3f4f6;
+      border-bottom: 1px solid #f1f5f9;
+
+      &.table-secondary {
+        background: #f3f4f6;
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
     }
 
     tbody td {
-        padding: .7rem .9rem;
-        border-bottom: 0;
-        vertical-align: middle;
+      font-size: 0.86rem;
+      color: #111827;
+      padding-top: 0.9rem;
+      padding-bottom: 0.9rem;
+      vertical-align: middle;
     }
 
-    .text-end {
-        text-align: right;
+    /* Más aire para descripción */
+    .col-descripcion {
+      width: 420px;
     }
 
-    .empty {
-        text-align: center;
-        padding: 1rem;
-        color: #9ca3af;
+    .col-acciones {
+      width: 190px;
     }
+  }
 }
 
-/* ASIGNADO*/
+/* =======================================
+   Estilo columna ID (azul código)
+======================================= */
+.incidencias-wrap {
+  .table-card tbody td:first-child a {
+    font-family: "SF Mono", "Menlo", "Consolas", monospace;
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: #2563eb;
+    text-decoration: none;
 
-.select-chip {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-
-    background-color: #f3f4f6 !important;
-    border: none !important;
-    border-radius: 999px !important;
-
-    padding: .35rem 2rem .35rem .9rem !important;
-    font-size: .78rem !important;
-    font-weight: 700 !important;
-    color: #111827 !important;
-    cursor: pointer;
-    min-height: 34px;
-
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path fill='%236b7280' d='M1 1l4 4 4-4'/></svg>");
-    background-repeat: no-repeat;
-    background-position: right .7rem center;
-    background-size: 10px 6px;
-
-    transition: transform .15s ease;
-}
-
-.select-chip:hover {
-    transform: translateY(-1px);
-}
-
-.select-chip:focus {
-    outline: none !important;
-    box-shadow: 0 0 0 3px rgba(24,136,75,.15);
-}
-
-select.select-chip option {
-    background-color: #ffffff !important;
-    color: #111827 !important;
-    font-weight: 600 !important;
-    padding: .6rem !important;
-}
-
-select.select-chip option:hover {
-    background-color: #f3f4f6 !important;
-    color: #111827 !important;
-}
-
-select.select-chip option:checked {
-    background-color: #e6f4ec !important;
-    color: #166534 !important;
-    font-weight: 700 !important;
-}
-
-select.select-chip option:active {
-    background-color: #e6f4ec !important;
-    color: #166534 !important;
-}
-
-@-moz-document url-prefix() {
-    select.select-chip option:checked {
-        background-color: #e6f4ec !important;
-        box-shadow: 0 0 0 1px #e6f4ec inset;
+    &:hover {
+      text-decoration: underline;
     }
+  }
 }
 
+/* =======================================
+   Descripción: link negro, no azul
+======================================= */
+.incidencias-wrap {
+  .table-card tbody td:nth-child(2) a {
+    color: #111827;
+    text-decoration: none;
+  }
+
+  .table-card .title-cell {
+    strong {
+      display: block;
+      font-size: 0.94rem;
+      line-height: 1.4;
+      font-weight: 600;
+    }
+
+    .muted {
+      display: block;
+      margin-top: 0.15rem;
+      font-size: 0.75rem;
+      color: $muted;
+    }
+  }
+}
+
+/* =======================================
+   Chips de tipo / problema / estado
+======================================= */
+.incidencias-wrap {
+  .badge {
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.2rem 0.55rem;
+  }
+
+  .badge.bg-info-subtle {
+    background: #e0f2fe;
+    color: #0369a1;
+  }
+
+  .badge.bg-warning-subtle {
+    background: #fef9c3;
+    color: #92400e;
+  }
+
+  .badge.bg-success-subtle {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .badge.bg-secondary-subtle {
+    background: #e5e7eb;
+    color: #4b5563;
+  }
+}
+
+/* =======================================
+   Solo lectura (chip discreto)
+======================================= */
+.incidencias-wrap {
+  .solo-lectura {
+    display: inline-flex;
+    margin-top: 0.25rem;
+    padding: 0.08rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    color: #6b7280;
+    background: #f3f4f6;
+  }
+}
+/* =======================================
+   Columna Acciones (iconos en fila)
+======================================= */
+.incidencias-wrap {
+  /* Contenedor de acciones dentro de la celda */
+  .table-card td.text-end > .d-flex {
+    flex-direction: row !important;  // fuerza fila por si queda algún flex-column
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  /* Grupo de resolver/anular pegaditos */
+  .table-card td.text-end .btn-group.btn-group-sm {
+    display: inline-flex;
+    gap: 0.25rem;
+  }
+
+  /* Botón icónico redondo (ojo, resolver, anular) */
+  .table-card .btn-icon {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+  }
+
+  /* Ojo (ver detalle) */
+  .table-card .btn-outline-primary.btn-sm.btn-icon {
+    border-color: #d1d5db;
+    background: #ffffff;
+    color: #16a34a; // verde para que combine
+    &:hover {
+      background: #ecfdf5;
+      border-color: #16a34a;
+    }
+  }
+
+  /* Resolver */
+  .table-card .btn-success.btn-sm.btn-icon {
+    background: $green;
+    border-color: $green;
+    color: #fff;
+    &:hover {
+      background: #13753f;
+      border-color: #13753f;
+    }
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+  }
+
+  /* Anular */
+  .table-card .btn-outline-secondary.btn-sm.btn-icon {
+    border-color: #e5e7eb;
+    color: #6b7280;
+    background: #ffffff;
+    &:hover {
+      background: #f3f4f6;
+    }
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+  }
+
+  .table-card .text-muted.small {
+    font-size: 0.7rem;
+  }
+}
+
+
+/* =======================================
+   Mensajes vacíos / cargando
+======================================= */
+.incidencias-wrap {
+  .empty {
+    text-align: center;
+    padding: 2rem;
+    color: $muted;
+    font-size: 0.9rem;
+  }
+}
