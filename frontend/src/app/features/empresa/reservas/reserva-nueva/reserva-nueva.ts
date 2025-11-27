@@ -6,6 +6,8 @@ import { HttpClient } from "@angular/common/http";
 import { environment } from "../../../../../environments/environment";
 
 type ClienteOption = { id: number; label: string; email: string };
+type ProductoEmpresa = { id: number; nombre: string; descripcion?: string; sku?: string; peso?: number; activo: boolean };
+type ProductoSeleccionado = { producto: ProductoEmpresa; cantidad: number };
 
 @Component({
   standalone: true,
@@ -27,7 +29,13 @@ export class ReservaNuevaComponent implements OnInit {
   tamanosDisponibles: { valor: string; label: string }[] = [];
   loadingTamanos = false;
 
+  productos: ProductoEmpresa[] = [];
+  productosFiltrados: ProductoEmpresa[] = [];
+  productoFiltro = "";
+  productosSeleccionados: ProductoSeleccionado[] = [];
+
   loadingData = false;
+  loadingProductos = false;
   submitting = false;
   errorMsg = "";
 
@@ -82,6 +90,35 @@ export class ReservaNuevaComponent implements OnInit {
     } finally {
       this.loadingData = false;
     }
+
+    // Cargar productos de la empresa
+    await this.cargarProductos();
+  }
+
+  async cargarProductos(): Promise<void> {
+    this.loadingProductos = true;
+    try {
+      const res: any = await this.http
+        .get<any>(`${environment.apiUrl}/empresa/productos`, { params: { activo: true, per_page: 1000 } })
+        .toPromise();
+
+      this.productos = (res?.data ?? []).map((p: any) => ({
+        id: p.id,
+        nombre: p.nombre,
+        descripcion: p.descripcion,
+        sku: p.sku,
+        peso: p.peso,
+        activo: p.activo,
+      }));
+      this.productosFiltrados = [...this.productos];
+    } catch (error) {
+      console.error("No se pudieron cargar los productos", error);
+      // No mostrar error crítico, simplemente no habrá productos disponibles
+      this.productos = [];
+      this.productosFiltrados = [];
+    } finally {
+      this.loadingProductos = false;
+    }
   }
 
   async onSubmit(): Promise<void> {
@@ -94,15 +131,50 @@ export class ReservaNuevaComponent implements OnInit {
     this.errorMsg = "";
 
     const value = this.form.value;
-    const payload = {
+    
+    // Preparar artículos desde los productos seleccionados
+    const articulos = this.productosSeleccionados.map(ps => ({
+      nombre: ps.producto.nombre,
+      cantidad: ps.cantidad,
+      descripcion: ps.producto.descripcion || null,
+      sku: ps.producto.sku || null,
+      peso: ps.producto.peso || null,
+    }));
+
+    // Normalizar el tamaño del pedido
+    if (!value.tamano_pedido) {
+      this.errorMsg = "Debes seleccionar un tamaño de pedido válido.";
+      this.submitting = false;
+      return;
+    }
+
+    // El valor ya viene del select que solo muestra tamaños válidos de la ubicación
+    // Solo normalizamos a mayúsculas para consistencia
+    let tamanoPedido = String(value.tamano_pedido).trim().toUpperCase();
+    
+    // Verificar que el tamaño está en los disponibles para esta ubicación
+    const tamanosValidos = this.tamanosDisponibles.map(t => t.valor.toUpperCase());
+    if (!tamanosValidos.includes(tamanoPedido)) {
+      console.error('Tamaño de pedido inválido recibido:', value.tamano_pedido, 'Tamaños válidos:', tamanosValidos);
+      this.errorMsg = "El tamaño del pedido seleccionado no es válido. Por favor, selecciona un tamaño válido.";
+      this.submitting = false;
+      return;
+    }
+
+    const payload: any = {
       usuario_id: Number(value.usuario_id),
       ubicacion_destino_id: Number(value.ubicacion_destino_id),
-      tamano_pedido: value.tamano_pedido,
+      tamano_pedido: tamanoPedido,
       fecha_reserva: value.fecha_reserva,
       hora_inicio: value.hora_inicio,
       hora_fin: null,
       tipo_acceso: value.tipo_acceso,
     };
+
+    // Solo incluir artículos si hay productos seleccionados
+    if (articulos.length > 0) {
+      payload.articulos = articulos;
+    }
 
     try {
       await this.http.post(`${environment.apiUrl}/reservas/empresa/solicitudes`, payload).toPromise();
@@ -173,6 +245,61 @@ export class ReservaNuevaComponent implements OnInit {
       this.errorMsg = error?.error?.message || "No se pudieron cargar los tamaños disponibles.";
     } finally {
       this.loadingTamanos = false;
+    }
+  }
+
+  onProductoFiltro(term: string): void {
+    this.productoFiltro = term;
+    const normalized = term.trim().toLowerCase();
+
+    if (!normalized) {
+      this.productosFiltrados = [...this.productos];
+      return;
+    }
+
+    this.productosFiltrados = this.productos.filter(p =>
+      p.nombre.toLowerCase().includes(normalized) ||
+      (p.sku && p.sku.toLowerCase().includes(normalized)) ||
+      (p.descripcion && p.descripcion.toLowerCase().includes(normalized))
+    );
+  }
+
+  onProductoSelect(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    const productoId = target.value;
+    if (!productoId) return;
+
+    this.agregarProducto(Number(productoId));
+    target.value = '';
+  }
+
+  agregarProducto(productoId: number): void {
+    if (!productoId || isNaN(productoId)) return;
+
+    const producto = this.productos.find(p => p.id === productoId);
+    if (!producto) return;
+
+    // Verificar si el producto ya está seleccionado
+    const existente = this.productosSeleccionados.find(ps => ps.producto.id === producto.id);
+    if (existente) {
+      existente.cantidad += 1;
+    } else {
+      this.productosSeleccionados.push({ producto, cantidad: 1 });
+    }
+    // Limpiar filtro después de agregar
+    this.productoFiltro = "";
+    this.productosFiltrados = [...this.productos];
+  }
+
+  eliminarProducto(index: number): void {
+    this.productosSeleccionados.splice(index, 1);
+  }
+
+  actualizarCantidad(index: number, cantidad: number): void {
+    if (cantidad <= 0) {
+      this.eliminarProducto(index);
+    } else {
+      this.productosSeleccionados[index].cantidad = cantidad;
     }
   }
 

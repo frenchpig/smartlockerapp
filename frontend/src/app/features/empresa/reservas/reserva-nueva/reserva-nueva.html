@@ -127,6 +127,76 @@
                     <option value="qr">Codigo QR</option>
                   </select>
                 </div>
+
+                <div class="col-12">
+                  <label class="form-label fw-semibold">Productos del pedido</label>
+                  <p class="text-muted small mb-2">
+                    Selecciona los productos que se incluirán en esta reserva. Los productos son opcionales.
+                  </p>
+                  
+                  <div class="mb-3">
+                    <input
+                      type="text"
+                      class="form-control"
+                      placeholder="Buscar producto por nombre, SKU o descripción"
+                      [value]="productoFiltro"
+                      (input)="onProductoFiltro($any($event.target).value)"
+                      [disabled]="loadingProductos || submitting"
+                    />
+                    <select
+                      class="form-select mt-2"
+                      [disabled]="loadingProductos || submitting || productosFiltrados.length === 0"
+                      (change)="onProductoSelect($event)"
+                    >
+                      <option value="" disabled selected>
+                        {{ loadingProductos ? 'Cargando productos...' : productosFiltrados.length === 0 ? 'No hay productos disponibles' : 'Selecciona un producto para agregar' }}
+                      </option>
+                      <option *ngFor="let producto of productosFiltrados" [value]="producto.id">
+                        {{ producto.nombre }} {{ producto.sku ? '(' + producto.sku + ')' : '' }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <div *ngIf="productosSeleccionados.length > 0" class="border rounded p-3 bg-light">
+                    <h6 class="mb-3">Productos seleccionados:</h6>
+                    <div class="list-group">
+                      <div *ngFor="let item of productosSeleccionados; let i = index" class="list-group-item d-flex justify-content-between align-items-center">
+                        <div class="flex-grow-1">
+                          <strong>{{ item.producto.nombre }}</strong>
+                          <div class="small text-muted">
+                            <span *ngIf="item.producto.sku">SKU: {{ item.producto.sku }}</span>
+                            <span *ngIf="item.producto.sku && item.producto.peso"> • </span>
+                            <span *ngIf="item.producto.peso">Peso: {{ item.producto.peso }} kg</span>
+                          </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                          <label class="small mb-0 me-2">Cantidad:</label>
+                          <input
+                            type="number"
+                            class="form-control form-control-sm"
+                            style="width: 80px;"
+                            [value]="item.cantidad"
+                            (change)="actualizarCantidad(i, $any($event.target).valueAsNumber)"
+                            min="1"
+                            [disabled]="submitting"
+                          />
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-outline-danger"
+                            (click)="eliminarProducto(i)"
+                            [disabled]="submitting"
+                            title="Eliminar producto"
+                          >
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div *ngIf="productosSeleccionados.length === 0 && !loadingProductos" class="text-muted small">
+                    No hay productos seleccionados. Puedes crear la reserva sin productos o agregar productos más arriba.
+                  </div>
+                </div>
               </div>
 
               <div class="alert alert-danger mt-4" role="alert" *ngIf="errorMsg">

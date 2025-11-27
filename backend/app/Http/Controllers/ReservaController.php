@@ -166,13 +166,20 @@ class ReservaController extends Controller
         // Filtro por ubicación (por ID o nombre)
         if ($ubicacionId = $request->query('ubicacion_id')) {
             // Si se proporciona un ID, filtrar por ese ID específico
-            $query->whereHas('locker', function ($lockerQuery) use ($ubicacionId) {
-                $lockerQuery->where('ubicacion_id', $ubicacionId);
+            // Buscar tanto en lockers asignados como en ubicación de destino
+            $query->where(function ($q) use ($ubicacionId) {
+                $q->whereHas('locker', function ($lockerQuery) use ($ubicacionId) {
+                    $lockerQuery->where('ubicacion_id', $ubicacionId);
+                })->orWhere('ubicacion_destino_id', $ubicacionId);
             });
         } elseif ($ubicacion = trim((string) $request->query('ubicacion', ''))) {
             // Si se proporciona texto, buscar por nombre (compatibilidad hacia atrás)
-            $query->whereHas('locker.ubicacion', function ($ubicacionQuery) use ($ubicacion) {
-                $ubicacionQuery->where('nombre', 'like', "%{$ubicacion}%");
+            $query->where(function ($q) use ($ubicacion) {
+                $q->whereHas('locker.ubicacion', function ($ubicacionQuery) use ($ubicacion) {
+                    $ubicacionQuery->where('nombre', 'like', "%{$ubicacion}%");
+                })->orWhereHas('ubicacionDestino', function ($ubicacionQuery) use ($ubicacion) {
+                    $ubicacionQuery->where('nombre', 'like', "%{$ubicacion}%");
+                });
             });
         }
 
@@ -301,7 +308,12 @@ class ReservaController extends Controller
             ->sort()
             ->values()
             ->map(function ($tamano) {
-                $labels = ['S' => 'Pequeño (S)', 'M' => 'Mediano (M)', 'L' => 'Grande (L)'];
+                $labels = [
+                    'S' => 'Pequeño (S)',
+                    'M' => 'Mediano (M)',
+                    'L' => 'Grande (L)',
+                    'XL' => 'Extra Grande (XL)',
+                ];
                 return [
                     'valor' => $tamano,
                     'label' => $labels[$tamano] ?? $tamano,
@@ -326,9 +338,42 @@ class ReservaController extends Controller
             return response()->json(['message' => 'No autorizado'], 403);
         }
 
+        // Obtener tamaños válidos dinámicamente desde los lockers de la ubicación
+        $ubicacionId = $request->input('ubicacion_destino_id');
+        $tamanosValidos = [];
+        if ($ubicacionId) {
+            $tamanosValidos = Locker::where('ubicacion_id', $ubicacionId)
+                ->whereNotNull('tamano')
+                ->distinct()
+                ->pluck('tamano')
+                ->map(fn($t) => strtoupper(trim($t)))
+                ->unique()
+                ->values()
+                ->toArray();
+        }
+        
+        // Si no hay tamaños de la ubicación, usar los tamaños estándar
+        if (empty($tamanosValidos)) {
+            $tamanosValidos = Locker::TAMANOS_VALIDOS;
+        }
+
+        // Normalizar el tamaño del pedido antes de validar
+        $tamanoPedido = $request->input('tamano_pedido');
+        if ($tamanoPedido) {
+            $tamanoPedido = strtoupper(trim($tamanoPedido));
+            // Si el tamaño normalizado no está en los válidos, intentar extraerlo
+            if (!in_array($tamanoPedido, $tamanosValidos)) {
+                // Intentar extraer el tamaño del valor (por si viene como "Pequeño (S)" o similar)
+                if (preg_match('/\b([SML]|XL)\b/i', $tamanoPedido, $matches)) {
+                    $tamanoPedido = strtoupper($matches[1]);
+                }
+            }
+            $request->merge(['tamano_pedido' => $tamanoPedido]);
+        }
+
         $data = $request->validate([
             'usuario_id'   => ['required', 'integer', 'exists:usuarios,id'],
-            'tamano_pedido' => ['required', 'string', Rule::in(['S', 'M', 'L'])],
+            'tamano_pedido' => ['required', 'string', Rule::in($tamanosValidos)],
             'ubicacion_destino_id' => ['required', 'integer', 'exists:ubicaciones,id'],
             'fecha_reserva'=> ['required', 'date'],
             'hora_inicio'  => ['required', 'date_format:H:i'],
@@ -574,16 +619,32 @@ class ReservaController extends Controller
 
     /**
      * Busca un locker disponible del tamaño especificado en la ubicación indicada
+     * Un locker está disponible solo si:
+     * - Está activo (no bloqueado ni en mantenimiento)
+     * - No está marcado como ocupado
+     * - No tiene reservas pendientes
+     * - No tiene reservas en camino (logistica_estado = 'en_camino')
+     * - No tiene reservas completadas en logística pero pendientes de retiro (estado='pendiente' y logistica_estado='completado')
      */
     private function buscarLockerDisponible(int $ubicacionId, string $tamano): ?Locker
     {
-        // Buscar lockers disponibles: activos, del tamaño correcto, en la ubicación indicada
-        // y que no tengan reservas pendientes
+        // Buscar lockers disponibles: activos, del tamaño correcto, 
+        // en la ubicación indicada y que no tengan reservas activas
         $locker = Locker::where('ubicacion_id', $ubicacionId)
             ->where('tamano', $tamano)
-            ->where('estado', 'activo')
+            ->where('estado', 'activo') // Solo buscar lockers activos (no ocupados, bloqueados ni en mantenimiento)
             ->whereDoesntHave('reservas', function ($query) {
+                // Excluir lockers que tengan reservas pendientes
                 $query->where('estado', 'pendiente');
+            })
+            ->whereDoesntHave('reservas', function ($query) {
+                // Excluir lockers que tengan reservas en camino (pedido en ruta hacia el locker)
+                $query->where('logistica_estado', 'en_camino');
+            })
+            ->whereDoesntHave('reservas', function ($query) {
+                // Excluir lockers con reservas donde el repartidor entregó pero el cliente aún no retiró
+                $query->where('estado', 'pendiente')
+                      ->where('logistica_estado', 'completado');
             })
             ->first();
 
@@ -663,10 +724,16 @@ class ReservaController extends Controller
 
             // Asignar el locker a la reserva
             $reserva->locker_id = $lockerDisponible->id;
-            
-            // Actualizar estado del locker a ocupado
-            $lockerDisponible->estado = 'ocupado';
-            $lockerDisponible->save();
+        }
+
+        // SIEMPRE marcar el locker como ocupado cuando se marca en ruta
+        // Esto asegura que el locker no pueda ser asignado a otro pedido mientras este está en camino
+        if ($reserva->locker_id) {
+            $locker = Locker::find($reserva->locker_id);
+            if ($locker && !in_array($locker->estado, ['bloqueado', 'mantenimiento'], true)) {
+                $locker->estado = 'ocupado';
+                $locker->save();
+            }
         }
 
         $reserva->logistica_estado = 'en_camino';
@@ -728,6 +795,10 @@ class ReservaController extends Controller
         $reserva = DB::transaction(function () use ($reserva) {
             $reserva->logistica_estado = 'completado';
             $reserva->save();
+
+            // El locker debe permanecer ocupado porque el paquete está ahí
+            // y el cliente aún no lo ha retirado (estado sigue siendo 'pendiente')
+            // No actualizamos el estado del locker aquí, se actualizará cuando el cliente retire
 
             $this->liberarRepartidor($reserva);
 
@@ -1151,6 +1222,51 @@ class ReservaController extends Controller
                     continue;
                 }
 
+                // Si la reserva no tiene locker asignado, buscar uno disponible automáticamente
+                if (!$reserva->locker_id) {
+                    if (!$reserva->tamano_pedido) {
+                        $resultados['fallidos'][] = [
+                            'id' => $reservaId,
+                            'mensaje' => 'El pedido no tiene tamaño especificado'
+                        ];
+                        continue;
+                    }
+
+                    if (!$reserva->ubicacion_destino_id) {
+                        $resultados['fallidos'][] = [
+                            'id' => $reservaId,
+                            'mensaje' => 'El pedido no tiene ubicación de destino especificada'
+                        ];
+                        continue;
+                    }
+
+                    // Buscar un locker disponible del tamaño correcto en la ubicación de destino
+                    $lockerDisponible = $this->buscarLockerDisponible(
+                        $reserva->ubicacion_destino_id,
+                        $reserva->tamano_pedido
+                    );
+
+                    if (!$lockerDisponible) {
+                        $resultados['fallidos'][] = [
+                            'id' => $reservaId,
+                            'mensaje' => "No hay lockers disponibles del tamaño '{$reserva->tamano_pedido}' en la ubicación de destino"
+                        ];
+                        continue;
+                    }
+
+                    // Asignar el locker a la reserva
+                    $reserva->locker_id = $lockerDisponible->id;
+                }
+
+                // SIEMPRE marcar el locker como ocupado cuando se marca en ruta
+                if ($reserva->locker_id) {
+                    $locker = Locker::find($reserva->locker_id);
+                    if ($locker && !in_array($locker->estado, ['bloqueado', 'mantenimiento'], true)) {
+                        $locker->estado = 'ocupado';
+                        $locker->save();
+                    }
+                }
+
                 // Marcar como en ruta
                 $reserva->logistica_estado = 'en_camino';
                 $reserva->save();
@@ -1276,6 +1392,17 @@ class ReservaController extends Controller
      * Si hay reservas pendientes, el locker se marca como "ocupado".
      * Si no hay reservas pendientes y el locker no está bloqueado o en mantenimiento, se marca como "activo".
      */
+    /**
+     * Actualiza el estado de un locker según las reservas activas
+     * Un locker está OCUPADO si:
+     * - Tiene reservas pendientes (estado='pendiente')
+     * - Tiene reservas en camino (logistica_estado='en_camino')
+     * - Tiene reservas entregadas pero aún no retiradas (estado='pendiente' y logistica_estado='completado')
+     * 
+     * Un locker está ACTIVO si:
+     * - No tiene reservas activas
+     * - Todas sus reservas están completamente finalizadas (estado='completado' y logistica_estado='completado')
+     */
     private function actualizarEstadoLocker(int $lockerId): void
     {
         $locker = Locker::find($lockerId);
@@ -1288,13 +1415,21 @@ class ReservaController extends Controller
             return;
         }
 
-        // Verificar si hay reservas pendientes para este locker
-        $tieneReservasPendientes = Reserva::where('locker_id', $lockerId)
-            ->where('estado', 'pendiente')
+        // Verificar si hay reservas activas para este locker que lo mantengan ocupado
+        $tieneReservasActivas = Reserva::where('locker_id', $lockerId)
+            ->where(function ($query) {
+                $query->where('estado', 'pendiente') // Reservas pendientes
+                      ->orWhere('logistica_estado', 'en_camino') // Pedidos en ruta
+                      ->orWhere(function ($q) {
+                          // Reservas entregadas por repartidor pero cliente aún no retiró
+                          $q->where('estado', 'pendiente')
+                            ->where('logistica_estado', 'completado');
+                      });
+            })
             ->exists();
 
-        // Actualizar el estado según si hay reservas pendientes
-        if ($tieneReservasPendientes) {
+        // Actualizar el estado según si hay reservas activas
+        if ($tieneReservasActivas) {
             $locker->estado = 'ocupado';
         } else {
             $locker->estado = 'activo';
@@ -1402,10 +1537,15 @@ class ReservaController extends Controller
 
                     // Asignar el locker a la reserva
                     $reserva->locker_id = $lockerDisponible->id;
-                    
-                    // Actualizar estado del locker a ocupado
-                    $lockerDisponible->estado = 'ocupado';
-                    $lockerDisponible->save();
+                }
+
+                // SIEMPRE marcar el locker como ocupado cuando se marca en ruta
+                if ($reserva->locker_id) {
+                    $locker = Locker::find($reserva->locker_id);
+                    if ($locker && !in_array($locker->estado, ['bloqueado', 'mantenimiento'], true)) {
+                        $locker->estado = 'ocupado';
+                        $locker->save();
+                    }
                 }
 
                 // Marcar como en ruta

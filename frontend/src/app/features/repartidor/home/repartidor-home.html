@@ -170,8 +170,9 @@
                       </td>
                       <td data-label="ID">#{{ r.id }}</td>
                       <td data-label="Locker">
-                        <span *ngIf="r.locker">{{ r.locker }}</span>
-                        <span *ngIf="!r.locker" class="text-muted fst-italic">Pendiente de asignación</span>
+                        <span *ngIf="r.logisticaEstado === 'en_camino' && r.locker">{{ r.locker }}</span>
+                        <span *ngIf="r.logisticaEstado !== 'en_camino'" class="text-muted fst-italic">No asignado</span>
+                        <span *ngIf="r.logisticaEstado === 'en_camino' && !r.locker" class="text-muted fst-italic">Pendiente de asignación</span>
                       </td>
                       <td data-label="Estado">
                         <span class="badge rounded-pill px-3 py-2" [ngClass]="r.estadoBadge">{{ r.estadoLabel }}</span>

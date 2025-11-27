@@ -12,6 +12,7 @@ class Locker extends Model
     protected $table = 'lockers';
 
     public const ESTADOS = ['activo', 'bloqueado', 'mantenimiento', 'ocupado'];
+    public const TAMANOS_VALIDOS = ['S', 'M', 'L', 'XL'];
 
     protected $fillable = [
         'numero',

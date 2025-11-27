@@ -401,14 +401,18 @@ export class RepartidorHome implements OnInit {
   }
 
   private mapReserva(data: any): ReservaAsignada {
-    // Solo mostrar locker si está asignado (locker_id existe y no es null)
-    const lockerId = data?.locker_id ?? null;
-    const lockerNumero = lockerId && data?.locker ? (data.locker.numero ?? data.locker.id ?? lockerId) : null;
-    const locker = lockerNumero ? `#${lockerNumero}` : null;
+    const logisticaEstado: LogisticaEstado = data?.logistica_estado ?? 'pendiente_repartidor';
+    
+    // Solo mostrar locker si el pedido está en ruta (en_camino) y tiene locker asignado
+    let locker: string | null = null;
+    if (logisticaEstado === 'en_camino') {
+      const lockerId = data?.locker_id ?? null;
+      const lockerNumero = lockerId && data?.locker ? (data.locker.numero ?? data.locker.id ?? lockerId) : null;
+      locker = lockerNumero ? `#${lockerNumero}` : null;
+    }
     
     // La ubicación puede venir del locker asignado o de ubicacion_destino
     const ubicacion = data?.locker?.ubicacion?.nombre ?? data?.ubicacion_destino?.nombre ?? 'Sin ubicacion';
-    const logisticaEstado: LogisticaEstado = data?.logistica_estado ?? 'pendiente_repartidor';
     const { label: logisticaLabel, badge: logisticaBadge } = this.mapLogisticaEstado(logisticaEstado);
 
     const estado = String(data?.estado ?? 'pendiente');
