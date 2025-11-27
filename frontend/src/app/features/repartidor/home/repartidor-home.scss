@@ -87,25 +87,27 @@
     display: block;
     background: #fff;
     margin-bottom: 0.75rem;
-    padding: 1rem;
+    padding: 0;
     border-radius: 0.75rem;
     border: 1px solid #e5e7eb;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
   }
 
   .table tbody td {
     display: flex !important;
     justify-content: space-between;
     align-items: center;
-    padding: 0.5rem 0;
+    padding: 0.75rem 1rem;
     border-bottom: 1px solid #f3f4f6;
     white-space: normal;
     text-align: right !important;
+    gap: 0.75rem;
   }
 
   .table tbody td:first-child {
     justify-content: flex-start;
-    padding: 0.75rem 0;
+    padding: 0.75rem 1rem;
     border-bottom: 1px solid #e5e7eb;
   }
 
@@ -120,6 +122,17 @@
     border-bottom: none;
   }
 
+  // Asegurar que las celdas no se salgan del contenedor
+  .table-responsive {
+    overflow-x: visible;
+    padding: 0;
+  }
+
+  .card-body {
+    padding: 0;
+    overflow: hidden;
+  }
+
   .table tbody td::before {
     content: attr(data-label);
     font-weight: 600;
@@ -129,16 +142,76 @@
     text-align: left;
   }
 
-  .table tbody td.text-end {
-    justify-content: flex-end;
+  // Celda de destinatario con mejor espaciado
+  .table tbody td.destinatario-cell {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.25rem;
     
-    .d-flex {
+    .destinatario-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      width: 100%;
+    }
+    
+    .destinatario-nombre {
+      font-size: 0.9rem;
+      line-height: 1.3;
+    }
+    
+    .destinatario-email {
+      font-size: 0.8rem;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+  }
+
+  // Celda de acciones responsive
+  .table tbody td.acciones-cell {
+    justify-content: flex-start !important;
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-bottom: none;
+    
+    .acciones-buttons {
+      display: flex;
       flex-direction: column;
       gap: 0.5rem;
       width: 100%;
       
-      button {
+      .btn-action {
         width: 100%;
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-height: 2.5rem;
+        
+        .btn-text {
+          flex: 1;
+          text-align: center;
+          white-space: normal;
+          word-break: break-word;
+        }
+        
+        i {
+          font-size: 1rem;
+          flex-shrink: 0;
+        }
+        
+        .spinner-border-sm {
+          width: 0.875rem;
+          height: 0.875rem;
+          flex-shrink: 0;
+        }
       }
     }
   }
@@ -242,5 +315,30 @@
 
   .page-indicator {
     text-align: center;
+  }
+
+  // Botones más compactos en móviles muy pequeños
+  .table tbody td.acciones-cell {
+    .acciones-buttons {
+      .btn-action {
+        font-size: 0.8rem;
+        padding: 0.45rem 0.65rem;
+        
+        .btn-text {
+          font-size: 0.8rem;
+        }
+      }
+    }
+  }
+
+  // Destinatario más compacto
+  .table tbody td.destinatario-cell {
+    .destinatario-nombre {
+      font-size: 0.85rem;
+    }
+    
+    .destinatario-email {
+      font-size: 0.75rem;
+    }
   }
 }

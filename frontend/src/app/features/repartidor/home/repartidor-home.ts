@@ -259,6 +259,32 @@ export class RepartidorHome implements OnInit {
     }
   }
 
+  async cancelarEntrega(reservaId: number): Promise<void> {
+    if (this.actionLoading.has(reservaId)) return;
+    
+    const reserva = this.reservas.find(r => r.id === reservaId);
+    if (!reserva) return;
+
+    const confirmacion = confirm(
+      `¿Estás seguro de que deseas cancelar la entrega del pedido #${reservaId}?\n\n` +
+      `Esta acción anulará el pedido y la empresa tendrá que crear una nueva reserva.`
+    );
+
+    if (!confirmacion) return;
+
+    this.actionLoading.add(reservaId);
+    try {
+      await this.http.post(`${environment.apiUrl}/reservas/${reservaId}/cancelar-entrega`, {}).toPromise();
+      alert('Entrega cancelada exitosamente. El pedido ha sido anulado.');
+      await this.cargarAsignaciones(this.page);
+    } catch (error: any) {
+      console.error('No se pudo cancelar la entrega', error);
+      alert(error?.error?.message ?? 'No se pudo cancelar la entrega. Intenta nuevamente.');
+    } finally {
+      this.actionLoading.delete(reservaId);
+    }
+  }
+
   siguiente(): void {
     if (this.page < this.lastPage) {
       void this.cargarAsignaciones(this.page + 1);

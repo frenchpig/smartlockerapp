@@ -180,40 +180,53 @@
                       <td data-label="Logística">
                         <span [ngClass]="r.logisticaBadge">{{ r.logisticaLabel }}</span>
                       </td>
-                      <td data-label="Destinatario">
-                        <strong class="d-block">{{ r.destinatario }}</strong>
-                        <small class="text-muted">{{ r.destinatarioEmail }}</small>
+                      <td data-label="Destinatario" class="destinatario-cell">
+                        <div class="destinatario-info">
+                          <strong class="d-block destinatario-nombre">{{ r.destinatario }}</strong>
+                          <small class="text-muted destinatario-email">{{ r.destinatarioEmail }}</small>
+                        </div>
                       </td>
                       <td data-label="Fecha">{{ r.fechaIso | date:'dd/MM/yyyy' }}</td>
-                      <td class="text-end" data-label="Acciones">
-                        <div class="d-flex justify-content-end gap-2 flex-wrap">
+                      <td class="text-end acciones-cell" data-label="Acciones">
+                        <div class="acciones-buttons">
                           <button
-                            class="btn btn-outline-primary btn-sm"
+                            class="btn btn-outline-primary btn-sm btn-action"
                             type="button"
                             (click)="marcarEnRuta(r.id)"
                             *ngIf="r.estado === 'pendiente' && r.logisticaEstado === 'asignado'"
                             [disabled]="actionLoading.has(r.id)">
                             <span *ngIf="actionLoading.has(r.id)" class="spinner-border spinner-border-sm me-1" role="status"></span>
-                            Marcar en ruta
+                            <span class="btn-text">Marcar en ruta</span>
                           </button>
                           <button
-                            class="btn btn-outline-warning btn-sm"
+                            class="btn btn-outline-warning btn-sm btn-action"
                             type="button"
                             (click)="abrirModalIncidencia(r)"
                             *ngIf="r.logisticaEstado === 'en_camino'"
-                            [disabled]="!r.lockerId"
+                            [disabled]="!r.lockerId || actionLoading.has(r.id)"
                             title="Reportar incidencia del locker">
-                            <i class="bi bi-exclamation-triangle me-1"></i>
-                            Reportar incidencia
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <span class="btn-text">Reportar incidencia</span>
                           </button>
                           <button
-                            class="btn btn-success btn-sm"
+                            class="btn btn-outline-danger btn-sm btn-action"
+                            type="button"
+                            (click)="cancelarEntrega(r.id)"
+                            *ngIf="r.logisticaEstado === 'en_camino'"
+                            [disabled]="actionLoading.has(r.id)"
+                            title="Cancelar entrega (anula el pedido)">
+                            <span *ngIf="actionLoading.has(r.id)" class="spinner-border spinner-border-sm me-1" role="status"></span>
+                            <i class="bi bi-x-circle"></i>
+                            <span class="btn-text">Cancelar entrega</span>
+                          </button>
+                          <button
+                            class="btn btn-success btn-sm btn-action"
                             type="button"
                             (click)="marcarEntregado(r.id)"
                             *ngIf="r.logisticaEstado === 'en_camino'"
                             [disabled]="actionLoading.has(r.id)">
                             <span *ngIf="actionLoading.has(r.id)" class="spinner-border spinner-border-sm me-1" role="status"></span>
-                            Marcar entregado
+                            <span class="btn-text">Marcar entregado</span>
                           </button>
                           <span class="text-muted small" *ngIf="r.logisticaEstado === 'completado'">Entregado</span>
                         </div>

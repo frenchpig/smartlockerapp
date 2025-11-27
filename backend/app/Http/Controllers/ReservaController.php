@@ -856,6 +856,87 @@ class ReservaController extends Controller
         ]);
     }
 
+    /**
+     * Permite al repartidor cancelar la entrega de un pedido que está en ruta.
+     * Esto anula el pedido y libera el locker asignado.
+     */
+    public function cancelarEntrega(Request $request, Reserva $reserva)
+    {
+        $user = $request->user();
+        
+        if (!$user) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        // Solo los repartidores pueden cancelar entregas
+        if ($user->rol !== 'repartidor') {
+            return response()->json(['message' => 'Solo los repartidores pueden cancelar entregas'], 403);
+        }
+
+        // Verificar que el repartidor es el asignado a la reserva
+        $repartidor = Repartidor::where('usuario_id', $user->id)->first();
+        
+        if (!$repartidor) {
+            return response()->json(['message' => 'No se encontró el repartidor asociado'], 404);
+        }
+        
+        if ($reserva->repartidor_id !== $repartidor->id) {
+            return response()->json(['message' => 'No tienes acceso a esta reserva'], 403);
+        }
+
+        // Solo se puede cancelar si está en ruta (en_camino)
+        if ($reserva->logistica_estado !== 'en_camino') {
+            return response()->json(['message' => 'Solo se pueden cancelar pedidos que están en ruta'], 422);
+        }
+
+        if ($reserva->estado === 'anulado') {
+            return response()->json(['message' => 'La reserva ya fue cancelada'], 422);
+        }
+
+        $reserva = DB::transaction(function () use ($reserva) {
+            $lockerId = $reserva->locker_id;
+            $estadoAnterior = $reserva->estado;
+            
+            // Anular la reserva
+            $reserva->estado = 'anulado';
+            $reserva->logistica_estado = 'completado'; // Marcar logística como completada para que no aparezca en listados activos
+            $reserva->save();
+
+            // Liberar el repartidor
+            $this->liberarRepartidor($reserva);
+
+            // Liberar el locker si estaba asignado
+            if ($lockerId) {
+                $this->actualizarEstadoLocker($lockerId);
+            }
+
+            // Registrar en historial del locker
+            if ($lockerId && $estadoAnterior === 'pendiente') {
+                HistorialLockerService::registrarReservaAnulada(
+                    $lockerId,
+                    $reserva->id,
+                    auth()->id()
+                );
+            }
+
+            // Registrar en historial de empresa
+            if ($reserva->empresa_id) {
+                HistorialEmpresaService::registrarReservaCancelada(
+                    $reserva->empresa_id,
+                    $reserva->id,
+                    'Entrega cancelada por repartidor'
+                );
+            }
+
+            return $reserva->load(['usuario','locker.ubicacion','repartidor']);
+        });
+
+        return response()->json([
+            'message' => 'Entrega cancelada exitosamente. El pedido ha sido anulado.',
+            'reserva' => $reserva,
+        ]);
+    }
+
     public function destroy(Reserva $reserva)
     {
         $lockerId = $reserva->locker_id;
