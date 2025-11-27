@@ -4,7 +4,8 @@
     <div class="container">
         <div class="toolbar">
             <h1 class="page-title">Incidencias del Sistema</h1>
-            <p class="text-muted">Gestiona las incidencias de lockers. Las incidencias de pedidos son gestionadas por las empresas.</p>
+            <p class="text-muted">Gestiona las incidencias de lockers. Las incidencias de pedidos son gestionadas por
+                las empresas.</p>
         </div>
 
         <!-- Filtros -->
@@ -38,13 +39,16 @@
                     <div class="col-12 col-md-6 col-lg-3">
                         <label class="form-label text-muted mb-1 d-block">&nbsp;</label>
                         <div class="d-flex flex-wrap gap-2">
-                            <button class="btn btn-outline-secondary btn-sm flex-fill flex-md-grow-0" type="button" (click)="limpiarFiltros()">
+                            <button class="btn btn-outline-secondary btn-sm flex-fill flex-md-grow-0" type="button"
+                                (click)="limpiarFiltros()">
                                 Limpiar
                             </button>
-                            <button class="btn btn-primary btn-sm flex-fill flex-md-grow-0" type="button" (click)="aplicarFiltros()">
+                            <button class="btn btn-primary btn-sm flex-fill flex-md-grow-0" type="button"
+                                (click)="aplicarFiltros()">
                                 Aplicar
                             </button>
-                            <button class="btn btn-outline-primary btn-sm flex-fill flex-md-grow-0" type="button" (click)="cargarIncidencias()" title="Refrescar">
+                            <button class="btn btn-outline-primary btn-sm flex-fill flex-md-grow-0" type="button"
+                                (click)="cargarIncidencias()" title="Refrescar">
                                 <i class="bi bi-arrow-clockwise"></i>
                             </button>
                         </div>
@@ -99,10 +103,11 @@
                     </thead>
 
                     <tbody>
-                        <tr *ngFor="let inc of incidencias(); trackBy: trackById" 
+                        <tr *ngFor="let inc of incidencias(); trackBy: trackById"
                             [class.table-secondary]="!inc.puedeGestionar">
                             <td>
-                                <a [routerLink]="['/admin/IncidenciaDetalle', inc.id]" class="text-decoration-none fw-bold">
+                                <a [routerLink]="['/admin/IncidenciaDetalle', inc.id]"
+                                    class="text-decoration-none fw-bold">
                                     #{{ inc.id }}
                                 </a>
                             </td>
@@ -117,8 +122,7 @@
                             </td>
 
                             <td>
-                                <span class="badge" 
-                                    [class.bg-primary-subtle]="inc.tipo === 'locker'"
+                                <span class="badge" [class.bg-primary-subtle]="inc.tipo === 'locker'"
                                     [class.text-primary-emphasis]="inc.tipo === 'locker'"
                                     [class.bg-info-subtle]="inc.tipo === 'pedido'"
                                     [class.text-info-emphasis]="inc.tipo === 'pedido'"
@@ -126,9 +130,10 @@
                                     [class.text-secondary-emphasis]="inc.tipo === 'otro'">
                                     {{ inc.tipo | titlecase }}
                                 </span>
-                                <small class="d-block text-muted" *ngIf="!inc.puedeGestionar">
-                                    (Solo lectura)
+                                <small class="solo-lectura" *ngIf="!inc.puedeGestionar">
+                                    Empresa
                                 </small>
+
                             </td>
                             <td>
                                 <span *ngIf="inc.problema_tipo_label" class="badge bg-info-subtle text-info-emphasis">
@@ -142,15 +147,15 @@
                                 <span *ngIf="inc.reserva && inc.reserva.empresa && inc.reserva.empresa.nombre">
                                     {{ inc.reserva.empresa.nombre }}
                                 </span>
-                                <span *ngIf="!inc.reserva || !inc.reserva.empresa || !inc.reserva.empresa.nombre" class="text-muted">—</span>
+                                <span *ngIf="!inc.reserva || !inc.reserva.empresa || !inc.reserva.empresa.nombre"
+                                    class="text-muted">—</span>
                             </td>
                             <td>
                                 <span *ngIf="inc.usuario">{{ inc.usuario.nombre }}</span>
                                 <span *ngIf="!inc.usuario" class="text-muted">—</span>
                             </td>
                             <td>
-                                <span class="badge" 
-                                    [class.bg-warning-subtle]="inc.estado === 'pendiente'"
+                                <span class="badge" [class.bg-warning-subtle]="inc.estado === 'pendiente'"
                                     [class.text-warning-emphasis]="inc.estado === 'pendiente'"
                                     [class.bg-success-subtle]="inc.estado === 'resuelto'"
                                     [class.text-success-emphasis]="inc.estado === 'resuelto'"
@@ -160,28 +165,26 @@
                                 </span>
                             </td>
                             <td class="text-end">
-                                <div class="d-flex flex-column gap-1 align-items-end">
-                                    <a [routerLink]="['/admin/IncidenciaDetalle', inc.id]" 
-                                       class="btn btn-outline-primary btn-sm">
-                                        <i class="bi bi-eye"></i> Ver Detalle
+                                <div class="d-flex gap-2 align-items-center justify-content-end">
+                                    <a [routerLink]="['/admin/IncidenciaDetalle', inc.id]"
+                                        class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-eye"></i>
                                     </a>
                                     <div class="btn-group btn-group-sm" *ngIf="inc.puedeGestionar">
-                                        <button class="btn btn-success btn-sm" 
-                                            (click)="actualizarEstado(inc, 'resuelto')"
-                                            title="Marcar como resuelta"
+                                        <button class="btn btn-success btn-sm"
+                                            (click)="actualizarEstado(inc, 'resuelto')" title="Marcar como resuelta"
                                             [disabled]="inc.estado === 'resuelto'">
-                                            <i class="bi bi-check-circle"></i> Resolver
+                                            <i class="bi bi-check-circle"></i> <!--Resolver-->
                                         </button>
-                                        <button class="btn btn-outline-secondary btn-sm" 
-                                            (click)="actualizarEstado(inc, 'anulada')"
-                                            title="Anular incidencia"
+                                        <button class="btn btn-outline-secondary btn-sm"
+                                            (click)="actualizarEstado(inc, 'anulada')" title="Anular incidencia"
                                             [disabled]="inc.estado === 'anulada'">
-                                            <i class="bi bi-x-circle"></i> Anular
+                                            <i class="bi bi-x-circle"></i> <!--Anular-->
                                         </button>
                                     </div>
-                                    <span *ngIf="!inc.puedeGestionar" class="text-muted small text-center">
+                                    <!-- <span *ngIf="!inc.puedeGestionar" class="text-muted small text-center">
                                         Gestionada por empresa
-                                    </span>
+                                    </span> -->
                                 </div>
                             </td>
                         </tr>
