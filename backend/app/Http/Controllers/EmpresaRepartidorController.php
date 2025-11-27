@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Repartidor;
 use App\Models\Reserva;
+use App\Models\Usuario;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -39,6 +40,7 @@ class EmpresaRepartidorController extends Controller
         }
 
         return $query
+            ->with('usuario')
             ->orderByDesc('created_at')
             ->paginate($perPage);
     }
@@ -71,7 +73,28 @@ class EmpresaRepartidorController extends Controller
         $data['rut'] = $this->normalizeRut($data['rut']);
         $data['telefono'] = $this->normalizeTelefono($data['telefono'] ?? null);
 
+        // Verificar que el email no exista en usuarios
+        $usuarioExistente = Usuario::where('email', $data['email'])->first();
+        if ($usuarioExistente) {
+            return response()->json([
+                'message' => 'El email ya está registrado como usuario del sistema.',
+            ], 422);
+        }
+
+        // Crear usuario para el repartidor
+        $usuarioRepartidor = Usuario::create([
+            'nombre' => $data['nombre'],
+            'apellido' => $data['apellido'],
+            'email' => $data['email'],
+            'telefono' => $data['telefono'],
+            'contrasena' => '123456', // Contraseña por defecto, el repartidor puede cambiarla
+            'rol' => 'repartidor',
+            'habilitado' => true,
+        ]);
+
+        // Crear repartidor vinculado al usuario
         $repartidor = Repartidor::create([
+            'usuario_id' => $usuarioRepartidor->id,
             'empresa_id' => $empresa->id,
             'nombre' => $data['nombre'],
             'apellido' => $data['apellido'],
@@ -81,7 +104,7 @@ class EmpresaRepartidorController extends Controller
             'disponible' => $data['disponible'] ?? true,
         ]);
 
-        return response()->json($repartidor, 201);
+        return response()->json($repartidor->load('usuario'), 201);
     }
 
     /**
@@ -130,9 +153,39 @@ class EmpresaRepartidorController extends Controller
             $data['telefono'] = $this->normalizeTelefono($data['telefono'] ?? null);
         }
 
+        // Si hay cambios en datos que también están en el usuario, actualizar ambos
+        if ($repartidor->usuario) {
+            $actualizacionesUsuario = [];
+            if (array_key_exists('nombre', $data)) {
+                $actualizacionesUsuario['nombre'] = $data['nombre'];
+            }
+            if (array_key_exists('apellido', $data)) {
+                $actualizacionesUsuario['apellido'] = $data['apellido'];
+            }
+            if (array_key_exists('email', $data)) {
+                // Verificar que el nuevo email no exista en otro usuario
+                $usuarioExistente = Usuario::where('email', $data['email'])
+                    ->where('id', '!=', $repartidor->usuario_id)
+                    ->first();
+                if ($usuarioExistente) {
+                    return response()->json([
+                        'message' => 'El email ya está registrado como usuario del sistema.',
+                    ], 422);
+                }
+                $actualizacionesUsuario['email'] = $data['email'];
+            }
+            if (array_key_exists('telefono', $data)) {
+                $actualizacionesUsuario['telefono'] = $data['telefono'];
+            }
+            
+            if (!empty($actualizacionesUsuario)) {
+                $repartidor->usuario->update($actualizacionesUsuario);
+            }
+        }
+
         $repartidor->update($data);
 
-        return response()->json($repartidor->fresh());
+        return response()->json($repartidor->fresh()->load('usuario'));
     }
 
     /**
@@ -161,7 +214,14 @@ class EmpresaRepartidorController extends Controller
             ], 422);
         }
 
+        // Eliminar el usuario asociado (cascade delete debería manejarlo, pero por si acaso)
+        $usuarioId = $repartidor->usuario_id;
         $repartidor->delete();
+        
+        // El usuario se eliminará automáticamente por cascadeOnDelete, pero por seguridad:
+        if ($usuarioId) {
+            Usuario::where('id', $usuarioId)->delete();
+        }
 
         return response()->noContent();
     }

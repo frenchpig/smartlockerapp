@@ -13,7 +13,7 @@ class Usuario extends Authenticatable
 
     protected $table = 'usuarios';
 
-    public const ROLES = ['empresa', 'usuario', 'administrador', 'tecnico'];
+    public const ROLES = ['empresa', 'usuario', 'administrador', 'tecnico', 'repartidor'];
 
     protected $fillable = [
         'nombre',
@@ -58,4 +58,7 @@ class Usuario extends Authenticatable
     // Relaciones para empresas (cuando rol = 'empresa')
     public function ubicacionesAsignadas() { return $this->hasMany(EmpresaUbicacion::class, 'empresa_id'); }
     public function reservasComoEmpresa() { return $this->hasMany(Reserva::class, 'empresa_id'); }
+    
+    // Relación para repartidores (cuando rol = 'repartidor')
+    public function repartidor() { return $this->hasOne(Repartidor::class, 'usuario_id'); }
 }

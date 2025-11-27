@@ -12,6 +12,7 @@ class Repartidor extends Model
     protected $table = 'repartidores';
 
     protected $fillable = [
+        'usuario_id',
         'empresa_id',
         'nombre',
         'apellido',
@@ -31,6 +32,11 @@ class Repartidor extends Model
         'nombre_completo',
     ];
 
+    public function usuario()
+    {
+        return $this->belongsTo(Usuario::class, 'usuario_id');
+    }
+
     public function empresa()
     {
         return $this->belongsTo(Usuario::class, 'empresa_id');
@@ -43,9 +49,13 @@ class Repartidor extends Model
 
     /**
      * Obtener el nombre completo del repartidor
+     * Prioriza los datos del usuario si existe, sino usa los campos directos
      */
     public function getNombreCompletoAttribute(): string
     {
+        if ($this->usuario) {
+            return trim($this->usuario->nombre . ' ' . $this->usuario->apellido);
+        }
         return trim($this->nombre . ' ' . $this->apellido);
     }
 }

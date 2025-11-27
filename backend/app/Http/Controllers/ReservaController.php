@@ -113,6 +113,53 @@ class ReservaController extends Controller
         return response()->json($items);
     }
 
+    /**
+     * Devuelve las reservas asignadas al repartidor autenticado con filtros y paginación
+     */
+    public function repartidorMisReservas(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user || $user->rol !== 'repartidor') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        // Obtener el repartidor asociado al usuario
+        $repartidor = Repartidor::where('usuario_id', $user->id)->first();
+
+        if (!$repartidor) {
+            return response()->json(['message' => 'No se encontró el repartidor asociado'], 404);
+        }
+
+        $perPage = (int) $request->query('per_page', 5);
+        $perPage = max(1, min(100, $perPage));
+
+        $query = Reserva::with(['usuario', 'locker.ubicacion'])
+            ->where('repartidor_id', $repartidor->id)
+            ->orderByDesc('created_at');
+
+        // Filtros opcionales
+        if ($estado = $request->query('estado')) {
+            $query->where('estado', $estado);
+        }
+
+        if ($logisticaEstado = $request->query('logistica_estado')) {
+            $query->where('logistica_estado', $logisticaEstado);
+        }
+
+        $items = $query->paginate($perPage);
+
+        return response()->json([
+            'reservas' => $items->items(),
+            'pagination' => [
+                'current_page' => $items->currentPage(),
+                'last_page' => $items->lastPage(),
+                'per_page' => $items->perPage(),
+                'total' => $items->total(),
+            ],
+        ]);
+    }
+
     public function index()
     {
         return Reserva::with(['usuario','locker.ubicacion','repartidor.usuario'])->paginate(20);
@@ -376,7 +423,6 @@ class ReservaController extends Controller
     {
         $user = $request->user();
         
-        // Permitir tanto a empresas como a repartidores (aunque repartidores ya no existen como usuarios)
         if (!$user) {
             return response()->json(['message' => 'No autorizado'], 403);
         }
@@ -399,8 +445,18 @@ class ReservaController extends Controller
             if (!$repartidor) {
                 return response()->json(['message' => 'El repartidor no pertenece a tu empresa'], 403);
             }
+        } elseif ($user->rol === 'repartidor') {
+            // Si es repartidor autenticado, verificar que es el asignado a la reserva
+            $repartidor = Repartidor::where('usuario_id', $user->id)->first();
+            
+            if (!$repartidor) {
+                return response()->json(['message' => 'No se encontró el repartidor asociado'], 404);
+            }
+            
+            if ($reserva->repartidor_id !== $repartidor->id) {
+                return response()->json(['message' => 'No tienes acceso a esta reserva'], 403);
+            }
         } else {
-            // Para otros roles, no permitir (repartidores ya no son usuarios)
             return response()->json(['message' => 'No autorizado'], 403);
         }
 
@@ -422,7 +478,6 @@ class ReservaController extends Controller
     {
         $user = $request->user();
         
-        // Permitir tanto a empresas como a repartidores (aunque repartidores ya no existen como usuarios)
         if (!$user) {
             return response()->json(['message' => 'No autorizado'], 403);
         }
@@ -445,8 +500,18 @@ class ReservaController extends Controller
             if (!$repartidor) {
                 return response()->json(['message' => 'El repartidor no pertenece a tu empresa'], 403);
             }
+        } elseif ($user->rol === 'repartidor') {
+            // Si es repartidor autenticado, verificar que es el asignado a la reserva
+            $repartidor = Repartidor::where('usuario_id', $user->id)->first();
+            
+            if (!$repartidor) {
+                return response()->json(['message' => 'No se encontró el repartidor asociado'], 404);
+            }
+            
+            if ($reserva->repartidor_id !== $repartidor->id) {
+                return response()->json(['message' => 'No tienes acceso a esta reserva'], 403);
+            }
         } else {
-            // Para otros roles, no permitir (repartidores ya no son usuarios)
             return response()->json(['message' => 'No autorizado'], 403);
         }
 

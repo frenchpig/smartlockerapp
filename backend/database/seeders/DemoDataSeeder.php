@@ -207,23 +207,43 @@ class DemoDataSeeder extends Seeder
 
         $tecnicos = [$tecnico1, $tecnico2];
 
-        // Crear repartidores como datos de empresa (sin usuarios)
+        // Crear repartidores como usuarios autenticables
+        $usuarioRepartidor1 = Usuario::create([
+            'nombre' => 'Laura',
+            'apellido' => 'Campos',
+            'email' => 'laura.campos@empresa1.com',
+            'contrasena' => '123456',
+            'telefono' => '56928889999',
+            'rol' => 'repartidor',
+        ]);
+
+        $usuarioRepartidor2 = Usuario::create([
+            'nombre' => 'Pedro',
+            'apellido' => 'Saez',
+            'email' => 'pedro.saez@empresa2.com',
+            'contrasena' => '123456',
+            'telefono' => '56927778888',
+            'rol' => 'repartidor',
+        ]);
+
         $repartidores = [
             Repartidor::create([
+                'usuario_id' => $usuarioRepartidor1->id,
                 'empresa_id' => $empresa1->id,
-                'nombre' => 'Laura',
-                'apellido' => 'Campos',
-                'email' => 'laura.campos@empresa1.com',
-                'telefono' => '56928889999',
+                'nombre' => $usuarioRepartidor1->nombre,
+                'apellido' => $usuarioRepartidor1->apellido,
+                'email' => $usuarioRepartidor1->email,
+                'telefono' => $usuarioRepartidor1->telefono,
                 'rut' => '111111111',
                 'disponible' => true,
             ]),
             Repartidor::create([
+                'usuario_id' => $usuarioRepartidor2->id,
                 'empresa_id' => $empresa2->id,
-                'nombre' => 'Pedro',
-                'apellido' => 'Saez',
-                'email' => 'pedro.saez@empresa2.com',
-                'telefono' => '56927778888',
+                'nombre' => $usuarioRepartidor2->nombre,
+                'apellido' => $usuarioRepartidor2->apellido,
+                'email' => $usuarioRepartidor2->email,
+                'telefono' => $usuarioRepartidor2->telefono,
                 'rut' => '22222222K',
                 'disponible' => true,
             ]),
