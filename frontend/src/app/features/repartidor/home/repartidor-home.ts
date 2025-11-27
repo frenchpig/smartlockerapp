@@ -64,6 +64,8 @@ export class RepartidorHome implements OnInit {
   loading = false;
   loadingUbicaciones = false;
   actionLoading = new Set<number>();
+  accionMasivaLoading = false;
+  pedidosSeleccionados = new Set<number>();
   errorMsg = '';
 
   page = 1;
@@ -171,6 +173,9 @@ export class RepartidorHome implements OnInit {
       const reservasData = Array.isArray(res?.reservas) ? res.reservas : [];
       this.reservas = reservasData.map((item: any) => this.mapReserva(item));
 
+      // Limpiar selección al cargar nuevas reservas
+      this.pedidosSeleccionados.clear();
+
       const pagination: Paginacion = res?.pagination ?? {};
       this.page = Number(pagination?.current_page ?? page) || page;
       this.lastPage = Number(pagination?.last_page ?? 1) || 1;
@@ -246,6 +251,152 @@ export class RepartidorHome implements OnInit {
       await this.auth.logout();
     } finally {
       await this.router.navigate(['/login']);
+    }
+  }
+
+  // Selección múltiple
+  estaSeleccionado(pedidoId: number): boolean {
+    return this.pedidosSeleccionados.has(pedidoId);
+  }
+
+  toggleSeleccionPedido(pedidoId: number): void {
+    if (this.pedidosSeleccionados.has(pedidoId)) {
+      this.pedidosSeleccionados.delete(pedidoId);
+    } else {
+      this.pedidosSeleccionados.add(pedidoId);
+    }
+  }
+
+  toggleSeleccionarTodos(grupo: GrupoUbicacion): void {
+    const todosSeleccionados = grupo.pedidos.every(p => this.pedidosSeleccionados.has(p.id));
+    
+    if (todosSeleccionados) {
+      grupo.pedidos.forEach(p => this.pedidosSeleccionados.delete(p.id));
+    } else {
+      grupo.pedidos
+        .filter(p => this.puedeMarcarEnRuta(p) || this.puedeMarcarEntregado(p))
+        .forEach(p => this.pedidosSeleccionados.add(p.id));
+    }
+  }
+
+  todosSeleccionadosEnGrupo(grupo: GrupoUbicacion): boolean {
+    const seleccionables = grupo.pedidos.filter(p => this.puedeMarcarEnRuta(p) || this.puedeMarcarEntregado(p));
+    return seleccionables.length > 0 && seleccionables.every(p => this.pedidosSeleccionados.has(p.id));
+  }
+
+  puedeMarcarEnRuta(reserva: ReservaAsignada): boolean {
+    return reserva.estado === 'pendiente' && reserva.logisticaEstado === 'asignado';
+  }
+
+  puedeMarcarEntregado(reserva: ReservaAsignada): boolean {
+    return reserva.logisticaEstado === 'en_camino';
+  }
+
+  get pedidosSeleccionablesParaEnRuta(): number[] {
+    return this.reservas
+      .filter(r => this.puedeMarcarEnRuta(r) && this.pedidosSeleccionados.has(r.id))
+      .map(r => r.id);
+  }
+
+  get pedidosSeleccionablesParaEntregado(): number[] {
+    return this.reservas
+      .filter(r => this.puedeMarcarEntregado(r) && this.pedidosSeleccionados.has(r.id))
+      .map(r => r.id);
+  }
+
+  async marcarEnRutaMasivo(): Promise<void> {
+    const ids = this.pedidosSeleccionablesParaEnRuta;
+    if (ids.length === 0) {
+      alert('Selecciona al menos un pedido que pueda marcarse en ruta.');
+      return;
+    }
+
+    if (!confirm(`¿Marcar ${ids.length} pedido(s) como en ruta?`)) {
+      return;
+    }
+
+    await this.ejecutarMarcarEnRutaMasivo(ids);
+  }
+
+  async ejecutarMarcarEnRutaMasivo(ids: number[]): Promise<void> {
+    this.accionMasivaLoading = true;
+    this.errorMsg = '';
+
+    try {
+      const res: any = await this.http
+        .post(`${environment.apiUrl}/reservas/repartidor/marcar-en-ruta-masivo`, {
+          reserva_ids: ids
+        })
+        .toPromise();
+
+      if (res?.resultados) {
+        const { exitosos, fallidos } = res.resultados;
+        let mensaje = `${exitosos.length} pedido(s) marcado(s) en ruta exitosamente.`;
+
+        if (fallidos.length > 0) {
+          mensaje += `\n\n${fallidos.length} pedido(s) no pudieron marcarse:`;
+          fallidos.forEach((f: any) => {
+            mensaje += `\n• Pedido #${f.id}: ${f.mensaje}`;
+          });
+        }
+
+        alert(mensaje);
+        this.pedidosSeleccionados.clear();
+        await this.cargarAsignaciones(this.page);
+      }
+    } catch (error: any) {
+      console.error('Error marcando en ruta masivo:', error);
+      alert(error?.error?.message || 'Error al marcar pedidos en ruta');
+    } finally {
+      this.accionMasivaLoading = false;
+    }
+  }
+
+  async marcarEntregadoMasivo(): Promise<void> {
+    const ids = this.pedidosSeleccionablesParaEntregado;
+    if (ids.length === 0) {
+      alert('Selecciona al menos un pedido que pueda marcarse como entregado.');
+      return;
+    }
+
+    if (!confirm(`¿Marcar ${ids.length} pedido(s) como entregado(s)?`)) {
+      return;
+    }
+
+    await this.ejecutarMarcarEntregadoMasivo(ids);
+  }
+
+  async ejecutarMarcarEntregadoMasivo(ids: number[]): Promise<void> {
+    this.accionMasivaLoading = true;
+    this.errorMsg = '';
+
+    try {
+      const res: any = await this.http
+        .post(`${environment.apiUrl}/reservas/repartidor/marcar-entregado-masivo`, {
+          reserva_ids: ids
+        })
+        .toPromise();
+
+      if (res?.resultados) {
+        const { exitosos, fallidos } = res.resultados;
+        let mensaje = `${exitosos.length} pedido(s) marcado(s) como entregado(s) exitosamente.`;
+
+        if (fallidos.length > 0) {
+          mensaje += `\n\n${fallidos.length} pedido(s) no pudieron marcarse:`;
+          fallidos.forEach((f: any) => {
+            mensaje += `\n• Pedido #${f.id}: ${f.mensaje}`;
+          });
+        }
+
+        alert(mensaje);
+        this.pedidosSeleccionados.clear();
+        await this.cargarAsignaciones(this.page);
+      }
+    } catch (error: any) {
+      console.error('Error marcando entregado masivo:', error);
+      alert(error?.error?.message || 'Error al marcar pedidos como entregados');
+    } finally {
+      this.accionMasivaLoading = false;
     }
   }
 
