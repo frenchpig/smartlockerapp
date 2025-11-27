@@ -47,12 +47,12 @@ interface Paginacion {
 
 @Component({
   standalone: true,
-  selector: 'app-repartidor-home',
+  selector: 'app-repartidor-historico',
   imports: [CommonModule, RouterModule, DatePipe, FormsModule, HeaderRepartidorComponent],
-  templateUrl: './repartidor-home.html',
-  styleUrls: ['./repartidor-home.scss'],
+  templateUrl: './historico.html',
+  styleUrls: ['./historico.scss'],
 })
-export class RepartidorHome implements OnInit {
+export class RepartidorHistorico implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
@@ -68,7 +68,7 @@ export class RepartidorHome implements OnInit {
 
   page = 1;
   lastPage = 1;
-  perPage = 10; // Aumentado para mostrar más pedidos
+  perPage = 10;
   total = 0;
 
   filtroEstado = '';
@@ -111,19 +111,18 @@ export class RepartidorHome implements OnInit {
       map.get(ubicacionNombre)!.pedidos.push(reserva);
     }
 
-    // Ordenar por nombre de ubicación y luego por ID de pedido
     return Array.from(map.values())
       .sort((a, b) => a.nombre.localeCompare(b.nombre))
       .map(grupo => ({
         ...grupo,
-        pedidos: grupo.pedidos.sort((a, b) => b.id - a.id) // Más recientes primero
+        pedidos: grupo.pedidos.sort((a, b) => b.id - a.id)
       }));
   }
 
   async ngOnInit(): Promise<void> {
     await this.auth.fetchMe().catch(() => undefined);
     await this.cargarUbicaciones();
-    await this.cargarAsignaciones();
+    await this.cargarHistorico();
   }
 
   async cargarUbicaciones(): Promise<void> {
@@ -142,16 +141,15 @@ export class RepartidorHome implements OnInit {
     }
   }
 
-  async cargarAsignaciones(page = 1): Promise<void> {
+  async cargarHistorico(page = 1): Promise<void> {
     this.loading = true;
     this.errorMsg = '';
 
     const params: Record<string, string | number> = {
       page,
       per_page: this.perPage,
-      solo_activos: 'true', // Por defecto, solo mostrar pedidos activos
-      // Excluir completados en logística por defecto
-      excluir_logistica_completado: 'true',
+      // En histórico NO excluimos los completados, mostramos todos
+      solo_activos: 'false',
     };
 
     if (this.filtroEstado) params['estado'] = this.filtroEstado;
@@ -179,8 +177,8 @@ export class RepartidorHome implements OnInit {
 
       this.kpis = this.buildKpis();
     } catch (error: any) {
-      console.error('Error cargando asignaciones', error);
-      this.errorMsg = error?.error?.message ?? 'No se pudieron cargar las reservas asignadas.';
+      console.error('Error cargando histórico', error);
+      this.errorMsg = error?.error?.message ?? 'No se pudo cargar el histórico de pedidos.';
       this.reservas = [];
     } finally {
       this.loading = false;
@@ -188,7 +186,7 @@ export class RepartidorHome implements OnInit {
   }
 
   aplicarFiltros(): void {
-    void this.cargarAsignaciones(1);
+    void this.cargarHistorico(1);
   }
 
   limpiarFiltros(): void {
@@ -198,54 +196,18 @@ export class RepartidorHome implements OnInit {
     this.filtroEmail = '';
     this.filtroFechaDesde = '';
     this.filtroFechaHasta = '';
-    void this.cargarAsignaciones(1);
-  }
-
-  async marcarEnRuta(reservaId: number): Promise<void> {
-    if (this.actionLoading.has(reservaId)) return;
-    this.actionLoading.add(reservaId);
-    try {
-      await this.http.post(`${environment.apiUrl}/reservas/${reservaId}/en-ruta`, {}).toPromise();
-      await this.cargarAsignaciones(this.page);
-    } catch (error: any) {
-      console.error('No se pudo marcar la reserva en ruta', error);
-      alert(error?.error?.message ?? 'No se pudo marcar en ruta. Intenta nuevamente.');
-    } finally {
-      this.actionLoading.delete(reservaId);
-    }
-  }
-
-  async marcarEntregado(reservaId: number): Promise<void> {
-    if (this.actionLoading.has(reservaId)) return;
-    this.actionLoading.add(reservaId);
-    try {
-      await this.http.post(`${environment.apiUrl}/reservas/${reservaId}/entregar`, {}).toPromise();
-      await this.cargarAsignaciones(this.page);
-    } catch (error: any) {
-      console.error('No se pudo marcar la reserva como entregada', error);
-      alert(error?.error?.message ?? 'No se pudo marcar como entregada. Intenta nuevamente.');
-    } finally {
-      this.actionLoading.delete(reservaId);
-    }
+    void this.cargarHistorico(1);
   }
 
   siguiente(): void {
     if (this.page < this.lastPage) {
-      void this.cargarAsignaciones(this.page + 1);
+      void this.cargarHistorico(this.page + 1);
     }
   }
 
   anterior(): void {
     if (this.page > 1) {
-      void this.cargarAsignaciones(this.page - 1);
-    }
-  }
-
-  async onLogout(): Promise<void> {
-    try {
-      await this.auth.logout();
-    } finally {
-      await this.router.navigate(['/login']);
+      void this.cargarHistorico(this.page - 1);
     }
   }
 
@@ -311,10 +273,12 @@ export class RepartidorHome implements OnInit {
     const pendientes = this.reservas.filter(r => r.logisticaEstado === 'pendiente_repartidor').length;
 
     return [
-      { label: 'Total activos', value: this.total, hint: `Total de pedidos activos (${this.reservas.length} en esta página)` },
+      { label: 'Total histórico', value: this.total, hint: `Total de pedidos (${this.reservas.length} en esta página)` },
       { label: 'Asignados', value: asignados, hint: 'Pedidos listos para iniciar' },
       { label: 'En camino', value: enCamino, hint: 'Pedidos en proceso de entrega' },
+      { label: 'Completados', value: completados, hint: 'Entregas finalizadas' },
       { label: 'Pendientes', value: pendientes, hint: 'A la espera de asignación' },
     ];
   }
 }
+

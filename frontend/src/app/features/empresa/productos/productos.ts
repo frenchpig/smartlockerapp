@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
@@ -30,7 +30,7 @@ interface PaginatedResponse<T> {
 @Component({
   standalone: true,
   selector: 'app-empresa-productos',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, DatePipe, HeaderEmpresaComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, HeaderEmpresaComponent],
   templateUrl: './productos.html',
   styleUrls: ['./productos.scss']
 })

@@ -20,6 +20,7 @@ import { HomeEmpresa } from './features/empresa/home-empresa/home-empresa';
 import { Pedidos } from './features/empresa/pedidos/pedidos';
 import { MisPedidos } from './features/cliente/mis-pedidos/mis-pedidos';
 import { RepartidorHome } from './features/repartidor/home/repartidor-home';
+import { RepartidorHistorico } from './features/repartidor/historico/historico';
 import { PerfilRepartidor } from './features/repartidor/perfil/perfil';
 import { ReservaNuevaComponent } from './features/empresa/reservas/reserva-nueva/reserva-nueva';
 import { EmpresaPedidoDetalle } from './features/empresa/pedidoDetalle/pedido-detalle';
@@ -114,6 +115,7 @@ const routes: Routes = [
     data: { roles: ['repartidor'] },
     children: [
       { path: '', component: RepartidorHome },
+      { path: 'historico', component: RepartidorHistorico },
       { path: 'perfil', component: PerfilRepartidor },
     ],
   },

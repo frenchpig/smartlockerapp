@@ -8,7 +8,12 @@
                    routerLinkActive="active" 
                    [routerLinkActiveOptions]="{exact: true}"
                    class="nav-link-custom">
-                    <i class="bi bi-box-seam me-1"></i> Asignaciones
+                    <i class="bi bi-box-seam me-1"></i> Pedidos Activos
+                </a>
+                <a routerLink="/repartidor/historico" 
+                   routerLinkActive="active" 
+                   class="nav-link-custom">
+                    <i class="bi bi-clock-history me-1"></i> Historial
                 </a>
             </nav>
         </div>
@@ -42,7 +47,12 @@
                     <li><hr class="dropdown-divider"></li>
                     <li>
                         <a class="dropdown-item" routerLink="/repartidor">
-                            <i class="bi bi-box-seam me-2"></i>Asignaciones
+                            <i class="bi bi-box-seam me-2"></i>Pedidos Activos
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" routerLink="/repartidor/historico">
+                            <i class="bi bi-clock-history me-2"></i>Historial
                         </a>
                     </li>
                     <li>

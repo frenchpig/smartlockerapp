@@ -7,6 +7,7 @@ use App\Models\Repartidor;
 use App\Models\ArticuloReserva;
 use App\Models\Locker;
 use App\Models\HistorialLocker;
+use App\Models\EmpresaUbicacion;
 use App\Services\HistorialEmpresaService;
 use App\Services\HistorialLockerService;
 use App\Services\TarifaLimitacionService;
@@ -115,6 +116,7 @@ class ReservaController extends Controller
 
     /**
      * Devuelve las reservas asignadas al repartidor autenticado con filtros y paginación
+     * Por defecto, solo muestra pedidos activos (no completados ni anulados)
      */
     public function repartidorMisReservas(Request $request)
     {
@@ -131,12 +133,25 @@ class ReservaController extends Controller
             return response()->json(['message' => 'No se encontró el repartidor asociado'], 404);
         }
 
-        $perPage = (int) $request->query('per_page', 5);
+        $perPage = (int) $request->query('per_page', 10);
         $perPage = max(1, min(100, $perPage));
 
-        $query = Reserva::with(['usuario', 'locker.ubicacion'])
+        $query = Reserva::with(['usuario', 'locker.ubicacion', 'articulos'])
             ->where('repartidor_id', $repartidor->id)
             ->orderByDesc('created_at');
+
+        // Por defecto, mostrar solo pedidos activos (no completados ni anulados)
+        $soloActivos = $request->query('solo_activos', 'true');
+        if ($soloActivos === 'true' || $soloActivos === true) {
+            $query->where('estado', '!=', 'completado')
+                  ->where('estado', '!=', 'anulado');
+        }
+
+        // Por defecto, excluir pedidos completados en logística si se solicita
+        $excluirLogisticaCompletado = $request->query('excluir_logistica_completado', 'false');
+        if ($excluirLogisticaCompletado === 'true' || $excluirLogisticaCompletado === true) {
+            $query->where('logistica_estado', '!=', 'completado');
+        }
 
         // Filtros opcionales
         if ($estado = $request->query('estado')) {
@@ -145,6 +160,41 @@ class ReservaController extends Controller
 
         if ($logisticaEstado = $request->query('logistica_estado')) {
             $query->where('logistica_estado', $logisticaEstado);
+        }
+
+        // Filtro por ubicación (por ID o nombre)
+        if ($ubicacionId = $request->query('ubicacion_id')) {
+            // Si se proporciona un ID, filtrar por ese ID específico
+            $query->whereHas('locker', function ($lockerQuery) use ($ubicacionId) {
+                $lockerQuery->where('ubicacion_id', $ubicacionId);
+            });
+        } elseif ($ubicacion = trim((string) $request->query('ubicacion', ''))) {
+            // Si se proporciona texto, buscar por nombre (compatibilidad hacia atrás)
+            $query->whereHas('locker.ubicacion', function ($ubicacionQuery) use ($ubicacion) {
+                $ubicacionQuery->where('nombre', 'like', "%{$ubicacion}%");
+            });
+        }
+
+        // Filtro por email del destinatario
+        if ($email = trim((string) $request->query('email', ''))) {
+            $query->whereHas('usuario', function ($usuarioQuery) use ($email) {
+                $usuarioQuery->where('email', 'like', "%{$email}%");
+            });
+        }
+
+        // Filtro por fecha desde
+        if ($fechaDesde = trim((string) $request->query('fecha_desde', ''))) {
+            $query->where('fecha_reserva', '>=', $fechaDesde);
+        }
+
+        // Filtro por fecha hasta
+        if ($fechaHasta = trim((string) $request->query('fecha_hasta', ''))) {
+            $query->where('fecha_reserva', '<=', $fechaHasta);
+        }
+
+        // Filtro por ID de reserva
+        if ($reservaId = $request->query('reserva_id')) {
+            $query->where('id', $reservaId);
         }
 
         $items = $query->paginate($perPage);
@@ -157,6 +207,48 @@ class ReservaController extends Controller
                 'per_page' => $items->perPage(),
                 'total' => $items->total(),
             ],
+        ]);
+    }
+
+    /**
+     * Devuelve las ubicaciones asignadas a la empresa del repartidor autenticado
+     */
+    public function repartidorMisUbicaciones(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user || $user->rol !== 'repartidor') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        // Obtener el repartidor asociado al usuario
+        $repartidor = Repartidor::where('usuario_id', $user->id)->first();
+
+        if (!$repartidor) {
+            return response()->json(['message' => 'No se encontró el repartidor asociado'], 404);
+        }
+
+        if (!$repartidor->empresa_id) {
+            return response()->json(['message' => 'El repartidor no tiene empresa asignada'], 404);
+        }
+
+        // Obtener las ubicaciones asignadas a la empresa del repartidor
+        $ubicaciones = EmpresaUbicacion::where('empresa_id', $repartidor->empresa_id)
+            ->with('ubicacion')
+            ->get()
+            ->map(function ($empresaUbicacion) {
+                return [
+                    'id' => $empresaUbicacion->ubicacion_id,
+                    'nombre' => $empresaUbicacion->ubicacion->nombre,
+                    'latitud' => $empresaUbicacion->ubicacion->latitud,
+                    'longitud' => $empresaUbicacion->ubicacion->longitud,
+                ];
+            })
+            ->sortBy('nombre')
+            ->values();
+
+        return response()->json([
+            'ubicaciones' => $ubicaciones,
         ]);
     }
 
