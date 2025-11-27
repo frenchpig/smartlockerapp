@@ -197,6 +197,16 @@
                             Marcar en ruta
                           </button>
                           <button
+                            class="btn btn-outline-warning btn-sm"
+                            type="button"
+                            (click)="abrirModalIncidencia(r)"
+                            *ngIf="r.logisticaEstado === 'en_camino'"
+                            [disabled]="!r.lockerId"
+                            title="Reportar incidencia del locker">
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            Reportar incidencia
+                          </button>
+                          <button
                             class="btn btn-success btn-sm"
                             type="button"
                             (click)="marcarEntregado(r.id)"
@@ -230,3 +240,92 @@
     </div>
   </div>
 </main>
+
+<!-- Modal para reportar incidencia -->
+<div class="modal fade" [class.show]="mostrarModalIncidencia" [style.display]="mostrarModalIncidencia ? 'block' : 'none'" tabindex="-1" role="dialog" *ngIf="mostrarModalIncidencia">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Reportar incidencia del locker</h5>
+        <button type="button" class="btn-close" (click)="cerrarModalIncidencia()" [disabled]="reportandoIncidencia" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <form [formGroup]="incidenciaForm" (ngSubmit)="reportarIncidencia()">
+          <div class="mb-3">
+            <label for="problemaTipo" class="form-label fw-semibold">
+              Tipo de problema <span class="text-danger">*</span>
+            </label>
+            <select
+              id="problemaTipo"
+              class="form-select"
+              formControlName="problema_tipo"
+              [disabled]="reportandoIncidencia">
+              <option value="">Selecciona un problema</option>
+              <option *ngFor="let problema of problemasLocker" [value]="problema.value">
+                {{ problema.label }}
+              </option>
+            </select>
+            <div
+              class="invalid-feedback d-block"
+              *ngIf="incidenciaForm.controls['problema_tipo'].invalid && (incidenciaForm.controls['problema_tipo'].dirty || incidenciaForm.controls['problema_tipo'].touched)">
+              Debes seleccionar un tipo de problema.
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="descripcionIncidencia" class="form-label fw-semibold">
+              Descripción <span class="text-danger">*</span>
+            </label>
+            <textarea
+              id="descripcionIncidencia"
+              class="form-control"
+              formControlName="descripcion"
+              rows="4"
+              placeholder="Describe el problema con el locker..."
+              [disabled]="reportandoIncidencia"
+              maxlength="1000"></textarea>
+            <div
+              class="invalid-feedback d-block"
+              *ngIf="incidenciaForm.controls['descripcion'].invalid && (incidenciaForm.controls['descripcion'].dirty || incidenciaForm.controls['descripcion'].touched)">
+              <span *ngIf="incidenciaForm.controls['descripcion'].errors?.['required']">
+                Debes proporcionar una descripción del problema.
+              </span>
+              <span *ngIf="incidenciaForm.controls['descripcion'].errors?.['maxlength']">
+                La descripción no puede exceder 1000 caracteres.
+              </span>
+            </div>
+            <small class="text-muted">
+              {{ incidenciaForm.controls['descripcion'].value?.length || 0 }}/1000 caracteres
+            </small>
+          </div>
+
+          <div class="alert alert-info" *ngIf="reservaIncidencia">
+            <small>
+              <strong>Pedido:</strong> #{{ reservaIncidencia.id }}<br>
+              <strong>Locker:</strong> {{ reservaIncidencia.locker || 'No asignado' }}<br>
+              <strong>Ubicación:</strong> {{ reservaIncidencia.ubicacion }}
+            </small>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="cerrarModalIncidencia()"
+          [disabled]="reportandoIncidencia">
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn btn-warning"
+          (click)="reportarIncidencia()"
+          [disabled]="incidenciaForm.invalid || reportandoIncidencia">
+          <span *ngIf="reportandoIncidencia" class="spinner-border spinner-border-sm me-1" role="status"></span>
+          Reportar incidencia
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="mostrarModalIncidencia" *ngIf="mostrarModalIncidencia"></div>

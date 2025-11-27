@@ -2,7 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { environment } from '../../../../environments/environment';
 import { AuthService } from '../../../core/auth/auth';
 import { HeaderRepartidorComponent } from '../shared/header-repartidor/header-repartidor.component';
@@ -12,6 +12,7 @@ type LogisticaEstado = 'pendiente_repartidor' | 'asignado' | 'en_camino' | 'comp
 type ReservaAsignada = {
   id: number;
   locker: string | null;
+  lockerId: number | null;
   ubicacion: string;
   fechaIso: string;
   estado: string;
@@ -48,7 +49,7 @@ interface Paginacion {
 @Component({
   standalone: true,
   selector: 'app-repartidor-home',
-  imports: [CommonModule, RouterModule, DatePipe, FormsModule, HeaderRepartidorComponent],
+  imports: [CommonModule, RouterModule, DatePipe, FormsModule, ReactiveFormsModule, HeaderRepartidorComponent],
   templateUrl: './repartidor-home.html',
   styleUrls: ['./repartidor-home.scss'],
 })
@@ -56,6 +57,7 @@ export class RepartidorHome implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly fb = inject(FormBuilder);
 
   reservas: ReservaAsignada[] = [];
   kpis: Kpi[] = [];
@@ -80,6 +82,22 @@ export class RepartidorHome implements OnInit {
   filtroFechaDesde = '';
   filtroFechaHasta = '';
 
+  // Modal de reportar incidencia
+  mostrarModalIncidencia = false;
+  reservaIncidencia: ReservaAsignada | null = null;
+  incidenciaForm: FormGroup;
+  reportandoIncidencia = false;
+  problemasLocker: { value: string; label: string }[] = [
+    { value: 'no_se_abre', label: 'No se abre' },
+    { value: 'no_se_cierra', label: 'No se cierra' },
+    { value: 'dañado', label: 'Dañado' },
+    { value: 'bloqueado', label: 'Bloqueado' },
+    { value: 'sin_energia', label: 'Sin energía' },
+    { value: 'codigo_no_funciona', label: 'Código no funciona' },
+    { value: 'sensor_defectuoso', label: 'Sensor defectuoso' },
+    { value: 'otro', label: 'Otro' },
+  ];
+
   readonly logisticaOptions: { value: string; label: string }[] = [
     { value: '', label: 'Todas' },
     { value: 'pendiente_repartidor', label: 'Pendiente de repartidor' },
@@ -96,6 +114,13 @@ export class RepartidorHome implements OnInit {
   ];
 
   user = this.auth.user;
+
+  constructor() {
+    this.incidenciaForm = this.fb.group({
+      problema_tipo: ['', Validators.required],
+      descripcion: ['', [Validators.required, Validators.maxLength(1000)]],
+    });
+  }
 
   get agrupadosPorUbicacion(): GrupoUbicacion[] {
     const map = new Map<string, GrupoUbicacion>();
@@ -439,9 +464,12 @@ export class RepartidorHome implements OnInit {
     const destinatario = nombres || usuario?.email || 'Sin destinatario';
     const destinatarioEmail = usuario?.email ?? '---';
 
+    const lockerId = data?.locker_id ?? (data?.locker?.id ?? null);
+
     return {
       id: data?.id ?? 0,
       locker,
+      lockerId,
       ubicacion,
       fechaIso: data?.fecha_reserva ?? data?.created_at ?? new Date().toISOString(),
       estado,
@@ -491,5 +519,50 @@ export class RepartidorHome implements OnInit {
       { label: 'En camino', value: enCamino, hint: 'Pedidos en proceso de entrega' },
       { label: 'Pendientes', value: pendientes, hint: 'A la espera de asignación' },
     ];
+  }
+
+  abrirModalIncidencia(reserva: ReservaAsignada): void {
+    if (!reserva.lockerId) {
+      alert('Este pedido no tiene un locker asignado. No se puede reportar una incidencia.');
+      return;
+    }
+    this.reservaIncidencia = reserva;
+    this.incidenciaForm.reset();
+    this.mostrarModalIncidencia = true;
+  }
+
+  cerrarModalIncidencia(): void {
+    this.mostrarModalIncidencia = false;
+    this.reservaIncidencia = null;
+    this.incidenciaForm.reset();
+  }
+
+  async reportarIncidencia(): Promise<void> {
+    const user = this.user();
+    if (!this.incidenciaForm.valid || !this.reservaIncidencia || !this.reservaIncidencia.lockerId || !user?.id) {
+      return;
+    }
+
+    this.reportandoIncidencia = true;
+    try {
+      const payload = {
+        tipo: 'locker',
+        problema_tipo: this.incidenciaForm.value.problema_tipo,
+        locker_id: this.reservaIncidencia.lockerId,
+        reserva_id: this.reservaIncidencia.id,
+        usuario_id: user.id,
+        descripcion: this.incidenciaForm.value.descripcion,
+        estado: 'pendiente',
+      };
+
+      await this.http.post(`${environment.apiUrl}/incidencias`, payload).toPromise();
+      alert('Incidencia reportada exitosamente. Los administradores serán notificados.');
+      this.cerrarModalIncidencia();
+    } catch (error: any) {
+      console.error('Error reportando incidencia', error);
+      alert(error?.error?.message ?? 'No se pudo reportar la incidencia. Intenta nuevamente.');
+    } finally {
+      this.reportandoIncidencia = false;
+    }
   }
 }
