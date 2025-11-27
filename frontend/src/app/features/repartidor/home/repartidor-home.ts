@@ -412,7 +412,23 @@ export class RepartidorHome implements OnInit {
     }
     
     // La ubicación puede venir del locker asignado o de ubicacion_destino
-    const ubicacion = data?.locker?.ubicacion?.nombre ?? data?.ubicacion_destino?.nombre ?? 'Sin ubicacion';
+    // Laravel serializa las relaciones en snake_case, así que es ubicacion_destino
+    const ubicacion = data?.locker?.ubicacion?.nombre 
+      ?? data?.ubicacion_destino?.nombre 
+      ?? data?.ubicacionDestino?.nombre  // Por si acaso viene en camelCase
+      ?? 'Sin ubicacion';
+    
+    // Debug: si no se encuentra la ubicación, loguear para investigar
+    if (ubicacion === 'Sin ubicacion') {
+      console.warn('No se encontró ubicación para reserva:', {
+        reservaId: data?.id,
+        locker: data?.locker,
+        ubicacion_destino: data?.ubicacion_destino,
+        ubicacionDestino: data?.ubicacionDestino,
+        ubicacion_destino_id: data?.ubicacion_destino_id,
+        dataKeys: Object.keys(data || {})
+      });
+    }
     const { label: logisticaLabel, badge: logisticaBadge } = this.mapLogisticaEstado(logisticaEstado);
 
     const estado = String(data?.estado ?? 'pendiente');

@@ -203,7 +203,25 @@ export class HomeEmpresa implements OnInit {
     const lockerNumero = data?.locker?.numero ?? data?.locker?.id ?? data?.locker_id ?? '';
     const locker = lockerNumero ? `#${lockerNumero}` : 'N/D';
 
-    const ubicacionNombre = data?.locker?.ubicacion?.nombre ?? data?.locker_ubicacion ?? 'Sin ubicacion';
+    // La ubicación puede venir del locker asignado o de ubicacion_destino
+    // Laravel serializa las relaciones en snake_case, así que es ubicacion_destino
+    const ubicacionNombre = data?.locker?.ubicacion?.nombre 
+      ?? data?.ubicacion_destino?.nombre 
+      ?? data?.ubicacionDestino?.nombre  // Por si acaso viene en camelCase
+      ?? data?.locker_ubicacion 
+      ?? 'Sin ubicacion';
+    
+    // Debug: si no se encuentra la ubicación, loguear para investigar
+    if (ubicacionNombre === 'Sin ubicacion') {
+      console.warn('No se encontró ubicación para pedido empresa:', {
+        pedidoId: data?.id,
+        locker: data?.locker,
+        ubicacion_destino: data?.ubicacion_destino,
+        ubicacionDestino: data?.ubicacionDestino,
+        ubicacion_destino_id: data?.ubicacion_destino_id,
+        dataKeys: Object.keys(data || {})
+      });
+    }
     const ubicacionLat = data?.locker?.ubicacion?.latitud ?? data?.locker_latitud ?? null;
     const ubicacionLng = data?.locker?.ubicacion?.longitud ?? data?.locker_longitud ?? null;
 

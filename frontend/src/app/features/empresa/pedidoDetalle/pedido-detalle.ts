@@ -70,7 +70,11 @@ export class EmpresaPedidoDetalle implements OnInit {
             const lockerNumero = res.locker?.numero ?? res.locker?.id ?? res.locker_id ?? '';
             const locker = lockerNumero ? `#${lockerNumero}` : 'N/D';
 
-            const ubicacionNombre = res.locker?.ubicacion?.nombre ?? 'Sin ubicación';
+            // La ubicación puede venir del locker asignado o de ubicacion_destino
+            const ubicacionNombre = res.locker?.ubicacion?.nombre 
+              ?? res?.ubicacion_destino?.nombre 
+              ?? res?.ubicacionDestino?.nombre 
+              ?? 'Sin ubicación';
 
             const usuario = res.usuario;
             const nombres = [usuario?.nombre, usuario?.apellido].filter(Boolean).join(' ').trim();

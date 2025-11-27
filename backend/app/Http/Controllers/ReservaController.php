@@ -67,7 +67,7 @@ class ReservaController extends Controller
         $perPage = (int) $request->query('per_page', 5);
         $perPage = max(1, min(1000, $perPage)); // Aumentado límite para permitir obtener todos los datos
 
-        $query = Reserva::with(['usuario', 'locker.ubicacion', 'repartidor'])
+        $query = Reserva::with(['usuario', 'locker.ubicacion', 'ubicacionDestino', 'repartidor'])
             ->where('empresa_id', $user->id)
             ->where('logistica_estado', '!=', 'completado') // Solo pedidos no entregados
             ->where(function ($q) use ($user) {
@@ -111,6 +111,18 @@ class ReservaController extends Controller
         }
 
         $items = $query->paginate($perPage);
+
+        // Asegurar que todas las reservas tengan la relación ubicacionDestino cargada
+        $reservas = $items->items();
+        foreach ($reservas as $reserva) {
+            // Si la relación no está cargada, cargarla manualmente
+            if (!$reserva->relationLoaded('ubicacionDestino') && $reserva->ubicacion_destino_id) {
+                $reserva->load('ubicacionDestino');
+            }
+        }
+
+        // Reconstruir la respuesta con las reservas actualizadas
+        $items->setCollection(collect($reservas));
 
         return response()->json($items);
     }
@@ -207,8 +219,17 @@ class ReservaController extends Controller
 
         $items = $query->paginate($perPage);
 
+        // Asegurar que todas las reservas tengan la relación ubicacionDestino cargada
+        $reservas = $items->items();
+        foreach ($reservas as $reserva) {
+            // Si la relación no está cargada, cargarla manualmente
+            if (!$reserva->relationLoaded('ubicacionDestino') && $reserva->ubicacion_destino_id) {
+                $reserva->load('ubicacionDestino');
+            }
+        }
+
         return response()->json([
-            'reservas' => $items->items(),
+            'reservas' => $reservas,
             'pagination' => [
                 'current_page' => $items->currentPage(),
                 'last_page' => $items->lastPage(),
@@ -468,7 +489,7 @@ class ReservaController extends Controller
 
     public function show(Reserva $reserva)
     {
-        return $reserva->load(['usuario','locker.ubicacion','repartidor','articulos']);
+        return $reserva->load(['usuario','locker.ubicacion','ubicacionDestino','repartidor','articulos']);
     }
 
     public function store(Request $request)
