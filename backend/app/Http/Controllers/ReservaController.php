@@ -379,6 +379,7 @@ class ReservaController extends Controller
             'hora_inicio'  => ['required', 'date_format:H:i'],
             'hora_fin'     => ['nullable', 'date_format:H:i', 'after:hora_inicio'],
             'tipo_acceso'  => ['nullable', Rule::in(['qr','codigo_temporal'])],
+            'repartidor_id' => ['nullable', 'integer', 'exists:repartidores,id'],
             'articulos'    => ['sometimes', 'array'],
             'articulos.*.nombre' => ['required', 'string', 'max:255'],
             'articulos.*.cantidad' => ['required', 'integer', 'min:1'],
@@ -386,6 +387,19 @@ class ReservaController extends Controller
             'articulos.*.sku' => ['nullable', 'string', 'max:100'],
             'articulos.*.peso' => ['nullable', 'numeric', 'min:0'],
         ]);
+
+        // Si se proporciona repartidor_id, verificar que pertenece a la empresa
+        if (!empty($data['repartidor_id'])) {
+            $repartidor = Repartidor::where('id', $data['repartidor_id'])
+                ->where('empresa_id', $user->id)
+                ->first();
+            
+            if (!$repartidor) {
+                return response()->json([
+                    'message' => 'El repartidor seleccionado no pertenece a tu empresa'
+                ], 422);
+            }
+        }
 
         // Validar limitaciones de tarifa antes de crear la reserva
         $ubicacion = Ubicacion::findOrFail($data['ubicacion_destino_id']);
@@ -410,7 +424,7 @@ class ReservaController extends Controller
             'empresa_id' => $user->id,
             'locker_id' => null, // Se asignará cuando el repartidor marque en ruta
             'estado' => 'pendiente',
-            'logistica_estado' => 'pendiente_repartidor',
+            'logistica_estado' => !empty($data['repartidor_id']) ? 'asignado' : 'pendiente_repartidor',
             'tipo_acceso' => $data['tipo_acceso'] ?? 'codigo_temporal',
             'codigo_acceso' => null,
         ]);
@@ -441,7 +455,11 @@ class ReservaController extends Controller
                 );
             }
             
-            $this->asignarRepartidorDisponible($reserva);
+            // Solo asignar repartidor automáticamente si no se proporcionó uno manualmente
+            if (empty($data['repartidor_id'])) {
+                $this->asignarRepartidorDisponible($reserva);
+            }
+            
             return $reserva->load(['usuario','ubicacionDestino','repartidor','articulos']);
         });
 
@@ -1076,20 +1094,45 @@ class ReservaController extends Controller
             return;
         }
 
-        $repartidor = Repartidor::where('empresa_id', $reserva->empresa_id)
-            ->where('disponible', true)
-            ->inRandomOrder()
-            ->first();
+        // Obtener todos los repartidores de la empresa (disponibles o no, ya que pueden tener múltiples pedidos)
+        $repartidores = Repartidor::where('empresa_id', $reserva->empresa_id)
+            ->get();
 
-        if (!$repartidor) {
+        if ($repartidores->isEmpty()) {
             return;
         }
 
-        $reserva->repartidor()->associate($repartidor);
+        // Sistema rotativo: asignar al repartidor con menos pedidos activos
+        // Si hay empate, usar el que fue asignado hace más tiempo (o nunca asignado)
+        $repartidorAsignado = $repartidores->map(function ($repartidor) {
+            $pedidosActivos = Reserva::where('repartidor_id', $repartidor->id)
+                ->whereIn('logistica_estado', ['asignado', 'en_camino'])
+                ->count();
+            
+            $ultimaAsignacion = Reserva::where('repartidor_id', $repartidor->id)
+                ->whereIn('logistica_estado', ['asignado', 'en_camino'])
+                ->orderByDesc('updated_at')
+                ->value('updated_at');
+
+            return [
+                'repartidor' => $repartidor,
+                'pedidos_activos' => $pedidosActivos,
+                'ultima_asignacion' => $ultimaAsignacion ?? '1970-01-01 00:00:00', // Si nunca fue asignado, usar fecha muy antigua
+            ];
+        })
+        ->sortBy([
+            ['pedidos_activos', 'asc'],
+            ['ultima_asignacion', 'asc'],
+        ])
+        ->first();
+
+        if (!$repartidorAsignado) {
+            return;
+        }
+
+        $reserva->repartidor()->associate($repartidorAsignado['repartidor']);
         $reserva->logistica_estado = 'asignado';
         $reserva->save();
-
-        $repartidor->update(['disponible' => false]);
     }
 
     /**
@@ -1138,9 +1181,9 @@ class ReservaController extends Controller
 
     private function liberarRepartidor(Reserva $reserva): void
     {
-        if ($reserva->repartidor_id) {
-            Repartidor::where('id', $reserva->repartidor_id)->update(['disponible' => true]);
-        }
+        // Ya no es necesario marcar repartidores como disponibles/no disponibles
+        // Los repartidores pueden tener múltiples pedidos asignados simultáneamente
+        // Este método se mantiene por compatibilidad pero no hace nada
     }
 
     public function marcarEnRutaMasivo(Request $request)

@@ -8,6 +8,7 @@ import { environment } from "../../../../../environments/environment";
 type ClienteOption = { id: number; label: string; email: string };
 type ProductoEmpresa = { id: number; nombre: string; descripcion?: string; sku?: string; peso?: number; activo: boolean };
 type ProductoSeleccionado = { producto: ProductoEmpresa; cantidad: number };
+type RepartidorOption = { id: number; nombre: string; apellido?: string; email: string };
 
 @Component({
   standalone: true,
@@ -34,6 +35,9 @@ export class ReservaNuevaComponent implements OnInit {
   productoFiltro = "";
   productosSeleccionados: ProductoSeleccionado[] = [];
 
+  repartidores: RepartidorOption[] = [];
+  loadingRepartidores = false;
+
   loadingData = false;
   loadingProductos = false;
   submitting = false;
@@ -46,6 +50,7 @@ export class ReservaNuevaComponent implements OnInit {
     fecha_reserva: ["", Validators.required],
     hora_inicio: ["", Validators.required],
     tipo_acceso: ["codigo_temporal", Validators.required],
+    repartidor_id: [""], // Opcional: si no se selecciona, se asignará automáticamente
   });
 
   async ngOnInit(): Promise<void> {
@@ -93,6 +98,31 @@ export class ReservaNuevaComponent implements OnInit {
 
     // Cargar productos de la empresa
     await this.cargarProductos();
+    
+    // Cargar repartidores de la empresa
+    await this.cargarRepartidores();
+  }
+
+  async cargarRepartidores(): Promise<void> {
+    this.loadingRepartidores = true;
+    try {
+      const res: any = await this.http
+        .get<any>(`${environment.apiUrl}/empresa/repartidores`, { params: { per_page: 1000 } })
+        .toPromise();
+
+      this.repartidores = (res?.data ?? []).map((r: any) => ({
+        id: r.id,
+        nombre: r.nombre || "",
+        apellido: r.apellido || "",
+        email: r.email || "",
+      }));
+    } catch (error) {
+      console.error("No se pudieron cargar los repartidores", error);
+      // No mostrar error crítico, simplemente no habrá repartidores disponibles para selección manual
+      this.repartidores = [];
+    } finally {
+      this.loadingRepartidores = false;
+    }
   }
 
   async cargarProductos(): Promise<void> {
@@ -170,6 +200,11 @@ export class ReservaNuevaComponent implements OnInit {
       hora_fin: null,
       tipo_acceso: value.tipo_acceso,
     };
+
+    // Incluir repartidor_id si se seleccionó uno manualmente
+    if (value.repartidor_id) {
+      payload.repartidor_id = Number(value.repartidor_id);
+    }
 
     // Solo incluir artículos si hay productos seleccionados
     if (articulos.length > 0) {

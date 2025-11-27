@@ -129,6 +129,26 @@
                 </div>
 
                 <div class="col-12">
+                  <label for="repartidor" class="form-label fw-semibold">Repartidor (Opcional)</label>
+                  <select
+                    id="repartidor"
+                    class="form-select"
+                    formControlName="repartidor_id"
+                    [disabled]="loadingRepartidores || submitting"
+                  >
+                    <option value="" selected>
+                      {{ loadingRepartidores ? 'Cargando repartidores...' : repartidores.length === 0 ? 'No hay repartidores disponibles' : 'Asignación automática (se asignará al repartidor con menos pedidos)' }}
+                    </option>
+                    <option *ngFor="let repartidor of repartidores" [value]="repartidor.id">
+                      {{ repartidor.nombre }} {{ repartidor.apellido }} {{ repartidor.email ? '(' + repartidor.email + ')' : '' }}
+                    </option>
+                  </select>
+                  <small class="text-muted">
+                    Si no seleccionas un repartidor, el sistema asignará automáticamente al repartidor con menos pedidos activos.
+                  </small>
+                </div>
+
+                <div class="col-12">
                   <label class="form-label fw-semibold">Productos del pedido</label>
                   <p class="text-muted small mb-2">
                     Selecciona los productos que se incluirán en esta reserva. Los productos son opcionales.
