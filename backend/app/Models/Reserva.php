@@ -19,6 +19,8 @@ class Reserva extends Model
         'usuario_id',
         'empresa_id',
         'locker_id',
+        'tamano_pedido',
+        'ubicacion_destino_id',
         'fecha_reserva',
         'hora_inicio',
         'hora_fin',
@@ -67,5 +69,10 @@ class Reserva extends Model
     public function articulos()
     {
         return $this->hasMany(ArticuloReserva::class, 'reserva_id');
+    }
+
+    public function ubicacionDestino()
+    {
+        return $this->belongsTo(Ubicacion::class, 'ubicacion_destino_id');
     }
 }

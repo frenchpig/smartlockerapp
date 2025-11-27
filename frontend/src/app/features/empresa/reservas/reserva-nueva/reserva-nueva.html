@@ -16,7 +16,8 @@
             <h2 class="h5 mb-3">Datos de la reserva</h2>
 
             <p class="text-muted mb-4">
-              Selecciona al cliente, la ubicacion y los horarios para generar la solicitud. El repartidor se asigna automaticamente.
+              Selecciona al cliente, la ubicación de destino, el tamaño del pedido y los horarios para generar la solicitud. 
+              El locker se asignará automáticamente cuando el repartidor marque el pedido en ruta. El repartidor se asigna automáticamente.
             </p>
 
             <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
@@ -45,46 +46,55 @@
                 </div>
 
                 <div class="col-12">
-                  <label for="ubicacion" class="form-label fw-semibold">Ubicacion</label>
+                  <label for="ubicacion" class="form-label fw-semibold">Ubicación de destino</label>
                   <select
                     id="ubicacion"
                     class="form-select"
-                    formControlName="ubicacion_id"
+                    formControlName="ubicacion_destino_id"
                     (change)="onUbicacionChange($event)"
                     [disabled]="loadingData || submitting"
                   >
-                    <option value="" disabled>Selecciona una ubicacion</option>
+                    <option value="" disabled>Selecciona una ubicación</option>
                     <option *ngFor="let u of ubicaciones" [value]="u.id">{{ u.nombre }}</option>
                   </select>
                   <div
                     class="invalid-feedback d-block"
-                    *ngIf="form.controls.ubicacion_id.invalid && (form.controls.ubicacion_id.dirty || form.controls.ubicacion_id.touched)"
+                    *ngIf="form.controls.ubicacion_destino_id.invalid && (form.controls.ubicacion_destino_id.dirty || form.controls.ubicacion_destino_id.touched)"
                   >
-                    Debes seleccionar una ubicacion.
+                    Debes seleccionar una ubicación de destino.
                   </div>
+                  <small class="text-muted">
+                    El locker se asignará automáticamente cuando el repartidor marque el pedido en ruta.
+                  </small>
                 </div>
 
                 <div class="col-12">
-                  <label for="locker" class="form-label fw-semibold">Locker</label>
+                  <label for="tamano" class="form-label fw-semibold">Tamaño del pedido</label>
                   <select
-                    id="locker"
+                    id="tamano"
                     class="form-select"
-                    formControlName="locker_id"
-                    [disabled]="submitting || !lockersFiltrados.length"
+                    formControlName="tamano_pedido"
+                    [disabled]="submitting || loadingTamanos || !form.value.ubicacion_destino_id || tamanosDisponibles.length === 0"
                   >
                     <option value="" disabled>
-                      {{ lockersFiltrados.length ? 'Selecciona un locker' : 'No hay lockers disponibles' }}
+                      {{ loadingTamanos ? 'Cargando tamaños...' : !form.value.ubicacion_destino_id ? 'Primero selecciona una ubicación' : tamanosDisponibles.length === 0 ? 'No hay tamaños disponibles' : 'Selecciona el tamaño' }}
                     </option>
-                    <option *ngFor="let l of lockersFiltrados" [value]="l.id">{{ l.label }}</option>
+                    <option *ngFor="let tamano of tamanosDisponibles" [value]="tamano.valor">{{ tamano.label }}</option>
                   </select>
                   <div
                     class="invalid-feedback d-block"
-                    *ngIf="form.controls.locker_id.invalid && (form.controls.locker_id.dirty || form.controls.locker_id.touched)"
+                    *ngIf="form.controls.tamano_pedido.invalid && (form.controls.tamano_pedido.dirty || form.controls.tamano_pedido.touched)"
                   >
-                    Debes seleccionar un locker.
+                    Debes seleccionar el tamaño del pedido.
                   </div>
-                  <small class="text-muted" *ngIf="form.value.ubicacion_id && !lockersFiltrados.length">
-                    No hay lockers disponibles en esta ubicacion.
+                  <small class="text-muted" *ngIf="loadingTamanos">
+                    Cargando tamaños disponibles...
+                  </small>
+                  <small class="text-muted" *ngIf="!loadingTamanos && form.value.ubicacion_destino_id">
+                    Solo se muestran los tamaños de lockers disponibles en esta ubicación.
+                  </small>
+                  <small class="text-muted" *ngIf="!loadingTamanos && !form.value.ubicacion_destino_id">
+                    Selecciona primero una ubicación para ver los tamaños disponibles.
                   </small>
                 </div>
 

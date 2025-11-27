@@ -36,6 +36,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reservas/empresa/solicitudes', [ReservaController::class, 'createForCompany']);
     Route::get('/reservas/repartidor/mis', [ReservaController::class, 'repartidorMisReservas']);
     Route::get('/repartidor/mis-ubicaciones', [ReservaController::class, 'repartidorMisUbicaciones']);
+    Route::get('/ubicaciones/tamanos-disponibles', [ReservaController::class, 'tamanosDisponiblesUbicacion']);
     Route::post('/reservas/repartidor/marcar-en-ruta-masivo', [ReservaController::class, 'repartidorMarcarEnRutaMasivo']);
     Route::post('/reservas/repartidor/marcar-entregado-masivo', [ReservaController::class, 'repartidorMarcarEntregadoMasivo']);
     Route::post('/reservas/{reserva}/asignar-repartidor', [ReservaController::class, 'asignarRepartidor']);

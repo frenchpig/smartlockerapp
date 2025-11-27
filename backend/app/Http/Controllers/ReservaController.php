@@ -8,6 +8,7 @@ use App\Models\ArticuloReserva;
 use App\Models\Locker;
 use App\Models\HistorialLocker;
 use App\Models\EmpresaUbicacion;
+use App\Models\Ubicacion;
 use App\Services\HistorialEmpresaService;
 use App\Services\HistorialLockerService;
 use App\Services\TarifaLimitacionService;
@@ -252,6 +253,66 @@ class ReservaController extends Controller
         ]);
     }
 
+    /**
+     * Obtiene los tamaños de lockers disponibles en una ubicación específica
+     */
+    public function tamanosDisponiblesUbicacion(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user || !in_array($user->rol, ['empresa', 'repartidor'])) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $data = $request->validate([
+            'ubicacion_id' => ['required', 'integer', 'exists:ubicaciones,id'],
+        ]);
+
+        // Si es empresa, verificar que tiene acceso a esta ubicación
+        if ($user->rol === 'empresa') {
+            $tieneAcceso = EmpresaUbicacion::where('empresa_id', $user->id)
+                ->where('ubicacion_id', $data['ubicacion_id'])
+                ->exists();
+
+            if (!$tieneAcceso) {
+                return response()->json(['message' => 'No tienes acceso a esta ubicación'], 403);
+            }
+        } elseif ($user->rol === 'repartidor') {
+            $repartidor = Repartidor::where('usuario_id', $user->id)->first();
+            if (!$repartidor || !$repartidor->empresa_id) {
+                return response()->json(['message' => 'No se encontró el repartidor asociado'], 404);
+            }
+
+            $tieneAcceso = EmpresaUbicacion::where('empresa_id', $repartidor->empresa_id)
+                ->where('ubicacion_id', $data['ubicacion_id'])
+                ->exists();
+
+            if (!$tieneAcceso) {
+                return response()->json(['message' => 'No tienes acceso a esta ubicación'], 403);
+            }
+        }
+
+        // Obtener los tamaños únicos de lockers en esta ubicación
+        $tamanos = Locker::where('ubicacion_id', $data['ubicacion_id'])
+            ->whereNotNull('tamano')
+            ->distinct()
+            ->pluck('tamano')
+            ->filter()
+            ->sort()
+            ->values()
+            ->map(function ($tamano) {
+                $labels = ['S' => 'Pequeño (S)', 'M' => 'Mediano (M)', 'L' => 'Grande (L)'];
+                return [
+                    'valor' => $tamano,
+                    'label' => $labels[$tamano] ?? $tamano,
+                ];
+            });
+
+        return response()->json([
+            'tamanos' => $tamanos,
+        ]);
+    }
+
     public function index()
     {
         return Reserva::with(['usuario','locker.ubicacion','repartidor.usuario'])->paginate(20);
@@ -267,7 +328,8 @@ class ReservaController extends Controller
 
         $data = $request->validate([
             'usuario_id'   => ['required', 'integer', 'exists:usuarios,id'],
-            'locker_id'    => ['required', 'integer', 'exists:lockers,id'],
+            'tamano_pedido' => ['required', 'string', Rule::in(['S', 'M', 'L'])],
+            'ubicacion_destino_id' => ['required', 'integer', 'exists:ubicaciones,id'],
             'fecha_reserva'=> ['required', 'date'],
             'hora_inicio'  => ['required', 'date_format:H:i'],
             'hora_fin'     => ['nullable', 'date_format:H:i', 'after:hora_inicio'],
@@ -281,9 +343,18 @@ class ReservaController extends Controller
         ]);
 
         // Validar limitaciones de tarifa antes de crear la reserva
-        $locker = Locker::with('ubicacion')->findOrFail($data['locker_id']);
+        $ubicacion = Ubicacion::findOrFail($data['ubicacion_destino_id']);
         try {
-            TarifaLimitacionService::validarYAsignarUbicacion($user, $locker);
+            // Verificar que la empresa tiene acceso a esta ubicación
+            $empresaUbicacion = EmpresaUbicacion::where('empresa_id', $user->id)
+                ->where('ubicacion_id', $ubicacion->id)
+                ->first();
+            
+            if (!$empresaUbicacion) {
+                return response()->json([
+                    'message' => 'No tienes acceso a esta ubicación. Verifica tu plan de tarifa.'
+                ], 422);
+            }
         } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage()
@@ -292,13 +363,14 @@ class ReservaController extends Controller
 
         $payload = array_merge($data, [
             'empresa_id' => $user->id,
+            'locker_id' => null, // Se asignará cuando el repartidor marque en ruta
             'estado' => 'pendiente',
             'logistica_estado' => 'pendiente_repartidor',
             'tipo_acceso' => $data['tipo_acceso'] ?? 'codigo_temporal',
             'codigo_acceso' => null,
         ]);
 
-        $reserva = DB::transaction(function () use ($payload, $data) {
+        $reserva = DB::transaction(function () use ($payload, $data, $ubicacion) {
             $reserva = Reserva::create($payload);
             
             // Crear artículos si se proporcionan
@@ -314,29 +386,18 @@ class ReservaController extends Controller
                     ]);
                 }
             }
-            
-            // Actualizar estado del locker a ocupado
-            $this->actualizarEstadoLocker($reserva->locker_id);
-            
-            // Registrar en historial
-            HistorialLockerService::registrarReservaCreada(
-                $reserva->locker_id,
-                $reserva->id,
-                Auth::id()
-            );
 
-            // Registrar en historial de empresa si existe empresa_id
+            // Registrar en historial de empresa
             if ($reserva->empresa_id) {
-                $lockerUbicacion = $reserva->locker->ubicacion?->nombre ?? null;
                 HistorialEmpresaService::registrarReservaCreada(
                     $reserva->empresa_id,
                     $reserva->id,
-                    $lockerUbicacion
+                    $ubicacion->nombre
                 );
             }
             
             $this->asignarRepartidorDisponible($reserva);
-            return $reserva->load(['usuario','locker.ubicacion','repartidor','articulos']);
+            return $reserva->load(['usuario','ubicacionDestino','repartidor','articulos']);
         });
 
         return response()->json($reserva, 201);
@@ -511,6 +572,24 @@ class ReservaController extends Controller
         return $reserva->load(['usuario','locker.ubicacion','repartidor']);
     }
 
+    /**
+     * Busca un locker disponible del tamaño especificado en la ubicación indicada
+     */
+    private function buscarLockerDisponible(int $ubicacionId, string $tamano): ?Locker
+    {
+        // Buscar lockers disponibles: activos, del tamaño correcto, en la ubicación indicada
+        // y que no tengan reservas pendientes
+        $locker = Locker::where('ubicacion_id', $ubicacionId)
+            ->where('tamano', $tamano)
+            ->where('estado', 'activo')
+            ->whereDoesntHave('reservas', function ($query) {
+                $query->where('estado', 'pendiente');
+            })
+            ->first();
+
+        return $locker;
+    }
+
     public function marcarEnRuta(Request $request, Reserva $reserva)
     {
         $user = $request->user();
@@ -558,6 +637,36 @@ class ReservaController extends Controller
 
         if (!in_array($reserva->logistica_estado, ['asignado', 'pendiente_repartidor'], true)) {
             return response()->json(['message' => 'La reserva ya fue marcada en ruta o finalizada'], 422);
+        }
+
+        // Si la reserva no tiene locker asignado, buscar uno disponible automáticamente
+        if (!$reserva->locker_id) {
+            if (!$reserva->tamano_pedido) {
+                return response()->json(['message' => 'El pedido no tiene tamaño especificado'], 422);
+            }
+
+            if (!$reserva->ubicacion_destino_id) {
+                return response()->json(['message' => 'El pedido no tiene ubicación de destino especificada'], 422);
+            }
+
+            // Buscar un locker disponible del tamaño correcto en la ubicación de destino
+            $lockerDisponible = $this->buscarLockerDisponible(
+                $reserva->ubicacion_destino_id,
+                $reserva->tamano_pedido
+            );
+
+            if (!$lockerDisponible) {
+                return response()->json([
+                    'message' => "No hay lockers disponibles del tamaño '{$reserva->tamano_pedido}' en la ubicación de destino"
+                ], 422);
+            }
+
+            // Asignar el locker a la reserva
+            $reserva->locker_id = $lockerDisponible->id;
+            
+            // Actualizar estado del locker a ocupado
+            $lockerDisponible->estado = 'ocupado';
+            $lockerDisponible->save();
         }
 
         $reserva->logistica_estado = 'en_camino';
@@ -1257,6 +1366,46 @@ class ReservaController extends Controller
                         'mensaje' => 'La reserva ya fue marcada en ruta o finalizada'
                     ];
                     continue;
+                }
+
+                // Si la reserva no tiene locker asignado, buscar uno disponible automáticamente
+                if (!$reserva->locker_id) {
+                    if (!$reserva->tamano_pedido) {
+                        $resultados['fallidos'][] = [
+                            'id' => $reservaId,
+                            'mensaje' => 'El pedido no tiene tamaño especificado'
+                        ];
+                        continue;
+                    }
+
+                    if (!$reserva->ubicacion_destino_id) {
+                        $resultados['fallidos'][] = [
+                            'id' => $reservaId,
+                            'mensaje' => 'El pedido no tiene ubicación de destino especificada'
+                        ];
+                        continue;
+                    }
+
+                    // Buscar un locker disponible del tamaño correcto en la ubicación de destino
+                    $lockerDisponible = $this->buscarLockerDisponible(
+                        $reserva->ubicacion_destino_id,
+                        $reserva->tamano_pedido
+                    );
+
+                    if (!$lockerDisponible) {
+                        $resultados['fallidos'][] = [
+                            'id' => $reservaId,
+                            'mensaje' => "No hay lockers disponibles del tamaño '{$reserva->tamano_pedido}' en la ubicación de destino"
+                        ];
+                        continue;
+                    }
+
+                    // Asignar el locker a la reserva
+                    $reserva->locker_id = $lockerDisponible->id;
+                    
+                    // Actualizar estado del locker a ocupado
+                    $lockerDisponible->estado = 'ocupado';
+                    $lockerDisponible->save();
                 }
 
                 // Marcar como en ruta
