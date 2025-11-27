@@ -38,6 +38,36 @@
     align-items: center;
 }
 
+@media (max-width: 768px) {
+    .perfil-main {
+        padding: 1.5rem 0.75rem;
+    }
+    
+    .perfil-card {
+        padding: 1rem 0.75rem;
+        border-radius: 0.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .perfil-main {
+        padding: 1rem 0.5rem;
+        min-height: calc(100dvh - 64px);
+    }
+    
+    .perfil-card {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .section-title {
+        font-size: 0.875rem;
+    }
+    
+    .section-hint {
+        font-size: 0.75rem;
+    }
+}
+
 .perfil-card {
     width: 100%;
     max-width: 640px;
@@ -245,20 +275,45 @@
     margin-bottom: 1rem;
 }
 
+@media (max-width: 768px) {
+    .modal-overlay {
+        padding: 0.75rem;
+        align-items: flex-end;
+    }
+    
+    .modal-content {
+        max-width: 100%;
+        border-radius: 0.75rem 0.75rem 0 0;
+        max-height: 85vh;
+    }
+}
+
 @media (max-width: 480px) {
     .dato-row {
         grid-template-columns: 1fr;
         row-gap: .25rem;
+        padding: 0.5rem 0;
+    }
+    
+    dt {
+        font-size: 0.75rem !important;
+        margin-bottom: 0.25rem;
+    }
+    
+    dd {
+        font-size: 0.85rem !important;
     }
 
     .perfil-section-header {
         flex-direction: column;
         align-items: flex-start;
+        gap: 0.75rem;
     }
 
     .section-actions {
         width: 100%;
         flex-direction: column;
+        gap: 0.5rem;
     }
 
     .section-actions .btn {
@@ -273,12 +328,14 @@
 
     .perfil-actions .btn {
         flex: 1 1 auto;
+        width: 100%;
     }
 
     .modal-content {
         margin: 0;
         border-radius: 0;
         max-height: 100vh;
+        max-width: 100%;
     }
 
     .modal-header,
@@ -286,13 +343,24 @@
     .modal-footer {
         padding: 1rem;
     }
+    
+    .modal-title {
+        font-size: 1.1rem;
+    }
 
     .modal-footer {
         flex-direction: column-reverse;
+        gap: 0.5rem;
     }
 
     .modal-footer .btn {
         width: 100%;
+    }
+    
+    .perfil-footer {
+        padding-top: 0.75rem;
+        margin-top: 1rem;
+        font-size: 0.75rem;
     }
 }
 

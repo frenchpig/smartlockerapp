@@ -137,7 +137,7 @@ class ReservaController extends Controller
         $perPage = (int) $request->query('per_page', 10);
         $perPage = max(1, min(100, $perPage));
 
-        $query = Reserva::with(['usuario', 'locker.ubicacion', 'articulos'])
+        $query = Reserva::with(['usuario', 'locker.ubicacion', 'ubicacionDestino', 'articulos'])
             ->where('repartidor_id', $repartidor->id)
             ->orderByDesc('created_at');
 

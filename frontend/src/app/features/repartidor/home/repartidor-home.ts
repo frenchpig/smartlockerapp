@@ -11,7 +11,7 @@ type LogisticaEstado = 'pendiente_repartidor' | 'asignado' | 'en_camino' | 'comp
 
 type ReservaAsignada = {
   id: number;
-  locker: string;
+  locker: string | null;
   ubicacion: string;
   fechaIso: string;
   estado: string;
@@ -401,9 +401,13 @@ export class RepartidorHome implements OnInit {
   }
 
   private mapReserva(data: any): ReservaAsignada {
-    const lockerNumero = data?.locker?.numero ?? data?.locker?.id ?? data?.locker_id ?? '';
-    const locker = lockerNumero ? `#${lockerNumero}` : 'N/D';
-    const ubicacion = data?.locker?.ubicacion?.nombre ?? 'Sin ubicacion';
+    // Solo mostrar locker si está asignado (locker_id existe y no es null)
+    const lockerId = data?.locker_id ?? null;
+    const lockerNumero = lockerId && data?.locker ? (data.locker.numero ?? data.locker.id ?? lockerId) : null;
+    const locker = lockerNumero ? `#${lockerNumero}` : null;
+    
+    // La ubicación puede venir del locker asignado o de ubicacion_destino
+    const ubicacion = data?.locker?.ubicacion?.nombre ?? data?.ubicacion_destino?.nombre ?? 'Sin ubicacion';
     const logisticaEstado: LogisticaEstado = data?.logistica_estado ?? 'pendiente_repartidor';
     const { label: logisticaLabel, badge: logisticaBadge } = this.mapLogisticaEstado(logisticaEstado);
 
