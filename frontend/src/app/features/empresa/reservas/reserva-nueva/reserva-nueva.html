@@ -98,26 +98,27 @@
                   </small>
                 </div>
 
-                <div class="col-12 col-md-6">
-                  <label for="fecha" class="form-label fw-semibold">Fecha</label>
-                  <input id="fecha" type="date" class="form-control" formControlName="fecha_reserva" [disabled]="submitting" />
+                <div class="col-12">
+                  <app-date-picker
+                    id="fechaEstimada"
+                    label="Fecha estimada de llegada al locker"
+                    formControlName="fecha_estimada_llegada"
+                    [minDate]="fechaMinimaISO"
+                    [disabled]="submitting"
+                    [required]="true"
+                    placeholder="DD/MM/YYYY"
+                  ></app-date-picker>
                   <div
                     class="invalid-feedback d-block"
-                    *ngIf="form.controls.fecha_reserva.invalid && (form.controls.fecha_reserva.dirty || form.controls.fecha_reserva.touched)"
+                    *ngIf="form.controls.fecha_estimada_llegada.invalid && (form.controls.fecha_estimada_llegada.dirty || form.controls.fecha_estimada_llegada.touched)"
                   >
-                    Selecciona una fecha valida.
+                    <span *ngIf="form.controls.fecha_estimada_llegada.errors?.['required']">
+                      Debes seleccionar una fecha estimada de llegada.
+                    </span>
                   </div>
-                </div>
-
-                <div class="col-12 col-md-6">
-                  <label for="horaInicio" class="form-label fw-semibold">Hora inicio</label>
-                  <input id="horaInicio" type="time" class="form-control" formControlName="hora_inicio" [disabled]="submitting" />
-                  <div
-                    class="invalid-feedback d-block"
-                    *ngIf="form.controls.hora_inicio.invalid && (form.controls.hora_inicio.dirty || form.controls.hora_inicio.touched)"
-                  >
-                    Selecciona una hora valida.
-                  </div>
+                  <small class="text-muted">
+                    Esta es la fecha estimada en la que el pedido debería llegar al locker. Haz clic en el calendario para seleccionar una fecha. Por defecto se establece para mañana.
+                  </small>
                 </div>
 
                 <div class="col-12">
@@ -149,9 +150,9 @@
                 </div>
 
                 <div class="col-12">
-                  <label class="form-label fw-semibold">Productos del pedido</label>
+                  <label class="form-label fw-semibold">Productos del pedido <span class="text-danger">*</span></label>
                   <p class="text-muted small mb-2">
-                    Selecciona los productos que se incluirán en esta reserva. Los productos son opcionales.
+                    Selecciona los productos que se incluirán en esta reserva. Debes seleccionar al menos un producto.
                   </p>
                   
                   <div class="mb-3">
@@ -213,8 +214,9 @@
                       </div>
                     </div>
                   </div>
-                  <div *ngIf="productosSeleccionados.length === 0 && !loadingProductos" class="text-muted small">
-                    No hay productos seleccionados. Puedes crear la reserva sin productos o agregar productos más arriba.
+                  <div *ngIf="productosSeleccionados.length === 0 && !loadingProductos" class="text-danger small">
+                    <i class="bi bi-exclamation-circle me-1"></i>
+                    Debes seleccionar al menos un producto para crear la reserva.
                   </div>
                 </div>
               </div>

@@ -35,7 +35,7 @@
                         <div class="row"><span>Nombre</span><strong>{{ nombreLocker }}</strong></div>
                         <div class="row"><span>Sede</span><strong>{{ locker.ubicacion?.nombre || 'Sin ubicación' }}</strong></div>
                         <div class="row" *ngIf="locker.tamano"><span>Tamaño</span><strong>{{ locker.tamano }}</strong></div>
-                        <div class="row"><span>Última actualización</span><strong>{{ locker.updated_at || locker.created_at | date:'short' }}</strong></div>
+                        <div class="row"><span>Última actualización</span><strong>{{ locker.updated_at || locker.created_at | date:'dd/MM/yyyy' }}</strong></div>
                     </div>
                 </article>
             </section>
@@ -70,7 +70,7 @@
                         </thead>
                         <tbody>
                             <tr *ngFor="let item of historial">
-                                <td>{{ item.created_at | date:'short' }}</td>
+                                <td>{{ item.created_at | date:'dd/MM/yyyy' }}</td>
                                 <td><strong>{{ getAccionDisplay(item.accion) }}</strong></td>
                                 <td>{{ item.descripcion }}</td>
                                 <td>{{ getUsuarioDisplay(item) }}</td>

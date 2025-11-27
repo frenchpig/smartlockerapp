@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormBuilder, Validators } from "@angular/forms";
 import { Router, RouterModule } from "@angular/router";
 import { HttpClient } from "@angular/common/http";
 import { environment } from "../../../../../environments/environment";
+import { DatePickerComponent } from "../../../../shared/components/date-picker/date-picker.component";
 
 type ClienteOption = { id: number; label: string; email: string };
 type ProductoEmpresa = { id: number; nombre: string; descripcion?: string; sku?: string; peso?: number; activo: boolean };
@@ -13,7 +14,7 @@ type RepartidorOption = { id: number; nombre: string; apellido?: string; email: 
 @Component({
   standalone: true,
   selector: "app-reserva-nueva",
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, DatePickerComponent],
   templateUrl: "./reserva-nueva.html",
   styleUrls: ["./reserva-nueva.scss"],
 })
@@ -43,23 +44,28 @@ export class ReservaNuevaComponent implements OnInit {
   submitting = false;
   errorMsg = "";
 
+  // Fecha mínima para el input de fecha (hoy) en formato ISO
+  get fechaMinimaISO(): string {
+    return new Date().toISOString().split("T")[0];
+  }
+
   form = this.fb.group({
     usuario_id: ["", Validators.required],
     ubicacion_destino_id: ["", Validators.required],
     tamano_pedido: ["", Validators.required],
-    fecha_reserva: ["", Validators.required],
-    hora_inicio: ["", Validators.required],
+    fecha_estimada_llegada: ["", Validators.required], // El componente date picker emite en formato ISO (YYYY-MM-DD)
     tipo_acceso: ["codigo_temporal", Validators.required],
     repartidor_id: [""], // Opcional: si no se selecciona, se asignará automáticamente
   });
 
   async ngOnInit(): Promise<void> {
     await this.cargarDatosIniciales();
-    const today = new Date();
-    const fechaIso = today.toISOString().split("T")[0];
+    // Establecer fecha estimada por defecto: mañana (para dar tiempo al repartidor) en formato ISO
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const fechaISO = tomorrow.toISOString().split("T")[0];
     this.form.patchValue({
-      fecha_reserva: fechaIso,
-      hora_inicio: "10:00",
+      fecha_estimada_llegada: fechaISO, // El componente date picker espera formato ISO
     });
   }
 
@@ -157,6 +163,12 @@ export class ReservaNuevaComponent implements OnInit {
       return;
     }
 
+    // Validar que se hayan seleccionado productos
+    if (this.productosSeleccionados.length === 0) {
+      this.errorMsg = "Debes seleccionar al menos un producto para la reserva.";
+      return;
+    }
+
     this.submitting = true;
     this.errorMsg = "";
 
@@ -191,24 +203,28 @@ export class ReservaNuevaComponent implements OnInit {
       return;
     }
 
+    // El componente date picker ya emite en formato ISO (YYYY-MM-DD)
+    const fechaISO = value.fecha_estimada_llegada || '';
+    if (!fechaISO) {
+      this.errorMsg = "Debes seleccionar una fecha estimada de llegada.";
+      this.submitting = false;
+      return;
+    }
+
     const payload: any = {
       usuario_id: Number(value.usuario_id),
       ubicacion_destino_id: Number(value.ubicacion_destino_id),
       tamano_pedido: tamanoPedido,
-      fecha_reserva: value.fecha_reserva,
-      hora_inicio: value.hora_inicio,
+      fecha_reserva: fechaISO, // Ya viene en formato ISO (YYYY-MM-DD) del componente
+      hora_inicio: null, // Ya no se requiere hora_inicio
       hora_fin: null,
       tipo_acceso: value.tipo_acceso,
+      articulos: articulos, // Los artículos son obligatorios
     };
 
     // Incluir repartidor_id si se seleccionó uno manualmente
     if (value.repartidor_id) {
       payload.repartidor_id = Number(value.repartidor_id);
-    }
-
-    // Solo incluir artículos si hay productos seleccionados
-    if (articulos.length > 0) {
-      payload.articulos = articulos;
     }
 
     try {

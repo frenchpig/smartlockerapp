@@ -26,9 +26,9 @@
                 <div>
                     <p class="text-muted mb-1">Pedido</p>
                     <h2 id="detalle-pedido" class="h4 mb-0">#{{ pedido.id }}</h2>
-                    <p class="mb-0 text-muted">Creado {{ pedido.creadoEl | date:'medium' }}</p>
+                    <p class="mb-0 text-muted">Creado {{ pedido.creadoEl | date:'dd/MM/yyyy' }}</p>
                     <p class="mb-0 text-muted" *ngIf="pedido.finalizadoEl">
-                        Actualizado {{ pedido.finalizadoEl | date:'medium' }}
+                        Actualizado {{ pedido.finalizadoEl | date:'dd/MM/yyyy' }}
                     </p>
                 </div>
 

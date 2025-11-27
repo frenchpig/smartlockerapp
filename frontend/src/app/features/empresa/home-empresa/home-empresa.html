@@ -132,7 +132,7 @@
                                 </td>
                                 <td data-label="Destinatario">{{ pedido.destinatario }}</td>
                                 <td data-label="Correo">{{ pedido.destinatarioEmail }}</td>
-                                <td data-label="Fecha">{{ pedido.fechaIso | date:'dd/MM/yy, h:mm a' }}</td>
+                                <td data-label="Fecha">{{ pedido.fechaIso | date:'dd/MM/yyyy' }}</td>
                                 <td class="text-end">
                                     <button class="btn btn-outline-secondary btn-sm" type="button"
                                         (click)="verDetalle(pedido.id)">

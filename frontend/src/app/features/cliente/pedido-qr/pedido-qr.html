@@ -12,7 +12,7 @@
                 <span class="dot ok" aria-hidden="true"></span>
                 <span class="ms-1">Locker <strong>{{ pedido?.locker }}</strong></span> ·
                 <span>{{ pedido?.sede }}</span> ·
-                <time [attr.datetime]="pedido?.creadoEl">{{ pedido?.creadoEl | date:'medium' }}</time>
+                <time [attr.datetime]="pedido?.creadoEl">{{ pedido?.creadoEl | date:'dd/MM/yyyy' }}</time>
             </p>
         </header>
 

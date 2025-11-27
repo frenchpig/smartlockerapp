@@ -9,7 +9,7 @@
         <span class="separator" aria-hidden="true">•</span>
         <span>{{ pedido?.sede }}</span>
         <span class="separator" aria-hidden="true">•</span>
-        <time [attr.datetime]="pedido?.creadoEl">{{ pedido?.creadoEl | date:'medium' }}</time>
+        <time [attr.datetime]="pedido?.creadoEl">{{ pedido?.creadoEl | date:'dd/MM/yyyy' }}</time>
       </p>
     </header>
 
@@ -29,7 +29,7 @@
       </p>
 
       <p class="text-muted mt-3" *ngIf="expiresAt">
-        Vence a las <time [attr.datetime]="expiresAt">{{ expiresAt | date:'shortTime' }}</time>
+        Vence el <time [attr.datetime]="expiresAt">{{ expiresAt | date:'dd/MM/yyyy' }}</time>
       </p>
     </section>
 

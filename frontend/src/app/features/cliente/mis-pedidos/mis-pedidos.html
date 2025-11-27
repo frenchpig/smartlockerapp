@@ -45,10 +45,10 @@
                                 }"></span>
                             <span class="ms-1">Locker <strong>{{ p.locker }}</strong></span> ·
                             <span>{{ p.sede }}</span> ·
-                            <time [attr.datetime]="p.creadoEl">Creado {{ p.creadoEl | date:'medium' }}</time>
+                            <time [attr.datetime]="p.creadoEl">Creado {{ p.creadoEl | date:'dd/MM/yyyy' }}</time>
                             <ng-container *ngIf="p.finalizadoEl && p.estado === 'Entregado'">
                                 · <time [attr.datetime]="p.finalizadoEl">
-                                    Entregado {{ p.finalizadoEl | date:'medium' }}
+                                    Entregado {{ p.finalizadoEl | date:'dd/MM/yyyy' }}
                                 </time>
                             </ng-container>
                         </p>

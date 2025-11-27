@@ -75,7 +75,7 @@
                 <h2 class="card-title">Mantenimiento</h2>
                 <div *ngIf="mantenimientoProximo" class="mb-3 p-3 bg-light rounded">
                     <p class="mb-2"><strong>Mantenimiento programado más cercano:</strong></p>
-                    <p class="mb-1"><small>Fecha: {{ mantenimientoProximo.fecha_programada | date:'short' }}</small></p>
+                    <p class="mb-1"><small>Fecha: {{ mantenimientoProximo.fecha_programada | date:'dd/MM/yyyy' }}</small></p>
                     <p class="mb-1" *ngIf="mantenimientoProximo.usuario">
                         <small>Responsable: {{ mantenimientoProximo.usuario.nombre }} {{ mantenimientoProximo.usuario.apellido }}</small>
                     </p>

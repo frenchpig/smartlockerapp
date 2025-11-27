@@ -1,0 +1,41 @@
+<div class="date-picker-wrapper">
+  <label *ngIf="label" [for]="id || 'datePicker'" class="form-label fw-semibold">
+    {{ label }}
+    <span *ngIf="required" class="text-danger">*</span>
+  </label>
+  
+  <div class="date-picker-input-group">
+    <input
+      type="text"
+      class="date-picker-input"
+      [id]="id || 'datePicker'"
+      [placeholder]="placeholder"
+      [value]="displayValue"
+      [disabled]="disabled"
+      maxlength="10"
+      (input)="onTextInput($event)"
+      (click)="openDatePicker()"
+    />
+    <button
+      type="button"
+      class="date-picker-button"
+      [disabled]="disabled"
+      (click)="openDatePicker()"
+      aria-label="Abrir calendario"
+    >
+      <i class="bi bi-calendar3"></i>
+    </button>
+    <!-- Date picker nativo oculto -->
+    <input
+      type="date"
+      [id]="(id || 'datePicker') + '_native'"
+      class="d-none"
+      [value]="isoValue"
+      [min]="minDate"
+      [max]="maxDate"
+      [disabled]="disabled"
+      (change)="onDatePickerChange($event)"
+    />
+  </div>
+</div>
+

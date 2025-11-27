@@ -397,11 +397,11 @@ class ReservaController extends Controller
             'tamano_pedido' => ['required', 'string', Rule::in($tamanosValidos)],
             'ubicacion_destino_id' => ['required', 'integer', 'exists:ubicaciones,id'],
             'fecha_reserva'=> ['required', 'date'],
-            'hora_inicio'  => ['required', 'date_format:H:i'],
-            'hora_fin'     => ['nullable', 'date_format:H:i', 'after:hora_inicio'],
+            'hora_inicio'  => ['nullable', 'date_format:H:i'],
+            'hora_fin'     => ['nullable', 'date_format:H:i'],
             'tipo_acceso'  => ['nullable', Rule::in(['qr','codigo_temporal'])],
             'repartidor_id' => ['nullable', 'integer', 'exists:repartidores,id'],
-            'articulos'    => ['sometimes', 'array'],
+            'articulos'    => ['required', 'array', 'min:1'],
             'articulos.*.nombre' => ['required', 'string', 'max:255'],
             'articulos.*.cantidad' => ['required', 'integer', 'min:1'],
             'articulos.*.descripcion' => ['nullable', 'string', 'max:1000'],
@@ -448,6 +448,8 @@ class ReservaController extends Controller
             'logistica_estado' => !empty($data['repartidor_id']) ? 'asignado' : 'pendiente_repartidor',
             'tipo_acceso' => $data['tipo_acceso'] ?? 'codigo_temporal',
             'codigo_acceso' => null,
+            // Si no se proporciona hora_inicio, establecerla como null (ya no es requerida)
+            'hora_inicio' => $data['hora_inicio'] ?? null,
         ]);
 
         $reserva = DB::transaction(function () use ($payload, $data, $ubicacion) {
@@ -499,8 +501,8 @@ class ReservaController extends Controller
             'empresa_id'   => ['nullable','integer','exists:usuarios,id'],
             'locker_id'    => ['required','integer','exists:lockers,id'],
             'fecha_reserva'=> ['required','date'],
-            'hora_inicio'  => ['required','date_format:H:i'],
-            'hora_fin'     => ['required','date_format:H:i','after:hora_inicio'],
+            'hora_inicio'  => ['nullable','date_format:H:i'],
+            'hora_fin'     => ['nullable','date_format:H:i'],
             'estado'       => ['required', Rule::in(['pendiente','completado','anulado'])],
             'tipo_acceso'  => ['required', Rule::in(['qr','codigo_temporal'])],
             'codigo_acceso'=> ['nullable','string','max:120'],
