@@ -175,6 +175,32 @@
       cursor: not-allowed;
     }
   }
+
+  .qr-reader-container {
+    margin-bottom: 24px;
+
+    .qr-reader {
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #f7fafc;
+      min-height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      video {
+        width: 100%;
+        height: auto;
+      }
+
+      canvas {
+        display: none;
+      }
+    }
+  }
 }
 
 .alert-error {

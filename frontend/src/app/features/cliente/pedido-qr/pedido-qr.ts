@@ -1,10 +1,11 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { AuthService } from '../../../core/auth/auth';
+import { QRCodeComponent } from 'angularx-qrcode';
 
 type Estado = 'Activo' | 'Entregado' | 'Cancelado';
 interface Pedido {
@@ -16,14 +17,27 @@ interface Pedido {
   creadoEl: string;
 }
 
+type EstadoCodigoResponse = {
+  has_code: boolean;
+  is_valid: boolean;
+  expires_at?: string;
+  code?: string;
+};
+
+type CodigoResponse = {
+  code: string;
+  expires_at: string;
+  valid_for_seconds: number;
+};
+
 @Component({
   standalone: true,
   selector: 'app-pedido-qr',
-  imports: [CommonModule, RouterModule, DatePipe, FormsModule],
+  imports: [CommonModule, RouterModule, DatePipe, FormsModule, QRCodeComponent],
   templateUrl: './pedido-qr.html',
   styleUrls: ['./pedido-qr.scss']
 })
-export class PedidoQr implements OnInit {
+export class PedidoQr implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
@@ -32,7 +46,11 @@ export class PedidoQr implements OnInit {
   pedido?: Pedido;
   cargando = true;
   errorMsg = '';
-  qrUrl?: string;
+  codigo?: string;
+  expiresAt?: string;
+  loadingCodigo = false;
+  private checkingEstado = false;
+  private pollHandle?: ReturnType<typeof setInterval>;
 
   // Modal de incidencia
   showIncidenciaModal = false;
@@ -96,22 +114,52 @@ export class PedidoQr implements OnInit {
     this.pedido = {
       id,
       estado: 'Activo',
-      locker: '#12',
-      sede: 'Metro Ñuñoa',
-      creadoEl: '2025-10-01T10:30:00Z',
+      locker: '#---',
+      sede: '---',
+      creadoEl: new Date().toISOString(),
     };
+    
+    void this.inicializar(id);
+  }
 
-    this.cargarPedido(id).then(() => {
-      // Validar que el pedido no esté cancelado o completado
-      if (this.pedido?.estado === 'Cancelado' || this.pedido?.estado === 'Entregado') {
-        alert('Este pedido no está disponible para obtener un código.');
-        this.router.navigate(['/cliente']);
-        return;
-      }
-      this.cargando = false;
-    }).catch(() => {
-      this.cargando = false;
-    });
+  ngOnDestroy(): void {
+    if (this.pollHandle) {
+      clearInterval(this.pollHandle);
+    }
+  }
+
+  private async inicializar(id: number) {
+    await this.cargarPedido(id);
+    
+    // Validar que el pedido no esté cancelado o completado
+    if (this.pedido?.estado === 'Cancelado' || this.pedido?.estado === 'Entregado') {
+      alert('Este pedido no está disponible para obtener un código.');
+      this.router.navigate(['/cliente']);
+      return;
+    }
+    
+    this.cargando = false;
+    await this.ensureCodigoDisponible();
+    this.iniciarPolling();
+  }
+
+  private iniciarPolling(): void {
+    if (this.pollHandle) {
+      clearInterval(this.pollHandle);
+    }
+
+    this.pollHandle = setInterval(() => {
+      void this.verificarEstadoCodigo();
+    }, 5000);
+  }
+
+  private mapEstado(estadoApi: string): Estado {
+    switch (estadoApi) {
+      case 'pendiente': return 'Activo';
+      case 'completado': return 'Entregado';
+      case 'anulado': return 'Cancelado';
+      default: return 'Activo';
+    }
   }
 
   private async cargarPedido(id: number): Promise<void> {
@@ -120,12 +168,9 @@ export class PedidoQr implements OnInit {
         .get<any>(`${environment.apiUrl}/reservas/${id}`)
         .toPromise();
       if (r) {
-        const estadoApi = r.estado ?? 'pendiente';
-        const estadoMapeado = estadoApi === 'pendiente' ? 'Activo' : estadoApi === 'completado' ? 'Entregado' : estadoApi === 'anulado' ? 'Cancelado' : 'Activo';
-        
         this.pedido = {
           id: r.id,
-          estado: estadoMapeado,
+          estado: this.mapEstado(r.estado),
           locker: `#${r.locker?.numero ?? r.locker?.id ?? r.locker_id ?? ''}`,
           lockerId: r.locker?.id ?? r.locker_id ?? null,
           sede: r.locker?.ubicacion?.nombre ?? '---',
@@ -137,14 +182,107 @@ export class PedidoQr implements OnInit {
     }
   }
 
+  private async ensureCodigoDisponible() {
+    if (!this.pedido) return;
+
+    this.loadingCodigo = true;
+    this.errorMsg = '';
+
+    try {
+      const tieneCodigo = await this.actualizarCodigoDesdeEstado();
+      if (!tieneCodigo) {
+        await this.generarNuevoCodigo();
+      }
+    } finally {
+      this.loadingCodigo = false;
+    }
+  }
+
+  private async actualizarCodigoDesdeEstado(): Promise<boolean> {
+    if (!this.pedido) return false;
+
+    try {
+      const estado = await this.http
+        .get<EstadoCodigoResponse>(`${environment.apiUrl}/reservas/${this.pedido.id}/codigo-temporal/estado`)
+        .toPromise();
+
+      if (estado?.has_code && estado.is_valid) {
+        if (estado.code) {
+          this.codigo = estado.code;
+        }
+        this.expiresAt = estado.expires_at;
+        this.errorMsg = '';
+        return true;
+      }
+
+      this.codigo = undefined;
+      this.expiresAt = estado?.expires_at;
+      return false;
+    } catch (error: any) {
+      console.error('No se pudo consultar el estado del código temporal', error);
+      this.errorMsg = error?.error?.message ?? 'No se pudo consultar el estado del código temporal.';
+      return false;
+    }
+  }
+
+  private async generarNuevoCodigo(): Promise<boolean> {
+    if (!this.pedido) return false;
+
+    try {
+      const data = await this.http
+        .post<CodigoResponse>(`${environment.apiUrl}/reservas/${this.pedido.id}/codigo-temporal`, {})
+        .toPromise();
+
+      if (data?.code) {
+        this.codigo = data.code;
+        this.expiresAt = data.expires_at;
+        this.errorMsg = '';
+        return true;
+      }
+
+      this.errorMsg = 'No se pudo obtener un nuevo código temporal.';
+      return false;
+    } catch (error: any) {
+      console.error('No se pudo generar un nuevo código temporal', error);
+      this.errorMsg = error?.error?.message ?? 'No se pudo generar un nuevo código temporal.';
+      return false;
+    }
+  }
+
+  private async verificarEstadoCodigo() {
+    if (!this.pedido || this.checkingEstado) return;
+
+    this.checkingEstado = true;
+
+    try {
+      const vigente = await this.actualizarCodigoDesdeEstado();
+      if (vigente) return;
+
+      await this.cargarPedido(this.pedido.id);
+      // Si el pedido está cancelado o completado, redirigir
+      if (this.pedido?.estado === 'Cancelado' || this.pedido?.estado === 'Entregado') {
+        this.router.navigate(['/cliente']);
+        return;
+      }
+      
+      if (this.pedido?.estado !== 'Activo') {
+        this.router.navigate(['/cliente']);
+        return;
+      }
+
+      await this.generarNuevoCodigo();
+    } finally {
+      this.checkingEstado = false;
+    }
+  }
+
   volver() {
     this.router.navigate(['/cliente']);
   }
 
   reintentar() {
-    this.cargando = true;
     this.errorMsg = '';
-    setTimeout(() => { this.cargando = false; }, 600);
+    void this.ensureCodigoDisponible();
   }
 
   abrirModalIncidencia() {

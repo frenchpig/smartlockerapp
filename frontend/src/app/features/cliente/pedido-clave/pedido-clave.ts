@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { AuthService } from '../../../core/auth/auth';
+import { QRCodeComponent } from 'angularx-qrcode';
 
 type Estado = 'Activo' | 'Entregado' | 'Cancelado';
 interface Pedido {
@@ -16,6 +17,7 @@ interface Pedido {
   latitud?: number | null;
   longitud?: number | null;
   creadoEl: string;
+  tipoAcceso?: 'qr' | 'codigo_temporal' | string;
 }
 
 type EstadoCodigoResponse = {
@@ -34,7 +36,7 @@ type CodigoResponse = {
 @Component({
   standalone: true,
   selector: 'app-pedido-clave',
-  imports: [CommonModule, RouterModule, DatePipe, FormsModule],
+  imports: [CommonModule, RouterModule, DatePipe, FormsModule, QRCodeComponent],
   templateUrl: './pedido-clave.html',
   styleUrls: ['./pedido-clave.scss']
 })
@@ -174,6 +176,7 @@ export class PedidoClave implements OnInit, OnDestroy {
           latitud: r.locker?.ubicacion?.latitud ?? null,
           longitud: r.locker?.ubicacion?.longitud ?? null,
           creadoEl: r.created_at ?? r.fecha_reserva ?? new Date().toISOString(),
+          tipoAcceso: r.tipo_acceso ?? 'codigo_temporal',
         };
       }
     } catch (e) {

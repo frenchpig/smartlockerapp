@@ -14,40 +14,62 @@
     </header>
 
     <section class="code-section">
-      <h2 class="section-title">Código temporal</h2>
-
-      <!-- Display de dígitos -->
-      <div class="code-display">
-        <span
-          class="code-digit"
-          *ngFor="let i of [0,1,2,3,4,5]"
-          [class.filled]="(clave.value.length) > i"
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="section-title mb-0">{{ modo === 'qr' ? 'Lector QR' : 'Código temporal' }}</h2>
+        <button 
+          type="button" 
+          class="btn btn-outline-primary btn-sm" 
+          (click)="cambiarModo()"
+          [disabled]="enviando"
         >
-          {{ clave.value[i] || '•' }}
-        </span>
+          <i class="bi" [class.bi-keyboard]="modo === 'qr'" [class.bi-qr-code-scan]="modo === 'teclado'"></i>
+          {{ modo === 'qr' ? 'Usar teclado' : 'Escanear QR' }}
+        </button>
       </div>
 
-      <!-- Keypad -->
-      <div class="keypad">
-        <button type="button" class="keypad-btn" (click)="press('1')">1</button>
-        <button type="button" class="keypad-btn" (click)="press('2')">2</button>
-        <button type="button" class="keypad-btn" (click)="press('3')">3</button>
-        <button type="button" class="keypad-btn" (click)="press('4')">4</button>
-        <button type="button" class="keypad-btn" (click)="press('5')">5</button>
-        <button type="button" class="keypad-btn" (click)="press('6')">6</button>
-        <button type="button" class="keypad-btn" (click)="press('7')">7</button>
-        <button type="button" class="keypad-btn" (click)="press('8')">8</button>
-        <button type="button" class="keypad-btn" (click)="press('9')">9</button>
-        <button type="button" class="keypad-btn keypad-btn-secondary" (click)="limpiar()" [disabled]="enviando">Limpiar</button>
-        <button type="button" class="keypad-btn" (click)="press('0')">0</button>
-        <button type="button" class="keypad-btn keypad-btn-secondary" (click)="borrar()" [disabled]="enviando">Borrar</button>
+      <!-- Modo QR: Lector -->
+      <div *ngIf="modo === 'qr'" class="qr-reader-container">
+        <div [id]="qrScannerId" #qrReader class="qr-reader"></div>
+        <p class="text-muted text-center mt-2 small">
+          Apunta la cámara hacia el código QR del cliente
+        </p>
       </div>
 
-      <!-- Botón validar -->
-      <button type="button" class="btn-validate" [disabled]="!lleno || enviando" (click)="enviar()">
-        <span *ngIf="!enviando">Validar código</span>
-        <span *ngIf="enviando">Validando...</span>
-      </button>
+      <!-- Modo Teclado: Display de dígitos y keypad -->
+      <div *ngIf="modo === 'teclado'">
+        <!-- Display de dígitos -->
+        <div class="code-display">
+          <span
+            class="code-digit"
+            *ngFor="let i of [0,1,2,3,4,5]"
+            [class.filled]="(clave.value.length) > i"
+          >
+            {{ clave.value[i] || '•' }}
+          </span>
+        </div>
+
+        <!-- Keypad -->
+        <div class="keypad">
+          <button type="button" class="keypad-btn" (click)="press('1')" [disabled]="enviando">1</button>
+          <button type="button" class="keypad-btn" (click)="press('2')" [disabled]="enviando">2</button>
+          <button type="button" class="keypad-btn" (click)="press('3')" [disabled]="enviando">3</button>
+          <button type="button" class="keypad-btn" (click)="press('4')" [disabled]="enviando">4</button>
+          <button type="button" class="keypad-btn" (click)="press('5')" [disabled]="enviando">5</button>
+          <button type="button" class="keypad-btn" (click)="press('6')" [disabled]="enviando">6</button>
+          <button type="button" class="keypad-btn" (click)="press('7')" [disabled]="enviando">7</button>
+          <button type="button" class="keypad-btn" (click)="press('8')" [disabled]="enviando">8</button>
+          <button type="button" class="keypad-btn" (click)="press('9')" [disabled]="enviando">9</button>
+          <button type="button" class="keypad-btn keypad-btn-secondary" (click)="limpiar()" [disabled]="enviando">Limpiar</button>
+          <button type="button" class="keypad-btn" (click)="press('0')" [disabled]="enviando">0</button>
+          <button type="button" class="keypad-btn keypad-btn-secondary" (click)="borrar()" [disabled]="enviando">Borrar</button>
+        </div>
+
+        <!-- Botón validar -->
+        <button type="button" class="btn-validate" [disabled]="!lleno || enviando" (click)="enviar()">
+          <span *ngIf="!enviando">Validar código</span>
+          <span *ngIf="enviando">Validando...</span>
+        </button>
+      </div>
     </section>
 
     <!-- Mensajes -->

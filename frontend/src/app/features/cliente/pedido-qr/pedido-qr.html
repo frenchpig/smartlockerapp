@@ -32,15 +32,28 @@
 
         <!-- (contenedor del QR) -->
         <section *ngIf="!cargando && !errorMsg" class="qr-card">
-            <img *ngIf="qrUrl" [src]="qrUrl" alt="QR del pedido" class="qr-img" />
-
-            <!--  mientras no hay qr -->
-            <div *ngIf="!qrUrl" class="qr-box" aria-label="Aquí se mostrará tu QR">
-                <span class="text-muted">Aquí se mostrará el QR</span>
+            <!-- Cargando código -->
+            <div *ngIf="loadingCodigo" class="placeholder">
+                <div class="spinner-border text-success" role="status" aria-label="Generando código"></div>
+                <p class="text-muted mt-3">Generando código...</p>
             </div>
 
-            <p class="text-muted mt-3">
-                Muestra este código QR en el locker para abrirlo.
+            <!-- Mostrar QR cuando hay código -->
+            <div *ngIf="!loadingCodigo && codigo" class="qr-display d-flex justify-content-center my-4">
+                <qrcode [qrdata]="codigo" [width]="256" [errorCorrectionLevel]="'M'" [margin]="2"></qrcode>
+            </div>
+
+            <!-- Mientras no hay código -->
+            <div *ngIf="!loadingCodigo && !codigo" class="qr-box" aria-label="Aquí se mostrará tu QR">
+                <span class="text-muted">Solicitando código...</span>
+            </div>
+
+            <p class="text-muted mt-3" *ngIf="codigo">
+                Muestra este código QR en el tótem del locker para abrirlo.
+            </p>
+
+            <p class="text-muted mt-2 small" *ngIf="expiresAt && codigo">
+                Vence el <time [attr.datetime]="expiresAt">{{ expiresAt | date:'dd/MM/yyyy HH:mm' }}</time>
             </p>
 
             <div class="d-flex flex-column align-items-center gap-2 mt-3">

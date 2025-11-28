@@ -14,13 +14,21 @@
     </header>
 
     <section class="codigo-panel" aria-live="polite">
-      <h3 class="h6 text-uppercase text-muted mb-3">Código temporal</h3>
+      <h3 class="h6 text-uppercase text-muted mb-3">
+        {{ pedido?.tipoAcceso === 'qr' ? 'Código QR' : 'Código temporal' }}
+      </h3>
 
       <div *ngIf="loadingCodigo" class="estado estado-loading">
         <div class="spinner-border text-success" role="status" aria-label="Cargando código temporal"></div>
       </div>
 
-      <div *ngIf="!loadingCodigo && codigo" class="codigo-display" aria-label="Código temporal en curso">
+      <!-- Mostrar QR cuando tipoAcceso es 'qr' -->
+      <div *ngIf="!loadingCodigo && codigo && pedido?.tipoAcceso === 'qr'" class="qr-display d-flex justify-content-center my-4">
+        <qrcode [qrdata]="codigo" [width]="256" [errorCorrectionLevel]="'M'" [margin]="2"></qrcode>
+      </div>
+
+      <!-- Mostrar código numérico cuando tipoAcceso es 'codigo_temporal' -->
+      <div *ngIf="!loadingCodigo && codigo && pedido?.tipoAcceso !== 'qr'" class="codigo-display" aria-label="Código temporal en curso">
         <span class="codigo-digit" *ngFor="let digit of codigoDigits">{{ digit }}</span>
       </div>
 
@@ -29,7 +37,7 @@
       </p>
 
       <p class="text-muted mt-3" *ngIf="expiresAt">
-        Vence el <time [attr.datetime]="expiresAt">{{ expiresAt | date:'dd/MM/yyyy' }}</time>
+        Vence el <time [attr.datetime]="expiresAt">{{ expiresAt | date:'dd/MM/yyyy HH:mm' }}</time>
       </p>
     </section>
 

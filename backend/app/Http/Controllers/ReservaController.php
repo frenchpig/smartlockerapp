@@ -1086,11 +1086,17 @@ class ReservaController extends Controller
         // Generar un código numérico de 6 dígitos
         $code = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
-        // Guardar hash y tipo de acceso
-        $reserva->update([
-            'tipo_acceso'   => 'codigo_temporal',
+        // Guardar hash y tipo de acceso (mantener tipo_acceso si ya es 'qr', sino usar 'codigo_temporal')
+        $updateData = [
             'codigo_acceso' => hash('sha256', $code),
-        ]);
+        ];
+        
+        // Solo cambiar tipo_acceso si no es 'qr' (para mantener consistencia cuando se muestra como QR)
+        if ($reserva->tipo_acceso !== 'qr') {
+            $updateData['tipo_acceso'] = 'codigo_temporal';
+        }
+        
+        $reserva->update($updateData);
 
         $expiresAt = now()->addMinutes(5);
         Cache::put('reserva_code_'.$reserva->id, $code, $expiresAt);
@@ -1170,7 +1176,7 @@ class ReservaController extends Controller
         $hash = hash('sha256', $data['code']);
 
         $reserva = Reserva::with(['locker.ubicacion','repartidor'])
-            ->where('tipo_acceso', 'codigo_temporal')
+            ->whereIn('tipo_acceso', ['codigo_temporal', 'qr'])
             ->where('codigo_acceso', $hash)
             ->first();
 
@@ -1238,7 +1244,7 @@ class ReservaController extends Controller
 
     private function calcularEstadoCodigoTemporal(Reserva $reserva): array
     {
-        $has = !empty($reserva->codigo_acceso) && $reserva->tipo_acceso === 'codigo_temporal';
+        $has = !empty($reserva->codigo_acceso) && in_array($reserva->tipo_acceso, ['codigo_temporal', 'qr']);
         $expiresAt = $reserva->updated_at?->copy()->addMinutes(5);
         $isValid = $has && $expiresAt && now()->lt($expiresAt);
 
