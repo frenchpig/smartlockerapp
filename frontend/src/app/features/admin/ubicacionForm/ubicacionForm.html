@@ -29,7 +29,7 @@
                         </div>
 
                         <!-- Formulario -->
-                        <form [formGroup]="ubicacionForm" (ngSubmit)="guardar()" *ngIf="!loading || editando">
+                        <form [formGroup]="ubicacionForm" (ngSubmit)="guardar()" *ngIf="!loading">
                             <div class="mb-3">
                                 <label for="nombre" class="form-label">
                                     Nombre <span class="text-danger">*</span>

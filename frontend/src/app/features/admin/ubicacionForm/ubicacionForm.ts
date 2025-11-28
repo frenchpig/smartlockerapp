@@ -78,10 +78,12 @@ export class UbicacionForm implements OnInit {
         if (id) {
             this.editando = true;
             this.ubicacionId = parseInt(id);
-            await Promise.all([
-                this.cargarUbicacion(this.ubicacionId),
-                this.cargarLockers()
-            ]);
+            // Cargar ubicación primero para llenar el formulario
+            await this.cargarUbicacion(this.ubicacionId);
+            // Luego cargar lockers
+            if (this.ubicacionId) {
+                await this.cargarLockers();
+            }
         }
     }
 
@@ -90,23 +92,51 @@ export class UbicacionForm implements OnInit {
         this.error = '';
 
         try {
-            const ubicacion = await firstValueFrom(
+            const response: any = await firstValueFrom(
                 this.http.get<Ubicacion>(`${environment.apiUrl}/ubicaciones/${id}`)
             );
 
+            console.log('=== RESPUESTA COMPLETA DEL API ===');
+            console.log(response);
+            console.log('==================================');
+
+            // Manejar respuesta que puede venir con o sin wrapper 'data'
+            const ubicacion = response?.data || response;
+            
+            console.log('=== DATOS DE UBICACIÓN PARSEADOS ===');
+            console.log(ubicacion);
+            console.log('====================================');
+
+            if (!ubicacion) {
+                throw new Error('No se recibieron datos de la ubicación');
+            }
+
             this.ubicacion = ubicacion;
 
-            // Cargar todos los datos existentes de la ubicación
-            this.ubicacionForm.patchValue({
-                nombre: ubicacion.nombre || '',
-                latitud: ubicacion.latitud !== null && ubicacion.latitud !== undefined ? ubicacion.latitud.toString() : '',
-                longitud: ubicacion.longitud !== null && ubicacion.longitud !== undefined ? ubicacion.longitud.toString() : '',
-                device_username: ubicacion.device_username || '',
-                device_password: '', // No cargar la contraseña por seguridad
-            });
+            // Preparar los valores para el formulario
+            const nombre = ubicacion.nombre || '';
+            const latitud = (ubicacion.latitud !== null && ubicacion.latitud !== undefined && ubicacion.latitud !== '') 
+                ? String(ubicacion.latitud) 
+                : '';
+            const longitud = (ubicacion.longitud !== null && ubicacion.longitud !== undefined && ubicacion.longitud !== '') 
+                ? String(ubicacion.longitud) 
+                : '';
+            const deviceUsername = ubicacion.device_username || '';
+
+            // Cargar todos los datos existentes de la ubicación en el formulario
+            // Usar setTimeout para asegurar que el formulario esté completamente inicializado
+            setTimeout(() => {
+                this.ubicacionForm.setValue({
+                    nombre: nombre,
+                    latitud: latitud,
+                    longitud: longitud,
+                    device_username: deviceUsername,
+                    device_password: '', // Siempre en blanco al cargar (la contraseña no se devuelve por seguridad)
+                }, { emitEvent: false });
+            }, 0);
         } catch (err: any) {
             console.error('Error cargando ubicación:', err);
-            this.error = 'No se pudo cargar la ubicación.';
+            this.error = err?.error?.message || 'No se pudo cargar la ubicación.';
         } finally {
             this.loading = false;
         }
@@ -279,45 +309,57 @@ export class UbicacionForm implements OnInit {
         this.success = '';
 
         try {
+            const formValue = this.ubicacionForm.value;
             const data: any = {
-                nombre: this.ubicacionForm.value.nombre,
-                latitud: this.ubicacionForm.value.latitud ? parseFloat(this.ubicacionForm.value.latitud) : null,
-                longitud: this.ubicacionForm.value.longitud ? parseFloat(this.ubicacionForm.value.longitud) : null,
+                nombre: formValue.nombre,
+                latitud: formValue.latitud && formValue.latitud.trim() !== '' 
+                    ? parseFloat(formValue.latitud) 
+                    : null,
+                longitud: formValue.longitud && formValue.longitud.trim() !== '' 
+                    ? parseFloat(formValue.longitud) 
+                    : null,
             };
 
-            // Solo incluir device_username si tiene valor
-            if (this.ubicacionForm.value.device_username !== null && this.ubicacionForm.value.device_username !== '') {
-                data.device_username = this.ubicacionForm.value.device_username;
+            // Incluir device_username (puede ser null o vacío)
+            if (formValue.device_username !== null && formValue.device_username !== undefined && formValue.device_username.trim() !== '') {
+                data.device_username = formValue.device_username.trim();
             } else {
                 data.device_username = null;
             }
 
-            // Solo incluir device_password si tiene valor (para no sobrescribir al editar)
-            if (this.ubicacionForm.value.device_password && this.ubicacionForm.value.device_password.trim() !== '') {
-                data.device_password = this.ubicacionForm.value.device_password;
-            } else if (!this.editando) {
-                // Si es creación y no hay contraseña, enviar null
-                data.device_password = null;
+            // Manejar device_password:
+            // - Si es creación: incluir siempre (puede ser null)
+            // - Si es edición: solo incluir si el usuario escribió algo (no está vacío)
+            const passwordValue = formValue.device_password?.trim() || '';
+            if (this.editando) {
+                // En edición, solo enviar la contraseña si el usuario escribió algo
+                if (passwordValue !== '') {
+                    data.device_password = passwordValue;
+                }
+                // Si está vacío, no incluir el campo para que el backend mantenga la contraseña actual
+            } else {
+                // En creación, siempre incluir el campo (puede ser null)
+                data.device_password = passwordValue !== '' ? passwordValue : null;
             }
-            // Si es edición y no hay contraseña, no incluir el campo (no se actualiza)
 
             if (this.editando && this.ubicacionId) {
-                // Actualizar
-                await firstValueFrom(
+                // Actualizar ubicación existente
+                const response: any = await firstValueFrom(
                     this.http.put(`${environment.apiUrl}/ubicaciones/${this.ubicacionId}`, data)
                 );
                 this.success = 'Ubicación actualizada exitosamente.';
                 
-                // Recargar datos
+                // Recargar datos actualizados
                 await Promise.all([
                     this.cargarUbicacion(this.ubicacionId),
                     this.cargarLockers()
                 ]);
             } else {
-                // Crear
-                const nuevaUbicacion = await firstValueFrom(
+                // Crear nueva ubicación
+                const response: any = await firstValueFrom(
                     this.http.post<Ubicacion>(`${environment.apiUrl}/ubicaciones`, data)
                 );
+                const nuevaUbicacion = response?.data || response;
                 this.success = 'Ubicación creada exitosamente.';
                 
                 // Redirigir a la página de edición para poder gestionar lockers
