@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Incidencia;
 use App\Models\Reserva;
+use App\Models\Locker;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class IncidenciaController extends Controller
@@ -107,6 +109,44 @@ class IncidenciaController extends Controller
             ], 422);
         }
 
+        // Si hay reserva_id y es tipo locker, intentar asignar un nuevo locker
+        // SOLO si el reportante es un repartidor
+        $nuevoLockerAsignado = false;
+        $mensajeLocker = null;
+        
+        // Verificar si el usuario que reporta es un repartidor
+        $usuarioReportante = \App\Models\Usuario::find($data['usuario_id']);
+        $esRepartidor = $usuarioReportante && $usuarioReportante->rol === 'repartidor';
+        
+        if (!empty($data['reserva_id']) && $data['tipo'] === 'locker' && $esRepartidor) {
+            $reserva = Reserva::with(['empresa', 'repartidor', 'usuario', 'articulos', 'locker.ubicacion'])->find($data['reserva_id']);
+            
+            if ($reserva && $reserva->logistica_estado === 'en_camino' && $reserva->ubicacion_destino_id && $reserva->tamano_pedido) {
+                // Verificar que el repartidor que reporta es el asignado a la reserva
+                $repartidorReportante = \App\Models\Repartidor::where('usuario_id', $data['usuario_id'])->first();
+                
+                if ($repartidorReportante && $reserva->repartidor_id === $repartidorReportante->id) {
+                    // Intentar buscar un nuevo locker disponible del mismo tamaño en la misma ubicación
+                    $nuevoLocker = $this->buscarLockerDisponible($reserva->ubicacion_destino_id, $reserva->tamano_pedido);
+                    
+                    if ($nuevoLocker) {
+                        // Asignar el nuevo locker a la reserva
+                        DB::transaction(function () use ($reserva, $nuevoLocker) {
+                            $reserva->locker_id = $nuevoLocker->id;
+                            $nuevoLocker->estado = 'ocupado';
+                            $nuevoLocker->save();
+                            $reserva->save();
+                        });
+                        $nuevoLockerAsignado = true;
+                        $mensajeLocker = "Se asignó un nuevo locker (#{$nuevoLocker->numero}) a la reserva.";
+                    } else {
+                        // No hay lockers disponibles
+                        $mensajeLocker = "No hay lockers disponibles del tamaño '{$reserva->tamano_pedido}' en esta ubicación. Deberás cancelar la entrega del pedido.";
+                    }
+                }
+            }
+        }
+
         // Si hay reserva_id, cargar y almacenar todos los datos del pedido
         if (!empty($data['reserva_id'])) {
             $reserva = Reserva::with(['empresa', 'repartidor', 'usuario', 'articulos', 'locker.ubicacion'])->find($data['reserva_id']);
@@ -157,7 +197,18 @@ class IncidenciaController extends Controller
 
         $incidencia = Incidencia::create($data);
 
-        return response()->json($incidencia->load(['locker', 'usuario', 'reserva.empresa', 'reserva.repartidor', 'reserva.articulos']), 201);
+        $response = [
+            'incidencia' => $incidencia->load(['locker', 'usuario', 'reserva.empresa', 'reserva.repartidor', 'reserva.articulos']),
+            'nuevo_locker_asignado' => $nuevoLockerAsignado,
+            'mensaje' => $mensajeLocker,
+        ];
+
+        // Si no se pudo asignar un nuevo locker, retornar un código especial
+        if (!$nuevoLockerAsignado && $mensajeLocker) {
+            return response()->json($response, 422);
+        }
+
+        return response()->json($response, 201);
     }
 
     public function update(Request $request, Incidencia $incidencia)
@@ -247,6 +298,30 @@ class IncidenciaController extends Controller
         $incidencia->update($data);
 
         return $incidencia->load(['locker', 'usuario', 'reserva.empresa', 'reserva.repartidor', 'reserva.articulos']);
+    }
+
+    /**
+     * Busca un locker disponible del tamaño especificado en la ubicación indicada
+     * (Mismo método que en ReservaController)
+     */
+    private function buscarLockerDisponible(int $ubicacionId, string $tamano): ?Locker
+    {
+        $locker = Locker::where('ubicacion_id', $ubicacionId)
+            ->where('tamano', $tamano)
+            ->where('estado', 'activo')
+            ->whereDoesntHave('reservas', function ($query) {
+                $query->where('estado', 'pendiente');
+            })
+            ->whereDoesntHave('reservas', function ($query) {
+                $query->where('logistica_estado', 'en_camino');
+            })
+            ->whereDoesntHave('reservas', function ($query) {
+                $query->where('estado', 'pendiente')
+                      ->where('logistica_estado', 'completado');
+            })
+            ->first();
+
+        return $locker;
     }
 
     public function destroy(Incidencia $incidencia)

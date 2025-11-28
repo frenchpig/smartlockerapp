@@ -381,6 +381,25 @@
           </div>
         </div>
 
+        <div class="mb-3">
+          <label for="razonCancelacion" class="form-label fw-semibold">
+            Razón de cancelación <span class="text-danger">*</span>
+          </label>
+          <select
+            id="razonCancelacion"
+            class="form-select"
+            [(ngModel)]="razonCancelacion"
+            [disabled]="cancelandoEntrega">
+            <option value="">Selecciona una razón</option>
+            <option *ngFor="let razon of razonesCancelacion" [value]="razon.value">
+              {{ razon.label }}
+            </option>
+          </select>
+          <small class="text-muted">
+            Es obligatorio indicar la razón por la cual se cancela la entrega.
+          </small>
+        </div>
+
         <p class="text-muted small mb-0">
           <i class="bi bi-info-circle me-1"></i>
           Esta acción no se puede deshacer. El locker será liberado y el pedido quedará anulado.
@@ -398,7 +417,7 @@
           type="button"
           class="btn btn-danger"
           (click)="confirmarCancelarEntrega()"
-          [disabled]="cancelandoEntrega">
+          [disabled]="cancelandoEntrega || !razonCancelacion">
           <span *ngIf="cancelandoEntrega" class="spinner-border spinner-border-sm me-1" role="status"></span>
           <i class="bi bi-x-circle me-1" *ngIf="!cancelandoEntrega"></i>
           Sí, cancelar entrega

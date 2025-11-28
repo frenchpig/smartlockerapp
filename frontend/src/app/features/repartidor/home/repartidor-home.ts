@@ -94,6 +94,15 @@ export class RepartidorHome implements OnInit {
   mostrarModalCancelar = false;
   reservaCancelar: ReservaAsignada | null = null;
   cancelandoEntrega = false;
+  razonCancelacion = '';
+  razonesCancelacion: { value: string; label: string }[] = [
+    { value: 'locker_no_disponible', label: 'No hay lockers disponibles en la ubicación' },
+    { value: 'locker_dañado', label: 'Locker dañado o no funcional' },
+    { value: 'problema_ubicacion', label: 'Problema con la ubicación del locker' },
+    { value: 'pedido_incorrecto', label: 'El pedido no corresponde o está incorrecto' },
+    { value: 'imposible_acceso', label: 'Imposible acceder al locker' },
+    { value: 'otro', label: 'Otra razón' },
+  ];
   problemasLocker: { value: string; label: string }[] = [
     { value: 'no_se_abre', label: 'No se abre' },
     { value: 'no_se_cierra', label: 'No se cierra' },
@@ -274,17 +283,29 @@ export class RepartidorHome implements OnInit {
   cerrarModalCancelar(): void {
     this.mostrarModalCancelar = false;
     this.reservaCancelar = null;
+    this.razonCancelacion = '';
   }
 
   async confirmarCancelarEntrega(): Promise<void> {
     if (!this.reservaCancelar || this.cancelandoEntrega) return;
+
+    if (!this.razonCancelacion) {
+      this.toastService.warning('Debes seleccionar una razón para cancelar la entrega.');
+      return;
+    }
 
     const reservaId = this.reservaCancelar.id;
     this.cancelandoEntrega = true;
     this.actionLoading.add(reservaId);
 
     try {
-      await this.http.post(`${environment.apiUrl}/reservas/${reservaId}/cancelar-entrega`, {}).toPromise();
+      const payload: any = {};
+      if (this.razonCancelacion) {
+        const razonSeleccionada = this.razonesCancelacion.find(r => r.value === this.razonCancelacion);
+        payload.razon_cancelacion = razonSeleccionada ? razonSeleccionada.label : this.razonCancelacion;
+      }
+
+      await this.http.post(`${environment.apiUrl}/reservas/${reservaId}/cancelar-entrega`, payload).toPromise();
       this.cerrarModalCancelar();
       await this.cargarAsignaciones(this.page);
       this.toastService.success('Entrega cancelada exitosamente. El pedido ha sido anulado.');
@@ -593,12 +614,50 @@ export class RepartidorHome implements OnInit {
         estado: 'pendiente',
       };
 
-      await this.http.post(`${environment.apiUrl}/incidencias`, payload).toPromise();
-      alert('Incidencia reportada exitosamente. Los administradores serán notificados.');
+      const response: any = await this.http.post(`${environment.apiUrl}/incidencias`, payload).toPromise();
+      
+      // Verificar si se asignó un nuevo locker
+      if (response?.nuevo_locker_asignado) {
+        this.toastService.success(
+          `Incidencia reportada exitosamente. ${response.mensaje || 'Se asignó un nuevo locker automáticamente.'}`
+        );
+        // Recargar las asignaciones para mostrar el nuevo locker
+        await this.cargarAsignaciones(this.page);
+      } else if (response?.mensaje) {
+        // No hay lockers disponibles
+        this.toastService.warning(response.mensaje);
+        this.toastService.info('Por favor, cancela la entrega del pedido indicando la razón.');
+      } else {
+        this.toastService.success('Incidencia reportada exitosamente. Los administradores serán notificados.');
+      }
+      
       this.cerrarModalIncidencia();
     } catch (error: any) {
       console.error('Error reportando incidencia', error);
-      alert(error?.error?.message ?? 'No se pudo reportar la incidencia. Intenta nuevamente.');
+      
+      // Si el error es 422 y tiene información sobre lockers no disponibles
+      // El backend retorna 422 pero con la incidencia creada y el mensaje
+      if (error?.status === 422 && error?.error) {
+        const errorData = error.error;
+        
+        // Verificar si la incidencia se creó exitosamente pero no hay lockers disponibles
+        if (errorData.incidencia && errorData.mensaje) {
+          // La incidencia se reportó correctamente, pero no hay lockers disponibles
+          this.toastService.warning(errorData.mensaje);
+          this.toastService.info('Por favor, cancela la entrega del pedido indicando la razón.');
+          this.cerrarModalIncidencia();
+          return;
+        }
+        
+        // Si tiene mensaje pero no incidencia, es un error de validación
+        if (errorData.mensaje) {
+          this.toastService.error(errorData.mensaje);
+          return;
+        }
+      }
+      
+      // Error genérico
+      this.toastService.error(error?.error?.message ?? 'No se pudo reportar la incidencia. Intenta nuevamente.');
     } finally {
       this.reportandoIncidencia = false;
     }

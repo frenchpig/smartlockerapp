@@ -893,7 +893,11 @@ class ReservaController extends Controller
             return response()->json(['message' => 'La reserva ya fue cancelada'], 422);
         }
 
-        $reserva = DB::transaction(function () use ($reserva) {
+        $data = $request->validate([
+            'razon_cancelacion' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $reserva = DB::transaction(function () use ($reserva, $data) {
             $lockerId = $reserva->locker_id;
             $estadoAnterior = $reserva->estado;
             
@@ -921,10 +925,15 @@ class ReservaController extends Controller
 
             // Registrar en historial de empresa
             if ($reserva->empresa_id) {
+                $mensajeCancelacion = 'Entrega cancelada por repartidor';
+                if (!empty($data['razon_cancelacion'])) {
+                    $mensajeCancelacion .= ': ' . $data['razon_cancelacion'];
+                }
+                
                 HistorialEmpresaService::registrarReservaCancelada(
                     $reserva->empresa_id,
                     $reserva->id,
-                    'Entrega cancelada por repartidor'
+                    $mensajeCancelacion
                 );
             }
 
