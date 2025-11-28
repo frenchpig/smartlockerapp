@@ -67,36 +67,55 @@ class ReservaController extends Controller
         $perPage = (int) $request->query('per_page', 5);
         $perPage = max(1, min(1000, $perPage)); // Aumentado límite para permitir obtener todos los datos
 
+        // Por defecto, mostrar historial completo (todos los estados)
+        // Si se especifica solo_activos=true, entonces excluir completados
+        $soloActivos = $request->query('solo_activos', 'false');
+        $mostrarHistorialCompleto = ($soloActivos !== 'true' && $soloActivos !== true);
+
         $query = Reserva::with(['usuario', 'locker.ubicacion', 'ubicacionDestino', 'repartidor'])
             ->where('empresa_id', $user->id)
-            ->where('logistica_estado', '!=', 'completado') // Solo pedidos no entregados
             ->where(function ($q) use ($user) {
                 // Incluir pedidos sin repartidor (pendiente_repartidor) O pedidos con repartidor de la empresa
                 $q->whereNull('repartidor_id')
                   ->orWhereHas('repartidor', function ($repQuery) use ($user) {
                       $repQuery->where('empresa_id', $user->id);
                   });
-            })
-            ->orderByDesc('created_at');
+            });
+
+        // Solo excluir completados si se solicita solo activos
+        if (!$mostrarHistorialCompleto) {
+            $query->where('logistica_estado', '!=', 'completado');
+        }
+
+        $query->orderByDesc('created_at');
 
         if ($estado = $request->query('estado')) {
             $query->where('estado', $estado);
         }
 
-        if ($ubicacion = trim((string) $request->query('ubicacion', ''))) {
-            $query->whereHas('locker.ubicacion', function ($ubicacionQuery) use ($ubicacion) {
-                $ubicacionQuery->where('nombre', 'like', "%{$ubicacion}%");
+        // Filtro por ubicación (por ID o nombre)
+        if ($ubicacionId = $request->query('ubicacion_id')) {
+            // Si se proporciona un ID, filtrar por ese ID específico
+            // Buscar tanto en lockers asignados como en ubicación de destino
+            $query->where(function ($q) use ($ubicacionId) {
+                $q->whereHas('locker', function ($lockerQuery) use ($ubicacionId) {
+                    $lockerQuery->where('ubicacion_id', $ubicacionId);
+                })->orWhere('ubicacion_destino_id', $ubicacionId);
+            });
+        } elseif ($ubicacion = trim((string) $request->query('ubicacion', ''))) {
+            // Si se proporciona texto, buscar por nombre
+            $query->where(function ($q) use ($ubicacion) {
+                $q->whereHas('locker.ubicacion', function ($ubicacionQuery) use ($ubicacion) {
+                    $ubicacionQuery->where('nombre', 'like', "%{$ubicacion}%");
+                })->orWhereHas('ubicacionDestino', function ($ubicacionQuery) use ($ubicacion) {
+                    $ubicacionQuery->where('nombre', 'like', "%{$ubicacion}%");
+                });
             });
         }
 
         if ($logistica = trim((string) $request->query('logistica_estado', ''))) {
-            // Si se especifica logistica_estado, aún así excluimos completados
-            if ($logistica !== 'completado') {
-                $query->where('logistica_estado', $logistica);
-            } else {
-                // Si específicamente piden completados, no retornar nada
-                $query->whereRaw('1 = 0');
-            }
+            // Si se especifica logistica_estado, aplicar el filtro
+            $query->where('logistica_estado', $logistica);
         }
 
         if ($email = trim((string) $request->query('email', ''))) {
@@ -108,6 +127,10 @@ class ReservaController extends Controller
 
         if ($fechaDesde = trim((string) $request->query('fecha_desde', ''))) {
             $query->where('created_at', '>=', $fechaDesde);
+        }
+
+        if ($fechaHasta = trim((string) $request->query('fecha_hasta', ''))) {
+            $query->where('created_at', '<=', $fechaHasta . ' 23:59:59');
         }
 
         $items = $query->paginate($perPage);

@@ -8,7 +8,7 @@
                 <div class="card border-0 shadow-sm mb-3">
                     <div class="card-body">
                         <div class="row g-2 align-items-end">
-                            <div class="col-12 col-md-4">
+                            <div class="col-12 col-md-6 col-lg-3">
                                 <label for="fEstado" class="form-label text-muted mb-1">Estado</label>
                                 <select id="fEstado" class="form-select form-select-sm" [(ngModel)]="filtroEstado">
                                     <option value="">Todos</option>
@@ -17,7 +17,7 @@
                                     <option value="anulado">Anulado</option>
                                 </select>
                             </div>
-                            <div class="col-12 col-md-4">
+                            <div class="col-12 col-md-6 col-lg-3">
                                 <label for="fLogistica" class="form-label text-muted mb-1">Logística</label>
                                 <select id="fLogistica" class="form-select form-select-sm" [(ngModel)]="filtroLogistica">
                                     <option value="">Todas</option>
@@ -27,14 +27,38 @@
                                     <option value="completado">Completado</option>
                                 </select>
                             </div>
-                            <div class="col-12 col-md-4 d-flex gap-2 justify-content-end">
-                                <button class="btn btn-outline-secondary btn-sm" type="button" (click)="limpiarFiltros()">
+                            <div class="col-12 col-md-6 col-lg-3">
+                                <label for="fUbicacion" class="form-label text-muted mb-1">Ubicación</label>
+                                <select id="fUbicacion" class="form-select form-select-sm" 
+                                        [(ngModel)]="filtroUbicacionId" [disabled]="cargandoUbicaciones">
+                                    <option [ngValue]="null">Todas las ubicaciones</option>
+                                    <option *ngFor="let ubi of ubicaciones" [ngValue]="ubi.id">{{ ubi.nombre }}</option>
+                                </select>
+                                <small class="text-muted" *ngIf="cargandoUbicaciones">Cargando ubicaciones...</small>
+                            </div>
+                            <div class="col-12 col-md-6 col-lg-3">
+                                <label for="fEmail" class="form-label text-muted mb-1">Email destinatario</label>
+                                <input id="fEmail" type="email" class="form-control form-control-sm" 
+                                       [(ngModel)]="filtroEmail" placeholder="usuario@dominio.cl" />
+                            </div>
+                            <div class="col-12 col-md-6 col-lg-3">
+                                <label for="fFechaDesde" class="form-label text-muted mb-1">Fecha desde</label>
+                                <input id="fFechaDesde" type="date" class="form-control form-control-sm" 
+                                       [(ngModel)]="filtroFechaDesde" />
+                            </div>
+                            <div class="col-12 col-md-6 col-lg-3">
+                                <label for="fFechaHasta" class="form-label text-muted mb-1">Fecha hasta</label>
+                                <input id="fFechaHasta" type="date" class="form-control form-control-sm" 
+                                       [(ngModel)]="filtroFechaHasta" />
+                            </div>
+                            <div class="col-12 col-md-6 col-lg-6 d-flex gap-2 justify-content-end">
+                                <button class="btn btn-outline-secondary btn-sm" type="button" (click)="limpiarFiltros()" [disabled]="cargando">
                                     Limpiar
                                 </button>
-                                <button class="btn btn-success btn-sm" type="button" (click)="aplicarFiltros()">
+                                <button class="btn btn-success btn-sm" type="button" (click)="aplicarFiltros()" [disabled]="cargando">
                                     Aplicar
                                 </button>
-                                <button class="btn btn-outline-success btn-sm" type="button" (click)="cargarPedidos(page)">
+                                <button class="btn btn-outline-success btn-sm" type="button" (click)="cargarPedidos(page)" [disabled]="cargando">
                                     <i class="bi bi-arrow-clockwise"></i>
                                 </button>
                             </div>
@@ -58,6 +82,7 @@
                             <tr>
                                 <th class="text-nowrap">ID</th>
                                 <th>Locker</th>
+                                <th>Ubicación</th>
                                 <th>Estado</th>
                                 <th>Logística</th>
                                 <th>Destinatario</th>
@@ -69,7 +94,7 @@
 
                         <tbody>
                             <tr *ngIf="!cargando && !pageItems.length">
-                                <td colspan="8" class="text-center text-muted py-4">
+                                <td colspan="9" class="text-center text-muted py-4">
                                     No se encontraron pedidos.
                                 </td>
                             </tr>
@@ -78,6 +103,7 @@
                                 <tr *ngFor="let p of pageItems">
                                     <td class="text-nowrap">#{{ p.id }}</td>
                                     <td>{{ p.locker }}</td>
+                                    <td>{{ p.ubicacion }}</td>
                                     <td>
                                         <span [class]="badgeClasses(p.estado)">{{ p.estado }}</span>
                                     </td>
@@ -86,7 +112,10 @@
                                             {{ p.logisticaLabel }}
                                         </span>
                                     </td>
-                                    <td>{{ p.destinatario }}</td>
+                                    <td>
+                                        <strong class="d-block">{{ p.destinatario }}</strong>
+                                        <small class="text-muted">{{ p.destinatarioEmail }}</small>
+                                    </td>
                                     <td>
                                         <span *ngIf="tieneRepartidor(p)" class="badge bg-info-subtle text-info-emphasis">
                                             {{ p.repartidor!.nombre_completo }}
@@ -117,7 +146,7 @@
                             </ng-container>
 
                             <tr *ngIf="cargando">
-                                <td colspan="8" class="py-4">
+                                <td colspan="9" class="py-4">
                                     <div class="d-flex align-items-center justify-content-center gap-2 text-muted">
                                         <div class="spinner-border spinner-border-sm"></div>
                                         Cargando…

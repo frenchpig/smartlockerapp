@@ -6,16 +6,19 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { HeaderEmpresaComponent } from '../shared/header-empresa/header-empresa.component';
 
-type EstadoPedido = 'Pendiente' | 'En camino' | 'Entregado';
+type EstadoPedido = 'Pendiente' | 'En camino' | 'Entregado' | 'Anulado';
 
 interface PedidoEmpresa {
   id: number;
   locker: string;
+  ubicacion: string;
   estado: EstadoPedido;
+  estadoReal: string; // Estado real del backend (pendiente, completado, anulado)
   logisticaEstado: string;
   logisticaLabel: string;
   logisticaBadge: string;
   destinatario: string;
+  destinatarioEmail: string;
   fecha: string;
   repartidor?: {
     id: number;
@@ -49,6 +52,14 @@ export class Pedidos {
   // Filtros
   filtroEstado = '';
   filtroLogistica = '';
+  filtroUbicacionId: number | null = null;
+  filtroEmail = '';
+  filtroFechaDesde = '';
+  filtroFechaHasta = '';
+
+  // Ubicaciones para el filtro
+  ubicaciones: { id: number; nombre: string }[] = [];
+  cargandoUbicaciones = false;
 
   cargando = true;
   pedidos: PedidoEmpresa[] = [];
@@ -56,8 +67,30 @@ export class Pedidos {
   asignandoRepartidor = new Set<number>(); // IDs de pedidos en proceso de asignación
   mensaje = { texto: '', tipo: '' as 'success' | 'error' | '' };
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
+    await this.cargarUbicaciones();
     void this.cargarPedidos();
+  }
+
+  async cargarUbicaciones(): Promise<void> {
+    this.cargandoUbicaciones = true;
+    try {
+      const res: any = await this.http
+        .get(`${environment.apiUrl}/empresa/mis-ubicaciones`)
+        .toPromise();
+      
+      this.ubicaciones = (res?.ubicaciones ?? []).map((u: any) => ({
+        id: u.id,
+        nombre: u.nombre,
+      })).sort((a: { id: number; nombre: string }, b: { id: number; nombre: string }) => 
+        a.nombre.localeCompare(b.nombre)
+      );
+    } catch (error) {
+      console.error('Error cargando ubicaciones', error);
+      this.ubicaciones = [];
+    } finally {
+      this.cargandoUbicaciones = false;
+    }
   }
 
   async cargarPedidos(page = 1) {
@@ -66,11 +99,18 @@ export class Pedidos {
       const params: Record<string, string | number> = {
         page,
         per_page: this.pageSize,
+        solo_activos: 'false', // Mostrar historial completo por defecto
       };
 
       // Agregar filtros si existen
       if (this.filtroEstado) params['estado'] = this.filtroEstado;
       if (this.filtroLogistica) params['logistica_estado'] = this.filtroLogistica;
+      if (this.filtroUbicacionId !== null && this.filtroUbicacionId !== undefined) {
+        params['ubicacion_id'] = this.filtroUbicacionId;
+      }
+      if (this.filtroEmail) params['email'] = this.filtroEmail;
+      if (this.filtroFechaDesde) params['fecha_desde'] = this.filtroFechaDesde;
+      if (this.filtroFechaHasta) params['fecha_hasta'] = this.filtroFechaHasta;
 
       const res = await this.http
         .get<PaginatedResponse<any>>(`${environment.apiUrl}/reservas/empresa/mis-ultimas`, { params })
@@ -99,12 +139,20 @@ export class Pedidos {
     const lockerNumero = data?.locker?.numero ?? data?.locker?.id ?? data?.locker_id ?? '';
     const locker = lockerNumero ? `#${lockerNumero}` : 'N/D';
 
+    // Obtener ubicación del locker o de ubicacion_destino
+    const ubicacion = data?.locker?.ubicacion?.nombre 
+      ?? data?.ubicacion_destino?.nombre 
+      ?? data?.ubicacionDestino?.nombre 
+      ?? 'Sin ubicación';
+
     const usuario = data?.usuario;
     const nombres = [usuario?.nombre, usuario?.apellido].filter(Boolean).join(' ').trim();
     const destinatario = nombres || usuario?.email || 'Sin destinatario';
+    const destinatarioEmail = usuario?.email ?? '';
 
+    const estadoReal = String(data?.estado ?? 'pendiente');
     const logisticaEstado = String(data?.logistica_estado ?? 'pendiente_repartidor');
-    const estado = this.mapEstado(logisticaEstado);
+    const estado = this.mapEstado(logisticaEstado, estadoReal);
     const { label: logisticaLabel, badgeClass: logisticaBadge } = this.mapLogisticaEstado(logisticaEstado);
 
     const fecha = data?.fecha_reserva ?? data?.created_at ?? new Date().toISOString();
@@ -112,11 +160,14 @@ export class Pedidos {
     return {
       id: data?.id ?? 0,
       locker,
+      ubicacion,
       estado,
+      estadoReal,
       logisticaEstado,
       logisticaLabel,
       logisticaBadge,
       destinatario,
+      destinatarioEmail,
       fecha,
       repartidor: data?.repartidor ? {
         id: data.repartidor.id,
@@ -128,7 +179,12 @@ export class Pedidos {
     };
   }
 
-  private mapEstado(logisticaEstado: string): EstadoPedido {
+  private mapEstado(logisticaEstado: string, estadoReal: string): EstadoPedido {
+    // Si el estado real es anulado, mostrar como anulado
+    if (estadoReal === 'anulado') {
+      return 'Anulado' as any; // Temporalmente, luego actualizaremos el tipo
+    }
+    
     switch (logisticaEstado) {
       case 'pendiente_repartidor':
       case 'asignado':
@@ -172,6 +228,10 @@ export class Pedidos {
   limpiarFiltros() {
     this.filtroEstado = '';
     this.filtroLogistica = '';
+    this.filtroUbicacionId = null;
+    this.filtroEmail = '';
+    this.filtroFechaDesde = '';
+    this.filtroFechaHasta = '';
     void this.cargarPedidos(1);
   }
 
@@ -197,6 +257,8 @@ export class Pedidos {
         return 'badge rounded-pill bg-warning-subtle text-warning-emphasis px-3 py-2';
       case 'Entregado':
         return 'badge rounded-pill bg-success-subtle text-success-emphasis px-3 py-2';
+      case 'Anulado':
+        return 'badge rounded-pill bg-danger-subtle text-danger-emphasis px-3 py-2';
     }
   }
 
