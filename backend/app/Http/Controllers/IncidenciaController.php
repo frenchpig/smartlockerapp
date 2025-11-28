@@ -51,6 +51,7 @@ class IncidenciaController extends Controller
         $perPage = max(1, min(100, $perPage));
 
         $query = Incidencia::with(['locker', 'usuario', 'reserva.empresa', 'reserva.repartidor', 'reserva.articulos'])
+            ->where('tipo', 'pedido') // Solo incidencias de tipo pedido
             ->whereNotNull('reserva_id') // Solo incidencias relacionadas con pedidos
             ->whereHas('reserva', function ($q) use ($user) {
                 $q->where('empresa_id', $user->id); // Solo pedidos de esta empresa

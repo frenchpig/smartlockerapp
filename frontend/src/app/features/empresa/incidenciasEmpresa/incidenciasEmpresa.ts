@@ -101,8 +101,6 @@ export class EmpresaIncidencias implements OnInit {
     tiposDisponibles = [
         { value: '', label: 'Todos' },
         { value: 'pedido', label: 'Pedido' },
-        { value: 'locker', label: 'Locker' },
-        { value: 'otro', label: 'Otro' },
     ];
 
     problemasDisponibles = [
