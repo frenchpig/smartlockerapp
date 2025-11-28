@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../../core/auth/auth';
 import { UserMenuButtonComponent, MenuItem } from '../../../../shared/components/user-menu-button/user-menu-button.component';
+import { ModalIncidencia } from '../reportar-incidencia/modal-incidencia';
 
 @Component({
   standalone: true,
   selector: 'app-header-cliente',
-  imports: [CommonModule, RouterModule, UserMenuButtonComponent],
+  imports: [CommonModule, RouterModule, UserMenuButtonComponent, ModalIncidencia],
   templateUrl: './header-cliente.component.html',
   styleUrls: ['./header-cliente.component.scss']
 })

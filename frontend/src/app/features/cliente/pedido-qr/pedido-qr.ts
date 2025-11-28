@@ -101,23 +101,31 @@ export class PedidoQr implements OnInit {
       creadoEl: '2025-10-01T10:30:00Z',
     };
 
-    this.cargarPedido(id);
-
-    // espera:
-    setTimeout(() => {
+    this.cargarPedido(id).then(() => {
+      // Validar que el pedido no esté cancelado o completado
+      if (this.pedido?.estado === 'Cancelado' || this.pedido?.estado === 'Entregado') {
+        alert('Este pedido no está disponible para obtener un código.');
+        this.router.navigate(['/cliente']);
+        return;
+      }
       this.cargando = false;
-    }, 600);
+    }).catch(() => {
+      this.cargando = false;
+    });
   }
 
-  private async cargarPedido(id: number) {
+  private async cargarPedido(id: number): Promise<void> {
     try {
       const r = await this.http
         .get<any>(`${environment.apiUrl}/reservas/${id}`)
         .toPromise();
       if (r) {
+        const estadoApi = r.estado ?? 'pendiente';
+        const estadoMapeado = estadoApi === 'pendiente' ? 'Activo' : estadoApi === 'completado' ? 'Entregado' : estadoApi === 'anulado' ? 'Cancelado' : 'Activo';
+        
         this.pedido = {
           id: r.id,
-          estado: r.estado === 'pendiente' ? 'Activo' : r.estado === 'completado' ? 'Entregado' : 'Cancelado',
+          estado: estadoMapeado,
           locker: `#${r.locker?.numero ?? r.locker?.id ?? r.locker_id ?? ''}`,
           lockerId: r.locker?.id ?? r.locker_id ?? null,
           sede: r.locker?.ubicacion?.nombre ?? '---',

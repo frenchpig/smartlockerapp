@@ -124,6 +124,14 @@ export class PedidoClave implements OnInit, OnDestroy {
 
   private async inicializar(id: number) {
     await this.cargarPedido(id);
+    
+    // Validar que el pedido no esté cancelado o completado
+    if (this.pedido?.estado === 'Cancelado' || this.pedido?.estado === 'Entregado') {
+      alert('Este pedido no está disponible para obtener un código.');
+      this.router.navigate(['/cliente']);
+      return;
+    }
+    
     await this.ensureCodigoDisponible();
     this.iniciarPolling();
 
@@ -250,6 +258,12 @@ export class PedidoClave implements OnInit, OnDestroy {
       if (vigente) return;
 
       await this.cargarPedido(this.pedido.id);
+      // Si el pedido está cancelado o completado, redirigir
+      if (this.pedido?.estado === 'Cancelado' || this.pedido?.estado === 'Entregado') {
+        this.router.navigate(['/cliente']);
+        return;
+      }
+      
       if (this.pedido?.estado !== 'Activo') {
         this.router.navigate(['/cliente']);
         return;

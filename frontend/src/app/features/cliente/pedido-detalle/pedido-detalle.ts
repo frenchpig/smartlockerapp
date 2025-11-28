@@ -69,8 +69,13 @@ export class PedidoDetalle implements OnInit {
       return;
     }
 
-    if (!this.pedido.canVerCodigo && this.pedido.tipoAcceso !== 'codigo_temporal') {
-      alert('Tu pedido aún no está listo para entregar un código.');
+    if (!this.pedido.canVerCodigo) {
+      alert('Este pedido no está disponible para obtener un código.');
+      return;
+    }
+
+    if (this.pedido.tipoAcceso !== 'codigo_temporal') {
+      alert('Este pedido no tiene código temporal disponible.');
       return;
     }
 
@@ -78,7 +83,16 @@ export class PedidoDetalle implements OnInit {
   }
 
   verQr(): void {
-    if (!this.pedido || this.pedido.tipoAcceso !== 'qr') {
+    if (!this.pedido) {
+      return;
+    }
+
+    if (!this.pedido.canVerCodigo) {
+      alert('Este pedido no está disponible para obtener un código.');
+      return;
+    }
+
+    if (this.pedido.tipoAcceso !== 'qr') {
       alert('Este pedido no tiene QR disponible.');
       return;
     }

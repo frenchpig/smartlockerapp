@@ -94,14 +94,14 @@
                     Volver
                 </button>
                 <button
-                    *ngIf="pedido.tipoAcceso === 'qr'"
+                    *ngIf="pedido.tipoAcceso === 'qr' && pedido.canVerCodigo"
                     class="btn btn-primary"
                     type="button"
                     (click)="verQr()">
                     Ver QR
                 </button>
                 <button
-                    *ngIf="pedido.tipoAcceso === 'codigo_temporal'"
+                    *ngIf="pedido.tipoAcceso === 'codigo_temporal' && pedido.canVerCodigo"
                     class="btn btn-primary"
                     type="button"
                     (click)="verCodigo()">

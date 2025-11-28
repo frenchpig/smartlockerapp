@@ -5,7 +5,8 @@ import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../core/auth/auth';
 import { environment } from '../../../../environments/environment';
 import { HeaderClienteComponent } from '../shared/header-cliente/header-cliente.component';
-import { ReportarIncidencia, PedidoIncidencia } from '../shared/reportar-incidencia/reportar-incidencia';
+import { BotonIncidencia } from '../shared/reportar-incidencia/boton-incidencia';
+import { PedidoIncidencia } from '../shared/reportar-incidencia/incidencia-modal.service';
 
 type LogisticaEstado = 'pendiente_repartidor' | 'asignado' | 'en_camino' | 'completado';
 type EstadoVisual = 'Listo para recoger' | 'En camino' | 'Pendiente de repartidor' | 'Repartidor asignado' | 'Entregado' | 'Cancelado';
@@ -45,7 +46,7 @@ interface PaginatedResponse<T> {
 @Component({
   standalone: true,
   selector: 'app-mis-pedidos',
-  imports: [CommonModule, RouterModule, DatePipe, HeaderClienteComponent, ReportarIncidencia],
+  imports: [CommonModule, RouterModule, DatePipe, HeaderClienteComponent, BotonIncidencia],
   templateUrl: './mis-pedidos.html',
   styleUrls: ['./mis-pedidos.scss'],
 })

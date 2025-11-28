@@ -1,0 +1,7 @@
+<button class="btn-incidencia-triangle" type="button" (click)="abrirModal()" 
+    [attr.aria-label]="'Reportar incidencia' + (pedido ? ' para pedido #' + pedido.id : '')" 
+    [title]="'Reportar incidencia' + (pedido ? ' para pedido #' + pedido.id : '')"
+    [disabled]="!pedido">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+</button>
+

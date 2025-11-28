@@ -1,0 +1,45 @@
+// Botón de incidencia
+.btn-incidencia-triangle {
+    position: absolute;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    background: none;
+    border: none;
+    color: #ef4444;
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: transform 0.2s ease, color 0.2s ease;
+    border-radius: 0.25rem;
+
+    &:hover:not(:disabled) {
+        color: #dc2626;
+        transform: scale(1.1);
+    }
+
+    &:active:not(:disabled) {
+        transform: scale(0.95);
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    i {
+        display: block;
+    }
+}
+
+// En móviles, agregar espacio al article para que el botón no se superponga con el footer
+@media (max-width: 576px) {
+    .btn-incidencia-triangle {
+        bottom: 1rem;
+        left: 0.75rem;
+    }
+}
+
