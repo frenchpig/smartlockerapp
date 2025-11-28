@@ -269,22 +269,9 @@
                     <div class="btns-row">
                       <button class="btn btn-light" (click)="irDetalle(r)">Detalle</button>
                       <button class="btn btn-outline" (click)="irEditar(r)">Editar</button>
-                      <button class="btn btn-warning" (click)="marcarRevision(r)">
-                        {{ r.estado === 'En revisión' ? 'Quitar revisión' : 'Revisión' }}
-                      </button>
-                      <button
-                        class="btn btn-danger"
-                        *ngIf="r.estado !== 'Bloqueado'"
-                        (click)="bloquear(r)"
-                      >
-                        Bloquear
-                      </button>
-                      <button
-                        class="btn btn-success"
-                        *ngIf="r.estado === 'Bloqueado'"
-                        (click)="activar(r)"
-                      >
-                        Activar
+                      <button class="btn btn-primary btn-sm" (click)="abrirModalCambiarEstado(r)" title="Cambiar estado">
+                        <i class="bi bi-arrow-repeat me-1"></i>
+                        Cambiar estado
                       </button>
                     </div>
                   </td>
@@ -329,3 +316,81 @@
 
   </div>
 </main>
+
+<!-- Modal para cambiar estado del locker -->
+<div class="modal fade" [class.show]="lockerCambiarEstado !== null" [style.display]="lockerCambiarEstado !== null ? 'block' : 'none'" tabindex="-1" role="dialog" *ngIf="lockerCambiarEstado">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title">
+          <i class="bi bi-arrow-repeat me-2"></i>
+          Cambiar estado del locker
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalCambiarEstado()" [disabled]="cambiandoEstado" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body pt-3">
+        <div class="card bg-light border-0 mb-3">
+          <div class="card-body p-3">
+            <div class="row g-2 small">
+              <div class="col-6">
+                <strong>Locker:</strong> #{{ lockerCambiarEstado.numero }}
+              </div>
+              <div class="col-6">
+                <strong>Ubicación:</strong> {{ lockerCambiarEstado.ubicacion }}
+              </div>
+              <div class="col-12">
+                <strong>Estado actual:</strong> 
+                <span
+                  class="badge ms-2"
+                  [class.badge-success]="lockerCambiarEstado.estado === 'Activo'"
+                  [class.badge-warning]="lockerCambiarEstado.estado === 'Ocupado'"
+                  [class.badge-info]="lockerCambiarEstado.estado === 'En revisión'"
+                  [class.badge-danger]="lockerCambiarEstado.estado === 'Bloqueado'"
+                >
+                  {{ lockerCambiarEstado.estado }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="nuevoEstado" class="form-label fw-semibold">
+            Nuevo estado <span class="text-danger">*</span>
+          </label>
+          <select
+            id="nuevoEstado"
+            class="form-select"
+            [(ngModel)]="nuevoEstado"
+            [disabled]="cambiandoEstado">
+            <option *ngFor="let estado of estadosDisponibles" [value]="estado.value">
+              {{ estado.label }}
+            </option>
+          </select>
+          <small class="text-muted">
+            Selecciona el nuevo estado para este locker.
+          </small>
+        </div>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="cerrarModalCambiarEstado()"
+          [disabled]="cambiandoEstado">
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="confirmarCambiarEstado()"
+          [disabled]="cambiandoEstado">
+          <span *ngIf="cambiandoEstado" class="spinner-border spinner-border-sm me-1" role="status"></span>
+          <i class="bi bi-check-circle me-1" *ngIf="!cambiandoEstado"></i>
+          Cambiar estado
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="lockerCambiarEstado !== null" *ngIf="lockerCambiarEstado !== null"></div>

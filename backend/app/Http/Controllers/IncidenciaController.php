@@ -130,11 +130,22 @@ class IncidenciaController extends Controller
                     $nuevoLocker = $this->buscarLockerDisponible($reserva->ubicacion_destino_id, $reserva->tamano_pedido);
                     
                     if ($nuevoLocker) {
-                        // Asignar el nuevo locker a la reserva
-                        DB::transaction(function () use ($reserva, $nuevoLocker) {
+                        // Guardar el locker anterior antes de cambiar
+                        $lockerAnterior = $reserva->locker;
+                        
+                        // Asignar el nuevo locker a la reserva y liberar el anterior
+                        DB::transaction(function () use ($reserva, $nuevoLocker, $lockerAnterior) {
+                            // Asignar el nuevo locker
                             $reserva->locker_id = $nuevoLocker->id;
                             $nuevoLocker->estado = 'ocupado';
                             $nuevoLocker->save();
+                            
+                            // Liberar el locker anterior si existe
+                            if ($lockerAnterior) {
+                                $lockerAnterior->estado = 'activo';
+                                $lockerAnterior->save();
+                            }
+                            
                             $reserva->save();
                         });
                         $nuevoLockerAsignado = true;

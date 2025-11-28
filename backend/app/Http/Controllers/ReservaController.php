@@ -480,7 +480,7 @@ class ReservaController extends Controller
             
             // Solo asignar repartidor automáticamente si no se proporcionó uno manualmente
             if (empty($data['repartidor_id'])) {
-                $this->asignarRepartidorDisponible($reserva);
+            $this->asignarRepartidorDisponible($reserva);
             }
             
             return $reserva->load(['usuario','ubicacionDestino','repartidor','articulos']);
@@ -1241,7 +1241,7 @@ class ReservaController extends Controller
             ['pedidos_activos', 'asc'],
             ['ultima_asignacion', 'asc'],
         ])
-        ->first();
+            ->first();
 
         if (!$repartidorAsignado) {
             return;

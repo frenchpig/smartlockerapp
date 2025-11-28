@@ -8,6 +8,7 @@ import { HeaderAdmin } from '../shared/header-admin/headerAdmin';
 import { environment } from '../../../../environments/environment';
 
 type LockerEstado = 'Activo' | 'Ocupado' | 'En revisión' | 'Bloqueado';
+type LockerEstadoBackend = 'activo' | 'bloqueado' | 'mantenimiento' | 'ocupado';
 
 interface LockerRow {
     id: number;
@@ -76,6 +77,17 @@ export class AdminLockers implements OnInit {
     errorUbicacion = '';
     successUbicacion = '';
     ubicacionForm: FormGroup;
+
+    // Cambio de estado
+    lockerCambiarEstado: LockerRow | null = null;
+    nuevoEstado: LockerEstadoBackend = 'activo';
+    cambiandoEstado = false;
+    estadosDisponibles: { value: LockerEstadoBackend; label: string }[] = [
+        { value: 'activo', label: 'Activo' },
+        { value: 'ocupado', label: 'Ocupado' },
+        { value: 'mantenimiento', label: 'En revisión (Mantenimiento)' },
+        { value: 'bloqueado', label: 'Bloqueado' },
+    ];
 
     get filtrados(): LockerRow[] {
         // Los filtros ahora se aplican en el servidor, así que retornamos los rows directamente
@@ -174,6 +186,53 @@ export class AdminLockers implements OnInit {
         } catch (error) {
             console.error('Error activando locker:', error);
             alert('No se pudo activar el locker');
+        }
+    }
+
+    abrirModalCambiarEstado(row: LockerRow): void {
+        this.lockerCambiarEstado = row;
+        // Mapear el estado actual al formato del backend
+        const estadoMap: Record<LockerEstado, LockerEstadoBackend> = {
+            'Activo': 'activo',
+            'Ocupado': 'ocupado',
+            'En revisión': 'mantenimiento',
+            'Bloqueado': 'bloqueado',
+        };
+        this.nuevoEstado = estadoMap[row.estado] || 'activo';
+    }
+
+    cerrarModalCambiarEstado(): void {
+        this.lockerCambiarEstado = null;
+        this.nuevoEstado = 'activo';
+    }
+
+    async confirmarCambiarEstado(): Promise<void> {
+        if (!this.lockerCambiarEstado || this.cambiandoEstado) return;
+
+        this.cambiandoEstado = true;
+        try {
+            await this.http
+                .patch(`${environment.apiUrl}/lockers/${this.lockerCambiarEstado.id}`, { estado: this.nuevoEstado })
+                .toPromise();
+
+            // Mapear el estado del backend al formato del frontend
+            const estadoMap: Record<LockerEstadoBackend, LockerEstado> = {
+                'activo': 'Activo',
+                'ocupado': 'Ocupado',
+                'mantenimiento': 'En revisión',
+                'bloqueado': 'Bloqueado',
+            };
+
+            this.lockerCambiarEstado.estado = estadoMap[this.nuevoEstado];
+            this.lockerCambiarEstado.actualizadoEl = new Date().toISOString();
+
+            await Promise.all([this.cargarLockers(), this.cargarKPIs()]);
+            this.cerrarModalCambiarEstado();
+        } catch (error) {
+            console.error('Error cambiando estado:', error);
+            alert('No se pudo cambiar el estado del locker');
+        } finally {
+            this.cambiandoEstado = false;
         }
     }
 
