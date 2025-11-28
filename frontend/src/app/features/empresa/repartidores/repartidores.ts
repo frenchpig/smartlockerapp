@@ -410,14 +410,6 @@ export class EmpresaRepartidoresComponent implements OnInit {
     return `569${digits}`;
   }
 
-  verPedidos(item: RepartidorItem): void {
-    this.router.navigate(['/empresa/repartidores', item.id, 'pedidos']);
-  }
-
-  verTodosLosPedidos(): void {
-    this.router.navigate(['/empresa/repartidores/todos-pedidos']);
-  }
-
   mostrarConfirmacion(titulo: string, mensaje: string, callback: () => void): void {
     this.confirmTitle = titulo;
     this.confirmMessage = mensaje;

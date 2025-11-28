@@ -8,9 +8,6 @@
           <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
             <h2 class="h5 fw-semibold mb-0">Repartidores</h2>
             <div class="d-flex gap-2 flex-wrap">
-              <button class="btn btn-outline-primary btn-sm" type="button" routerLink="/empresa/repartidores/todos-pedidos" [disabled]="loading">
-                <i class="bi bi-box-seam me-1"></i> Ver todos los pedidos
-              </button>
               <button class="btn btn-outline-success btn-sm" type="button" (click)="cargarRepartidores()" [disabled]="loading">
                 <i class="bi bi-arrow-repeat me-1"></i> Actualizar
               </button>
@@ -111,13 +108,6 @@
                   </td>
                   <td class="text-end">
                     <div class="d-flex justify-content-end flex-wrap gap-2">
-              <button
-                type="button"
-                class="btn btn-outline-primary btn-sm"
-                [routerLink]="['/empresa/repartidores', item.id, 'pedidos']"
-                [disabled]="saving || loading">
-                <i class="bi bi-box-seam me-1"></i> Ver pedidos
-              </button>
                       <button
                         type="button"
                         class="btn btn-outline-success btn-sm"
@@ -281,9 +271,9 @@
   </div>
 </div>
 
-<div class="repartidor-modal-backdrop" *ngIf="showEditModal"></div>
+<div class="repartidor-modal-backdrop" *ngIf="showEditModal" (click)="cancelarEdicion()"></div>
 <div class="repartidor-modal" *ngIf="showEditModal">
-  <div class="repartidor-modal__dialog">
+  <div class="repartidor-modal__dialog" (click)="$event.stopPropagation()">
     <div class="repartidor-modal__header">
       <h3 class="h6 fw-semibold mb-0 text-success">Editar repartidor</h3>
       <button type="button" class="btn btn-link text-muted p-0" (click)="cancelarEdicion()" [disabled]="saving">

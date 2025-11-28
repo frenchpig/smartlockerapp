@@ -7,6 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/auth/auth';
 import { environment } from '../../../../environments/environment';
 import { HeaderEmpresaComponent } from '../shared/header-empresa/header-empresa.component';
+import { ToastService } from '../../../shared/services/toast.service';
 
 type EstadoReserva = 'pendiente' | 'completado' | 'anulado' | string;
 
@@ -63,9 +64,15 @@ export class HomeEmpresa implements OnInit {
   tieneUbicacionesSeleccionadas = false;
   cargandoUbicaciones = false;
 
+  // Modal de cancelación
+  showCancelModal = false;
+  reservaCancelar: PedidoEmpresa | null = null;
+  cancelando = false;
+
   private readonly auth = inject(AuthService);
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly toastService = inject(ToastService);
 
   private readonly badgeClassByEstado: Record<string, string> = {
     pendiente: 'bg-warning-subtle text-warning-emphasis',
@@ -122,6 +129,45 @@ export class HomeEmpresa implements OnInit {
 
   verDetalle(pedidoId: number) {
     void this.router.navigate(['/empresa/pedidos', pedidoId]);
+  }
+
+  puedeCancelar(pedido: PedidoEmpresa): boolean {
+    // Solo se puede cancelar si está pendiente y no está en ruta
+    return pedido.estado === 'pendiente' && pedido.logisticaEstado !== 'en_camino';
+  }
+
+  abrirModalCancelar(pedido: PedidoEmpresa): void {
+    this.reservaCancelar = pedido;
+    this.showCancelModal = true;
+  }
+
+  cerrarModalCancelar(): void {
+    this.showCancelModal = false;
+    this.reservaCancelar = null;
+  }
+
+  async confirmarCancelar(): Promise<void> {
+    if (!this.reservaCancelar || this.cancelando) {
+      return;
+    }
+
+    this.cancelando = true;
+    try {
+      await this.http
+        .post(`${environment.apiUrl}/reservas/${this.reservaCancelar.id}/cancelar`, {})
+        .toPromise();
+
+      this.toastService.success('Reserva cancelada exitosamente');
+      this.cerrarModalCancelar();
+      await this.cargarPedidos(this.page);
+    } catch (error: any) {
+      console.error('Error cancelando reserva:', error);
+      this.toastService.error(
+        error?.error?.message || 'No se pudo cancelar la reserva. Intenta nuevamente.'
+      );
+    } finally {
+      this.cancelando = false;
+    }
   }
 
   private async cargarPedidos(page = 1) {

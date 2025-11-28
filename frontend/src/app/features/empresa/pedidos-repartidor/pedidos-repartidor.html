@@ -30,51 +30,10 @@
           </div>
 
           <div *ngIf="!loading && pedidos.length > 0">
-            <!-- Acciones masivas -->
-            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-              <div class="form-check">
-                <input 
-                  class="form-check-input" 
-                  type="checkbox" 
-                  id="selectAllPedidos"
-                  [checked]="todosSeleccionados"
-                  (change)="toggleSeleccionarTodos()">
-                <label class="form-check-label" for="selectAllPedidos">
-                  Seleccionar todos
-                </label>
-              </div>
-              <div class="d-flex gap-2 flex-wrap">
-                <button
-                  type="button"
-                  class="btn btn-outline-primary btn-sm"
-                  (click)="marcarEnRutaMasivo()"
-                  [disabled]="accionMasivaLoading || pedidosSeleccionablesParaEnRuta.length === 0">
-                  <span *ngIf="accionMasivaLoading" class="spinner-border spinner-border-sm me-1"></span>
-                  Marcar en ruta ({{ pedidosSeleccionablesParaEnRuta.length }})
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-success btn-sm"
-                  (click)="marcarEntregadoMasivo()"
-                  [disabled]="accionMasivaLoading || pedidosSeleccionablesParaEntregado.length === 0">
-                  <span *ngIf="accionMasivaLoading" class="spinner-border spinner-border-sm me-1"></span>
-                  Marcar entregado ({{ pedidosSeleccionablesParaEntregado.length }})
-                </button>
-              </div>
-            </div>
-
             <div class="table-responsive">
               <table class="table align-middle">
                 <thead>
                   <tr>
-                    <th style="width: 40px;">
-                      <input 
-                        class="form-check-input" 
-                        type="checkbox" 
-                        [checked]="todosSeleccionados"
-                        (change)="toggleSeleccionarTodos()"
-                        title="Seleccionar todos">
-                    </th>
                     <th>ID</th>
                     <th>Destinatario</th>
                     <th>Locker</th>
@@ -82,19 +41,10 @@
                     <th>Estado</th>
                     <th>Logística</th>
                     <th>Fecha</th>
-                    <th class="text-end">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr *ngFor="let pedido of pedidos">
-                    <td>
-                      <input 
-                        class="form-check-input" 
-                        type="checkbox" 
-                        [checked]="estaSeleccionado(pedido.id)"
-                        (change)="toggleSeleccionPedido(pedido.id)"
-                        [disabled]="!puedeMarcarEnRuta(pedido) && !puedeMarcarEntregado(pedido)">
-                    </td>
                     <td>#{{ pedido.id }}</td>
                     <td>
                       <div class="fw-semibold">{{ pedido.usuario.nombre }} {{ pedido.usuario.apellido }}</div>
@@ -115,31 +65,6 @@
                     <td>
                       <small>{{ pedido.fecha_reserva | date:'dd/MM/yyyy' }}</small>
                     </td>
-                    <td class="text-end">
-                      <div class="d-flex justify-content-end gap-2">
-                        <button
-                          type="button"
-                          class="btn btn-outline-primary btn-sm"
-                          (click)="marcarEnRuta(pedido.id)"
-                          *ngIf="puedeMarcarEnRuta(pedido)"
-                          [disabled]="saving">
-                          <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
-                          En ruta
-                        </button>
-                        <button
-                          type="button"
-                          class="btn btn-success btn-sm"
-                          (click)="marcarEntregado(pedido.id)"
-                          *ngIf="puedeMarcarEntregado(pedido)"
-                          [disabled]="saving">
-                          <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
-                          Entregado
-                        </button>
-                        <span class="text-muted small" *ngIf="pedido.logistica_estado === 'completado'">
-                          Completado
-                        </span>
-                      </div>
-                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -151,47 +76,3 @@
   </div>
 </section>
 
-<!-- Modal de Confirmación -->
-<div class="repartidor-modal-backdrop confirm-alert-backdrop" *ngIf="showConfirmModal" (click)="cerrarConfirmModal()"></div>
-<div class="repartidor-modal confirm-alert-modal" *ngIf="showConfirmModal">
-  <div class="repartidor-modal__dialog">
-    <div class="repartidor-modal__header">
-      <h3 class="h6 fw-semibold mb-0 text-success">{{ confirmTitle }}</h3>
-      <button type="button" class="btn btn-link text-muted p-0" (click)="cerrarConfirmModal()">
-        <i class="bi bi-x-lg fs-5"></i>
-      </button>
-    </div>
-    <div class="repartidor-modal__body">
-      <p class="mb-0" [innerHTML]="confirmMessageFormatted"></p>
-    </div>
-    <div class="repartidor-modal__footer">
-      <button type="button" class="btn btn-outline-secondary" (click)="cerrarConfirmModal()">
-        Cancelar
-      </button>
-      <button type="button" class="btn btn-success" (click)="confirmarAccion()">
-        Confirmar
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal de Alerta -->
-<div class="repartidor-modal-backdrop confirm-alert-backdrop" *ngIf="showAlertModal" (click)="cerrarAlertModal()"></div>
-<div class="repartidor-modal confirm-alert-modal" *ngIf="showAlertModal">
-  <div class="repartidor-modal__dialog">
-    <div class="repartidor-modal__header">
-      <h3 class="h6 fw-semibold mb-0" [ngClass]="{'text-success': alertType === 'success', 'text-danger': alertType === 'error', 'text-info': alertType === 'info'}">{{ alertTitle }}</h3>
-      <button type="button" class="btn btn-link text-muted p-0" (click)="cerrarAlertModal()">
-        <i class="bi bi-x-lg fs-5"></i>
-      </button>
-    </div>
-    <div class="repartidor-modal__body">
-      <p class="mb-0" [innerHTML]="alertMessageFormatted"></p>
-    </div>
-    <div class="repartidor-modal__footer">
-      <button type="button" class="btn btn-success" (click)="cerrarAlertModal()">
-        Aceptar
-      </button>
-    </div>
-  </div>
-</div>

@@ -265,3 +265,63 @@ footer {
         overflow-x: visible;
     }
 }
+
+// Estilos para modales
+.repartidor-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 1040;
+}
+
+.repartidor-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 1050;
+  pointer-events: auto;
+}
+
+.confirm-alert-backdrop {
+  z-index: 1060 !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+}
+
+.confirm-alert-modal {
+  z-index: 1070 !important;
+  pointer-events: auto !important;
+}
+
+.repartidor-modal__dialog {
+  width: min(640px, 100%);
+  background: #ffffff;
+  border-radius: 1rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  padding: 1.5rem;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.repartidor-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.repartidor-modal__body {
+  margin-bottom: 1rem;
+}
+
+.repartidor-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  margin-top: 1rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}

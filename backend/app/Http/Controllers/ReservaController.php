@@ -723,25 +723,12 @@ class ReservaController extends Controller
             return response()->json(['message' => 'No autorizado'], 403);
         }
 
-        // Si es empresa, verificar que la reserva pertenece a su empresa y tiene repartidor asignado
-        if ($user->rol === 'empresa') {
-            if ($reserva->empresa_id !== $user->id) {
-                return response()->json(['message' => 'Acceso denegado a la reserva'], 403);
-            }
-            
-            if (!$reserva->repartidor_id) {
-                return response()->json(['message' => 'La reserva no tiene repartidor asignado'], 422);
-            }
-            
-            // Verificar que el repartidor pertenece a la empresa
-            $repartidor = Repartidor::where('id', $reserva->repartidor_id)
-                ->where('empresa_id', $user->id)
-                ->first();
-                
-            if (!$repartidor) {
-                return response()->json(['message' => 'El repartidor no pertenece a tu empresa'], 403);
-            }
-        } elseif ($user->rol === 'repartidor') {
+        // Solo los repartidores pueden marcar como en ruta
+        if ($user->rol !== 'repartidor') {
+            return response()->json(['message' => 'Solo los repartidores pueden marcar pedidos como en ruta'], 403);
+        }
+        
+        if ($user->rol === 'repartidor') {
             // Si es repartidor autenticado, verificar que es el asignado a la reserva
             $repartidor = Repartidor::where('usuario_id', $user->id)->first();
             
@@ -818,25 +805,12 @@ class ReservaController extends Controller
             return response()->json(['message' => 'No autorizado'], 403);
         }
 
-        // Si es empresa, verificar que la reserva pertenece a su empresa y tiene repartidor asignado
-        if ($user->rol === 'empresa') {
-            if ($reserva->empresa_id !== $user->id) {
-                return response()->json(['message' => 'Acceso denegado a la reserva'], 403);
-            }
-            
-            if (!$reserva->repartidor_id) {
-                return response()->json(['message' => 'La reserva no tiene repartidor asignado'], 422);
-            }
-            
-            // Verificar que el repartidor pertenece a la empresa
-            $repartidor = Repartidor::where('id', $reserva->repartidor_id)
-                ->where('empresa_id', $user->id)
-                ->first();
-                
-            if (!$repartidor) {
-                return response()->json(['message' => 'El repartidor no pertenece a tu empresa'], 403);
-            }
-        } elseif ($user->rol === 'repartidor') {
+        // Solo los repartidores pueden marcar como entregado
+        if ($user->rol !== 'repartidor') {
+            return response()->json(['message' => 'Solo los repartidores pueden marcar pedidos como entregados'], 403);
+        }
+        
+        if ($user->rol === 'repartidor') {
             // Si es repartidor autenticado, verificar que es el asignado a la reserva
             $repartidor = Repartidor::where('usuario_id', $user->id)->first();
             
@@ -861,6 +835,8 @@ class ReservaController extends Controller
         }
 
         $reserva = DB::transaction(function () use ($reserva) {
+            $repartidorId = $reserva->repartidor_id;
+            
             $reserva->logistica_estado = 'completado';
             $reserva->save();
 
@@ -869,6 +845,9 @@ class ReservaController extends Controller
             // No actualizamos el estado del locker aquí, se actualizará cuando el cliente retire
 
             $this->liberarRepartidor($reserva);
+            
+            // Actualizar estado del repartidor
+            $this->actualizarEstadoRepartidor($repartidorId);
 
             return $reserva->load(['usuario','locker.ubicacion','repartidor']);
         });
@@ -922,6 +901,7 @@ class ReservaController extends Controller
 
         $reserva = DB::transaction(function () use ($reserva, $data) {
             $lockerId = $reserva->locker_id;
+            $repartidorId = $reserva->repartidor_id;
             $estadoAnterior = $reserva->estado;
             
             // Anular la reserva
@@ -931,6 +911,9 @@ class ReservaController extends Controller
 
             // Liberar el repartidor
             $this->liberarRepartidor($reserva);
+            
+            // Actualizar estado del repartidor
+            $this->actualizarEstadoRepartidor($repartidorId);
 
             // Liberar el locker si estaba asignado
             if ($lockerId) {
@@ -965,6 +948,89 @@ class ReservaController extends Controller
 
         return response()->json([
             'message' => 'Entrega cancelada exitosamente. El pedido ha sido anulado.',
+            'reserva' => $reserva,
+        ]);
+    }
+
+    /**
+     * Permite a la empresa cancelar una reserva pendiente antes de que esté en ruta
+     */
+    public function cancelarReserva(Request $request, Reserva $reserva)
+    {
+        $user = $request->user();
+        
+        if (!$user) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        // Solo las empresas pueden cancelar reservas pendientes
+        if ($user->rol !== 'empresa') {
+            return response()->json(['message' => 'Solo las empresas pueden cancelar reservas pendientes'], 403);
+        }
+
+        // Verificar que la reserva pertenece a la empresa
+        if ($reserva->empresa_id !== $user->id) {
+            return response()->json(['message' => 'No tienes acceso a esta reserva'], 403);
+        }
+
+        // Solo se puede cancelar si está pendiente y no está en ruta
+        if ($reserva->estado !== 'pendiente') {
+            return response()->json(['message' => 'Solo se pueden cancelar reservas pendientes'], 422);
+        }
+
+        // No se puede cancelar si ya está en ruta
+        if ($reserva->logistica_estado === 'en_camino') {
+            return response()->json(['message' => 'No se puede cancelar una reserva que ya está en ruta. Contacta al repartidor para cancelar la entrega.'], 422);
+        }
+
+        if ($reserva->estado === 'anulado') {
+            return response()->json(['message' => 'La reserva ya fue cancelada'], 422);
+        }
+
+        $reserva = DB::transaction(function () use ($reserva) {
+            $lockerId = $reserva->locker_id;
+            $repartidorId = $reserva->repartidor_id;
+            $estadoAnterior = $reserva->estado;
+            
+            // Anular la reserva
+            $reserva->estado = 'anulado';
+            $reserva->logistica_estado = 'completado'; // Marcar logística como completada para que no aparezca en listados activos
+            $reserva->save();
+
+            // Liberar el repartidor si estaba asignado
+            if ($repartidorId) {
+                $this->liberarRepartidor($reserva);
+                $this->actualizarEstadoRepartidor($repartidorId);
+            }
+
+            // Liberar el locker si estaba asignado
+            if ($lockerId) {
+                $this->actualizarEstadoLocker($lockerId);
+            }
+
+            // Registrar en historial del locker
+            if ($lockerId && $estadoAnterior === 'pendiente') {
+                HistorialLockerService::registrarReservaAnulada(
+                    $lockerId,
+                    $reserva->id,
+                    auth()->id()
+                );
+            }
+
+            // Registrar en historial de empresa
+            if ($reserva->empresa_id) {
+                HistorialEmpresaService::registrarReservaCancelada(
+                    $reserva->empresa_id,
+                    $reserva->id,
+                    'Reserva cancelada por la empresa'
+                );
+            }
+
+            return $reserva->load(['usuario','locker.ubicacion','repartidor']);
+        });
+
+        return response()->json([
+            'message' => 'Reserva cancelada exitosamente.',
             'reserva' => $reserva,
         ]);
     }
@@ -1326,12 +1392,39 @@ class ReservaController extends Controller
         // Este método se mantiene por compatibilidad pero no hace nada
     }
 
+    /**
+     * Actualiza el estado disponible del repartidor basado en si tiene pedidos activos
+     */
+    private function actualizarEstadoRepartidor(?int $repartidorId): void
+    {
+        if (!$repartidorId) {
+            return;
+        }
+
+        $repartidor = Repartidor::find($repartidorId);
+        if (!$repartidor) {
+            return;
+        }
+
+        // Contar pedidos activos (asignados o en camino)
+        $pedidosActivos = Reserva::where('repartidor_id', $repartidorId)
+            ->whereIn('logistica_estado', ['asignado', 'en_camino'])
+            ->where('estado', '!=', 'anulado')
+            ->count();
+
+        // Si no tiene pedidos activos, marcar como disponible
+        // Si tiene pedidos activos, mantener el estado actual (no forzar a no disponible)
+        $repartidor->disponible = $pedidosActivos === 0;
+        $repartidor->save();
+    }
+
     public function marcarEnRutaMasivo(Request $request)
     {
         $user = $request->user();
         
-        if (!$user || $user->rol !== 'empresa') {
-            return response()->json(['message' => 'No autorizado'], 403);
+        // Solo los repartidores pueden marcar pedidos como en ruta
+        if (!$user || $user->rol !== 'repartidor') {
+            return response()->json(['message' => 'Solo los repartidores pueden marcar pedidos como en ruta'], 403);
         }
 
         $data = $request->validate([
@@ -1357,15 +1450,6 @@ class ReservaController extends Controller
                     continue;
                 }
 
-                // Verificar que pertenece a la empresa
-                if ($reserva->empresa_id !== $user->id) {
-                    $resultados['fallidos'][] = [
-                        'id' => $reservaId,
-                        'mensaje' => 'No tienes acceso a esta reserva'
-                    ];
-                    continue;
-                }
-
                 // Verificar que tiene repartidor asignado
                 if (!$reserva->repartidor_id) {
                     $resultados['fallidos'][] = [
@@ -1375,15 +1459,13 @@ class ReservaController extends Controller
                     continue;
                 }
 
-                // Verificar que el repartidor pertenece a la empresa
-                $repartidor = Repartidor::where('id', $reserva->repartidor_id)
-                    ->where('empresa_id', $user->id)
-                    ->first();
+                // Verificar que el repartidor es el asignado a la reserva
+                $repartidor = Repartidor::where('usuario_id', $user->id)->first();
                     
-                if (!$repartidor) {
+                if (!$repartidor || $reserva->repartidor_id !== $repartidor->id) {
                     $resultados['fallidos'][] = [
                         'id' => $reservaId,
-                        'mensaje' => 'El repartidor no pertenece a tu empresa'
+                        'mensaje' => 'No tienes acceso a esta reserva'
                     ];
                     continue;
                 }
@@ -1452,7 +1534,12 @@ class ReservaController extends Controller
 
                 // Marcar como en ruta
                 $reserva->logistica_estado = 'en_camino';
+                if (!$reserva->hora_inicio) {
+                    $reserva->hora_inicio = now();
+                }
                 $reserva->save();
+                
+                // No actualizamos el estado del repartidor aquí porque el pedido aún está activo (en camino)
 
                 $resultados['exitosos'][] = $reservaId;
             } catch (\Exception $e) {
@@ -1473,8 +1560,9 @@ class ReservaController extends Controller
     {
         $user = $request->user();
         
-        if (!$user || $user->rol !== 'empresa') {
-            return response()->json(['message' => 'No autorizado'], 403);
+        // Solo los repartidores pueden marcar pedidos como entregados
+        if (!$user || $user->rol !== 'repartidor') {
+            return response()->json(['message' => 'Solo los repartidores pueden marcar pedidos como entregados'], 403);
         }
 
         $data = $request->validate([
@@ -1500,15 +1588,6 @@ class ReservaController extends Controller
                     continue;
                 }
 
-                // Verificar que pertenece a la empresa
-                if ($reserva->empresa_id !== $user->id) {
-                    $resultados['fallidos'][] = [
-                        'id' => $reservaId,
-                        'mensaje' => 'No tienes acceso a esta reserva'
-                    ];
-                    continue;
-                }
-
                 // Verificar que tiene repartidor asignado
                 if (!$reserva->repartidor_id) {
                     $resultados['fallidos'][] = [
@@ -1518,15 +1597,13 @@ class ReservaController extends Controller
                     continue;
                 }
 
-                // Verificar que el repartidor pertenece a la empresa
-                $repartidor = Repartidor::where('id', $reserva->repartidor_id)
-                    ->where('empresa_id', $user->id)
-                    ->first();
+                // Verificar que el repartidor es el asignado a la reserva
+                $repartidor = Repartidor::where('usuario_id', $user->id)->first();
                     
-                if (!$repartidor) {
+                if (!$repartidor || $reserva->repartidor_id !== $repartidor->id) {
                     $resultados['fallidos'][] = [
                         'id' => $reservaId,
-                        'mensaje' => 'El repartidor no pertenece a tu empresa'
+                        'mensaje' => 'No tienes acceso a esta reserva'
                     ];
                     continue;
                 }
@@ -1549,10 +1626,11 @@ class ReservaController extends Controller
                 }
 
                 // Marcar como entregado
-                DB::transaction(function () use ($reserva) {
+                DB::transaction(function () use ($reserva, $repartidor) {
                     $reserva->logistica_estado = 'completado';
                     $reserva->save();
                     $this->liberarRepartidor($reserva);
+                    $this->actualizarEstadoRepartidor($repartidor->id);
                 });
 
                 $resultados['exitosos'][] = $reservaId;

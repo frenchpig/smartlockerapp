@@ -129,12 +129,20 @@
                                         <div class="d-flex gap-1 justify-content-end">
                                             <button *ngIf="!tieneRepartidor(p) && p.logisticaEstado === 'pendiente_repartidor'"
                                                     class="btn btn-primary btn-sm"
-                                                    (click)="asignarRepartidor(p)"
+                                                    (click)="abrirModalAsignar(p)"
                                                     [disabled]="estaAsignando(p)"
                                                     title="Asignar repartidor disponible">
                                                 <span *ngIf="estaAsignando(p)" class="spinner-border spinner-border-sm me-1"></span>
                                                 <i *ngIf="!estaAsignando(p)" class="bi bi-person-plus"></i>
                                                 Asignar
+                                            </button>
+                                            <button 
+                                                class="btn btn-outline-danger btn-sm" 
+                                                type="button"
+                                                (click)="abrirModalCancelar(p)"
+                                                *ngIf="puedeCancelar(p)"
+                                                title="Cancelar reserva">
+                                                <i class="bi bi-x-circle me-1"></i>Cancelar
                                             </button>
                                             <a class="btn btn-outline-secondary btn-sm"
                                                 [routerLink]="['/empresa/pedidos', p.id]">
@@ -188,3 +196,61 @@
 <footer class="text-center text-muted py-3">
     <small>&copy; 2025 Smart Lockers — Empresa</small>
 </footer>
+
+<!-- Modal de Confirmación de Cancelación -->
+<div class="repartidor-modal-backdrop confirm-alert-backdrop" *ngIf="showCancelModal" (click)="cerrarModalCancelar()"></div>
+<div class="repartidor-modal confirm-alert-modal" *ngIf="showCancelModal">
+  <div class="repartidor-modal__dialog" (click)="$event.stopPropagation()">
+    <div class="repartidor-modal__header">
+      <h3 class="h6 fw-semibold mb-0 text-danger">Cancelar Reserva</h3>
+      <button type="button" class="btn btn-link text-muted p-0" (click)="cerrarModalCancelar()" [disabled]="cancelando">
+        <i class="bi bi-x-lg fs-5"></i>
+      </button>
+    </div>
+    <div class="repartidor-modal__body">
+      <p class="mb-0">
+        ¿Estás seguro de que deseas cancelar la reserva <strong>#{{ reservaCancelar?.id }}</strong>?
+        <br><br>
+        Esta acción no se puede deshacer. El pedido será anulado y, si tenía un repartidor asignado, será liberado.
+      </p>
+    </div>
+    <div class="repartidor-modal__footer">
+      <button type="button" class="btn btn-outline-secondary" (click)="cerrarModalCancelar()" [disabled]="cancelando">
+        No, mantener
+      </button>
+      <button type="button" class="btn btn-danger" (click)="confirmarCancelar()" [disabled]="cancelando">
+        <span *ngIf="!cancelando">Sí, cancelar</span>
+        <span *ngIf="cancelando" class="spinner-border spinner-border-sm me-1"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Confirmación de Asignación de Repartidor -->
+<div class="repartidor-modal-backdrop confirm-alert-backdrop" *ngIf="showAsignarModal" (click)="cerrarModalAsignar()"></div>
+<div class="repartidor-modal confirm-alert-modal" *ngIf="showAsignarModal">
+  <div class="repartidor-modal__dialog" (click)="$event.stopPropagation()">
+    <div class="repartidor-modal__header">
+      <h3 class="h6 fw-semibold mb-0 text-success">Asignar Repartidor</h3>
+      <button type="button" class="btn btn-link text-muted p-0" (click)="cerrarModalAsignar()" [disabled]="reservaAsignar && estaAsignando(reservaAsignar)">
+        <i class="bi bi-x-lg fs-5"></i>
+      </button>
+    </div>
+    <div class="repartidor-modal__body">
+      <p class="mb-0">
+        ¿Deseas asignar un repartidor disponible al pedido <strong>#{{ reservaAsignar?.id }}</strong>?
+        <br><br>
+        El sistema asignará automáticamente al repartidor con menos pedidos activos.
+      </p>
+    </div>
+    <div class="repartidor-modal__footer">
+      <button type="button" class="btn btn-outline-secondary" (click)="cerrarModalAsignar()" [disabled]="reservaAsignar && estaAsignando(reservaAsignar)">
+        Cancelar
+      </button>
+      <button type="button" class="btn btn-success" (click)="confirmarAsignarRepartidor()" [disabled]="reservaAsignar && estaAsignando(reservaAsignar)">
+        <span *ngIf="!reservaAsignar || !estaAsignando(reservaAsignar)">Sí, asignar</span>
+        <span *ngIf="reservaAsignar && estaAsignando(reservaAsignar)" class="spinner-border spinner-border-sm me-1"></span>
+      </button>
+    </div>
+  </div>
+</div>

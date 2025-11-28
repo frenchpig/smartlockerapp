@@ -147,11 +147,7 @@
   justify-content: center;
   padding: 1.5rem;
   z-index: 1050;
-  pointer-events: none;
-  
-  &[style*="display: flex"] {
-    pointer-events: auto;
-  }
+  pointer-events: auto;
 }
 
 // Modales de confirmación y alerta deben estar por encima del modal de pedidos

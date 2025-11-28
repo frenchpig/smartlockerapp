@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { HeaderEmpresaComponent } from '../shared/header-empresa/header-empresa.component';
+import { ToastService } from '../../../shared/services/toast.service';
 
 type EstadoPedido = 'Pendiente' | 'En camino' | 'Entregado' | 'Anulado';
 
@@ -43,6 +44,7 @@ interface PaginatedResponse<T> {
 })
 export class Pedidos {
   private readonly http = inject(HttpClient);
+  private readonly toastService = inject(ToastService);
 
   page = 1;
   pageSize = 10;
@@ -66,6 +68,15 @@ export class Pedidos {
   pageItems: PedidoEmpresa[] = [];
   asignandoRepartidor = new Set<number>(); // IDs de pedidos en proceso de asignación
   mensaje = { texto: '', tipo: '' as 'success' | 'error' | '' };
+
+  // Modal de cancelación
+  showCancelModal = false;
+  reservaCancelar: PedidoEmpresa | null = null;
+  cancelando = false;
+
+  // Modal de asignación de repartidor
+  showAsignarModal = false;
+  reservaAsignar: PedidoEmpresa | null = null;
 
   async ngOnInit(): Promise<void> {
     await this.cargarUbicaciones();
@@ -262,42 +273,41 @@ export class Pedidos {
     }
   }
 
-  async asignarRepartidor(pedido: PedidoEmpresa) {
-    if (this.asignandoRepartidor.has(pedido.id)) {
+  abrirModalAsignar(pedido: PedidoEmpresa): void {
+    this.reservaAsignar = pedido;
+    this.showAsignarModal = true;
+  }
+
+  cerrarModalAsignar(): void {
+    this.showAsignarModal = false;
+    this.reservaAsignar = null;
+  }
+
+  async confirmarAsignarRepartidor(): Promise<void> {
+    if (!this.reservaAsignar || this.asignandoRepartidor.has(this.reservaAsignar.id)) {
       return;
     }
 
-    if (!confirm(`¿Deseas asignar un repartidor disponible al pedido #${pedido.id}?`)) {
-      return;
-    }
-
-    this.asignandoRepartidor.add(pedido.id);
-    this.mensaje = { texto: '', tipo: '' };
+    const reservaId = this.reservaAsignar.id;
+    this.asignandoRepartidor.add(reservaId);
+    this.cerrarModalAsignar();
 
     try {
       const res = await this.http
-        .post<any>(`${environment.apiUrl}/reservas/${pedido.id}/asignar-repartidor`, {})
+        .post<any>(`${environment.apiUrl}/reservas/${reservaId}/asignar-repartidor`, {})
         .toPromise();
 
-      this.mensaje = {
-        texto: res?.message || 'Repartidor asignado exitosamente',
-        tipo: 'success'
-      };
+      this.toastService.success(res?.message || 'Repartidor asignado exitosamente');
 
       // Recargar pedidos
       await this.cargarPedidos(this.page);
     } catch (error: any) {
       console.error('Error asignando repartidor:', error);
-      this.mensaje = {
-        texto: error?.error?.message || 'No se pudo asignar el repartidor. Intenta nuevamente.',
-        tipo: 'error'
-      };
+      this.toastService.error(
+        error?.error?.message || 'No se pudo asignar el repartidor. Intenta nuevamente.'
+      );
     } finally {
-      this.asignandoRepartidor.delete(pedido.id);
-      // Ocultar mensaje después de 5 segundos
-      setTimeout(() => {
-        this.mensaje = { texto: '', tipo: '' };
-      }, 5000);
+      this.asignandoRepartidor.delete(reservaId);
     }
   }
 
@@ -307,5 +317,44 @@ export class Pedidos {
 
   estaAsignando(pedido: PedidoEmpresa): boolean {
     return this.asignandoRepartidor.has(pedido.id);
+  }
+
+  puedeCancelar(pedido: PedidoEmpresa): boolean {
+    // Solo se puede cancelar si está pendiente y no está en ruta
+    return pedido.estadoReal === 'pendiente' && pedido.logisticaEstado !== 'en_camino';
+  }
+
+  abrirModalCancelar(pedido: PedidoEmpresa): void {
+    this.reservaCancelar = pedido;
+    this.showCancelModal = true;
+  }
+
+  cerrarModalCancelar(): void {
+    this.showCancelModal = false;
+    this.reservaCancelar = null;
+  }
+
+  async confirmarCancelar(): Promise<void> {
+    if (!this.reservaCancelar || this.cancelando) {
+      return;
+    }
+
+    this.cancelando = true;
+    try {
+      await this.http
+        .post(`${environment.apiUrl}/reservas/${this.reservaCancelar.id}/cancelar`, {})
+        .toPromise();
+
+      this.toastService.success('Reserva cancelada exitosamente');
+      this.cerrarModalCancelar();
+      await this.cargarPedidos(this.page);
+    } catch (error: any) {
+      console.error('Error cancelando reserva:', error);
+      this.toastService.error(
+        error?.error?.message || 'No se pudo cancelar la reserva. Intenta nuevamente.'
+      );
+    } finally {
+      this.cancelando = false;
+    }
   }
 }

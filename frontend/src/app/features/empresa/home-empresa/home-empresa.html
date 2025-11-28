@@ -134,10 +134,20 @@
                                 <td data-label="Correo">{{ pedido.destinatarioEmail }}</td>
                                 <td data-label="Fecha">{{ pedido.fechaIso | date:'dd/MM/yyyy' }}</td>
                                 <td class="text-end">
-                                    <button class="btn btn-outline-secondary btn-sm" type="button"
-                                        (click)="verDetalle(pedido.id)">
-                                        <i class="bi bi-eye me-1"></i>Detalle
-                                    </button>
+                                    <div class="d-flex gap-2 justify-content-end">
+                                        <button 
+                                            class="btn btn-outline-danger btn-sm" 
+                                            type="button"
+                                            (click)="abrirModalCancelar(pedido)"
+                                            *ngIf="puedeCancelar(pedido)"
+                                            title="Cancelar reserva">
+                                            <i class="bi bi-x-circle me-1"></i>Cancelar
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm" type="button"
+                                            (click)="verDetalle(pedido.id)">
+                                            <i class="bi bi-eye me-1"></i>Detalle
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
@@ -163,3 +173,32 @@
 <footer class="text-center text-muted py-3">
     <small>&copy; 2025 Smart Lockers - Empresa</small>
 </footer>
+
+<!-- Modal de Confirmación de Cancelación -->
+<div class="repartidor-modal-backdrop confirm-alert-backdrop" *ngIf="showCancelModal" (click)="cerrarModalCancelar()"></div>
+<div class="repartidor-modal confirm-alert-modal" *ngIf="showCancelModal">
+  <div class="repartidor-modal__dialog" (click)="$event.stopPropagation()">
+    <div class="repartidor-modal__header">
+      <h3 class="h6 fw-semibold mb-0 text-danger">Cancelar Reserva</h3>
+      <button type="button" class="btn btn-link text-muted p-0" (click)="cerrarModalCancelar()" [disabled]="cancelando">
+        <i class="bi bi-x-lg fs-5"></i>
+      </button>
+    </div>
+    <div class="repartidor-modal__body">
+      <p class="mb-0">
+        ¿Estás seguro de que deseas cancelar la reserva <strong>#{{ reservaCancelar?.id }}</strong>?
+        <br><br>
+        Esta acción no se puede deshacer. El pedido será anulado y, si tenía un repartidor asignado, será liberado.
+      </p>
+    </div>
+    <div class="repartidor-modal__footer">
+      <button type="button" class="btn btn-outline-secondary" (click)="cerrarModalCancelar()" [disabled]="cancelando">
+        No, mantener
+      </button>
+      <button type="button" class="btn btn-danger" (click)="confirmarCancelar()" [disabled]="cancelando">
+        <span *ngIf="!cancelando">Sí, cancelar</span>
+        <span *ngIf="cancelando" class="spinner-border spinner-border-sm me-1"></span>
+      </button>
+    </div>
+  </div>
+</div>
