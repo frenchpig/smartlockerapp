@@ -86,15 +86,20 @@ export class AdminIncidencias implements OnInit {
   errorMsg = signal('');
   successMsg = signal('');
 
+  // Modal de confirmación
+  mostrarModalConfirmacion = signal(false);
+  incidenciaSeleccionada: Incidencia | null = null;
+  nuevoEstadoSeleccionado: 'resuelto' | 'pendiente' | 'anulada' | null = null;
+
   // Paginación
   page = 1;
   pageSize = 20;
   lastPage = 1;
   total = 0;
 
-  // Filtros
+  // Filtros - Inicializar con filtro de tipo Locker activado
   filtroEstado = '';
-  filtroTipo = '';
+  filtroTipo = 'locker'; // Filtro inicial activado
   filtroProblema = '';
 
   // Estados y tipos disponibles para filtros
@@ -140,6 +145,8 @@ export class AdminIncidencias implements OnInit {
   ];
 
   async ngOnInit(): Promise<void> {
+    // El filtro de tipo 'locker' ya está activado por defecto
+    // Cargar incidencias con el filtro aplicado
     await this.cargarIncidencias();
   }
 
@@ -167,7 +174,17 @@ export class AdminIncidencias implements OnInit {
       );
 
       const mapped = (resp?.data ?? []).map((inc) => this.mapIncidencia(inc));
-      this._incidencias.set(mapped);
+      
+      // Ordenar: primero las pendientes, luego las demás
+      const ordenadas = mapped.sort((a, b) => {
+        // Pendientes primero
+        if (a.estado === 'pendiente' && b.estado !== 'pendiente') return -1;
+        if (a.estado !== 'pendiente' && b.estado === 'pendiente') return 1;
+        // Si ambas son pendientes o ninguna lo es, mantener orden original (por fecha, más recientes primero)
+        return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
+      });
+      
+      this._incidencias.set(ordenadas);
       this.page = Number(resp?.current_page ?? page) || 1;
       this.lastPage = Number(resp?.last_page ?? 1) || 1;
       this.total = Number(resp?.total ?? 0) || 0;
@@ -263,15 +280,30 @@ export class AdminIncidencias implements OnInit {
     return this.lastPage;
   }
 
-  async actualizarEstado(incidencia: Incidencia, nuevoEstado: 'resuelto' | 'pendiente' | 'anulada'): Promise<void> {
+  abrirModalConfirmacion(incidencia: Incidencia, nuevoEstado: 'resuelto' | 'pendiente' | 'anulada'): void {
     if (!incidencia.puedeGestionar) {
       this.errorMsg.set('Solo puedes gestionar incidencias de tipo Locker. Las incidencias de pedidos son gestionadas por las empresas.');
       return;
     }
 
-    if (!confirm(`¿Estás seguro de que deseas cambiar el estado a "${nuevoEstado === 'resuelto' ? 'Resuelta' : nuevoEstado === 'anulada' ? 'Anulada' : 'Pendiente'}"?`)) {
+    this.incidenciaSeleccionada = incidencia;
+    this.nuevoEstadoSeleccionado = nuevoEstado;
+    this.mostrarModalConfirmacion.set(true);
+  }
+
+  cerrarModalConfirmacion(): void {
+    this.mostrarModalConfirmacion.set(false);
+    this.incidenciaSeleccionada = null;
+    this.nuevoEstadoSeleccionado = null;
+  }
+
+  async confirmarCambioEstado(): Promise<void> {
+    if (!this.incidenciaSeleccionada || !this.nuevoEstadoSeleccionado) {
       return;
     }
+
+    const incidencia = this.incidenciaSeleccionada;
+    const nuevoEstado = this.nuevoEstadoSeleccionado;
 
     this.errorMsg.set('');
     this.successMsg.set('');
@@ -286,6 +318,9 @@ export class AdminIncidencias implements OnInit {
 
       this.successMsg.set(`Incidencia ${nuevoEstado === 'resuelto' ? 'marcada como resuelta' : nuevoEstado === 'anulada' ? 'anulada' : 'marcada como pendiente'} exitosamente.`);
       
+      // Cerrar modal
+      this.cerrarModalConfirmacion();
+      
       // Recargar incidencias
       await this.cargarIncidencias(this.page);
     } catch (err: any) {
@@ -294,6 +329,13 @@ export class AdminIncidencias implements OnInit {
         err?.error?.message || 'No fue posible actualizar la incidencia. Intenta nuevamente.'
       );
     }
+  }
+
+  getEstadoLabel(estado: 'resuelto' | 'pendiente' | 'anulada' | null): string {
+    if (!estado) return '';
+    if (estado === 'resuelto') return 'Resuelta';
+    if (estado === 'anulada') return 'Anulada';
+    return 'Pendiente';
   }
 
   verDetalle(incidencia: Incidencia) {

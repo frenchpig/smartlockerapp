@@ -107,6 +107,10 @@ export class IncidenciaDetalleComponent implements OnInit {
     error = signal('');
     successMsg = signal('');
 
+    // Modal de confirmación
+    mostrarModalConfirmacion = signal(false);
+    nuevoEstadoSeleccionado: 'resuelto' | 'pendiente' | 'anulada' | null = null;
+
     async ngOnInit(): Promise<void> {
         if (!this.incidenciaId) {
             this.error.set('ID de incidencia no proporcionado.');
@@ -221,16 +225,29 @@ export class IncidenciaDetalleComponent implements OnInit {
         return this.incidencia()?.reserva?.articulos?.some(art => !!art.peso) ?? false;
     }
 
-    async actualizarEstado(nuevoEstado: 'resuelto' | 'pendiente' | 'anulada'): Promise<void> {
+    abrirModalConfirmacion(nuevoEstado: 'resuelto' | 'pendiente' | 'anulada'): void {
         const incidencia = this.incidencia();
         if (!incidencia || !incidencia.puedeGestionar) {
             this.error.set('Solo puedes gestionar incidencias de tipo Locker.');
             return;
         }
 
-        if (!confirm(`¿Estás seguro de que deseas cambiar el estado a "${nuevoEstado === 'resuelto' ? 'Resuelta' : nuevoEstado === 'anulada' ? 'Anulada' : 'Pendiente'}"?`)) {
+        this.nuevoEstadoSeleccionado = nuevoEstado;
+        this.mostrarModalConfirmacion.set(true);
+    }
+
+    cerrarModalConfirmacion(): void {
+        this.mostrarModalConfirmacion.set(false);
+        this.nuevoEstadoSeleccionado = null;
+    }
+
+    async confirmarCambioEstado(): Promise<void> {
+        const incidencia = this.incidencia();
+        if (!incidencia || !this.nuevoEstadoSeleccionado) {
             return;
         }
+
+        const nuevoEstado = this.nuevoEstadoSeleccionado;
 
         this.error.set('');
         this.successMsg.set('');
@@ -245,6 +262,9 @@ export class IncidenciaDetalleComponent implements OnInit {
 
             this.successMsg.set(`Incidencia ${nuevoEstado === 'resuelto' ? 'marcada como resuelta' : nuevoEstado === 'anulada' ? 'anulada' : 'marcada como pendiente'} exitosamente.`);
             
+            // Cerrar modal
+            this.cerrarModalConfirmacion();
+            
             // Recargar incidencia
             await this.cargarIncidencia();
         } catch (err: any) {
@@ -253,6 +273,13 @@ export class IncidenciaDetalleComponent implements OnInit {
                 err?.error?.message || 'No fue posible actualizar la incidencia. Intenta nuevamente.'
             );
         }
+    }
+
+    getEstadoLabel(estado: 'resuelto' | 'pendiente' | 'anulada' | null): string {
+        if (!estado) return '';
+        if (estado === 'resuelto') return 'Resuelta';
+        if (estado === 'anulada') return 'Anulada';
+        return 'Pendiente';
     }
 }
 

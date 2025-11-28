@@ -49,18 +49,16 @@
                                     {{ incidencia()!.estadoLabel }}
                                 </span>
                                 
-                                <!-- Botones de acción (solo para admin y solo si puede gestionar) -->
-                                <div *ngIf="mostrarAcciones && incidencia()!.puedeGestionar" class="btn-group">
+                                <!-- Botones de acción (solo para admin, solo si puede gestionar Y está pendiente) -->
+                                <div *ngIf="mostrarAcciones && incidencia()!.puedeGestionar && incidencia()!.estado === 'pendiente'" class="btn-group">
                                     <button class="btn btn-success btn-sm" 
-                                        (click)="actualizarEstado('resuelto')"
-                                        title="Marcar como resuelta"
-                                        [disabled]="incidencia()!.estado === 'resuelto'">
+                                        (click)="abrirModalConfirmacion('resuelto')"
+                                        title="Marcar como resuelta">
                                         <i class="bi bi-check-circle"></i> Resolver
                                     </button>
                                     <button class="btn btn-outline-secondary btn-sm" 
-                                        (click)="actualizarEstado('anulada')"
-                                        title="Anular incidencia"
-                                        [disabled]="incidencia()!.estado === 'anulada'">
+                                        (click)="abrirModalConfirmacion('anulada')"
+                                        title="Anular incidencia">
                                         <i class="bi bi-x-circle"></i> Anular
                                     </button>
                                 </div>
@@ -235,4 +233,82 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de Confirmación -->
+<div class="modal fade" [class.show]="mostrarModalConfirmacion()" [style.display]="mostrarModalConfirmacion() ? 'block' : 'none'" tabindex="-1" role="dialog" *ngIf="mostrarModalConfirmacion()">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle-fill me-2 text-warning"></i>
+                    Confirmar Cambio de Estado
+                </h5>
+                <button type="button" class="btn-close" (click)="cerrarModalConfirmacion()" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <div class="card bg-light border-0 mb-3" *ngIf="incidencia()">
+                    <div class="card-body p-3">
+                        <div class="row g-2 small">
+                            <div class="col-12">
+                                <strong>Incidencia:</strong> #{{ incidencia()!.id }}
+                            </div>
+                            <div class="col-12">
+                                <strong>Descripción:</strong> {{ incidencia()!.descripcion }}
+                            </div>
+                            <div class="col-6">
+                                <strong>Estado actual:</strong> 
+                                <span class="badge ms-2"
+                                    [class.bg-warning-subtle]="incidencia()!.estado === 'pendiente'"
+                                    [class.text-warning-emphasis]="incidencia()!.estado === 'pendiente'"
+                                    [class.bg-success-subtle]="incidencia()!.estado === 'resuelto'"
+                                    [class.text-success-emphasis]="incidencia()!.estado === 'resuelto'"
+                                    [class.bg-secondary-subtle]="incidencia()!.estado === 'anulada'"
+                                    [class.text-secondary-emphasis]="incidencia()!.estado === 'anulada'">
+                                    {{ incidencia()!.estadoLabel }}
+                                </span>
+                            </div>
+                            <div class="col-6" *ngIf="nuevoEstadoSeleccionado">
+                                <strong>Nuevo estado:</strong> 
+                                <span class="badge ms-2"
+                                    [class.bg-warning-subtle]="nuevoEstadoSeleccionado === 'pendiente'"
+                                    [class.text-warning-emphasis]="nuevoEstadoSeleccionado === 'pendiente'"
+                                    [class.bg-success-subtle]="nuevoEstadoSeleccionado === 'resuelto'"
+                                    [class.text-success-emphasis]="nuevoEstadoSeleccionado === 'resuelto'"
+                                    [class.bg-secondary-subtle]="nuevoEstadoSeleccionado === 'anulada'"
+                                    [class.text-secondary-emphasis]="nuevoEstadoSeleccionado === 'anulada'">
+                                    {{ getEstadoLabel(nuevoEstadoSeleccionado) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <p class="mb-0">
+                        ¿Estás seguro de que deseas cambiar el estado de esta incidencia a 
+                        <strong>"{{ getEstadoLabel(nuevoEstadoSeleccionado) }}"</strong>?
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    (click)="cerrarModalConfirmacion()">
+                    Cancelar
+                </button>
+                <button
+                    type="button"
+                    class="btn"
+                    [class.btn-success]="nuevoEstadoSeleccionado === 'resuelto'"
+                    [class.btn-outline-secondary]="nuevoEstadoSeleccionado === 'anulada'"
+                    (click)="confirmarCambioEstado()">
+                    <i class="bi bi-check-circle me-1"></i>
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="mostrarModalConfirmacion()" *ngIf="mostrarModalConfirmacion()"></div>
 
