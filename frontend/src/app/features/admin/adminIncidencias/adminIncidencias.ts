@@ -32,6 +32,7 @@ interface Incidencia {
     empresa?: { id: number; nombre: string; email: string } | null;
   } | null;
   puedeGestionar: boolean; // Solo true para incidencias de tipo 'locker'
+  tieneSoporte24_7?: boolean; // Si la empresa tiene plan con soporte 24/7
 }
 
 interface IncidenciaResponse {
@@ -56,7 +57,9 @@ interface IncidenciaResponse {
   reserva?: {
     id: number;
     empresa?: { id: number; nombre: string; email: string } | null;
+    ubicacion_destino?: { id: number; nombre: string } | null;
   } | null;
+  empresa_tiene_soporte_24_7?: boolean;
 }
 
 interface PaginatedResponse<T> {
@@ -175,12 +178,23 @@ export class AdminIncidencias implements OnInit {
 
       const mapped = (resp?.data ?? []).map((inc) => this.mapIncidencia(inc));
       
-      // Ordenar: primero las pendientes, luego las demás
+      // Ordenar: primero empresas con soporte 24/7 y pendientes, luego las demás
       const ordenadas = mapped.sort((a, b) => {
-        // Pendientes primero
+        // Prioridad 1: Empresas con soporte 24/7 y pendientes
+        const aPrioritario = a.tieneSoporte24_7 && a.estado === 'pendiente';
+        const bPrioritario = b.tieneSoporte24_7 && b.estado === 'pendiente';
+        if (aPrioritario && !bPrioritario) return -1;
+        if (!aPrioritario && bPrioritario) return 1;
+        
+        // Prioridad 2: Pendientes (sin soporte 24/7)
         if (a.estado === 'pendiente' && b.estado !== 'pendiente') return -1;
         if (a.estado !== 'pendiente' && b.estado === 'pendiente') return 1;
-        // Si ambas son pendientes o ninguna lo es, mantener orden original (por fecha, más recientes primero)
+        
+        // Prioridad 3: Empresas con soporte 24/7 (resueltas/anuladas) antes que otras
+        if (a.tieneSoporte24_7 && !b.tieneSoporte24_7) return -1;
+        if (!a.tieneSoporte24_7 && b.tieneSoporte24_7) return 1;
+        
+        // Si están en la misma categoría, ordenar por fecha (más recientes primero)
         return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
       });
       
@@ -239,7 +253,7 @@ export class AdminIncidencias implements OnInit {
       estadoLabel: estadoLabels[raw.estado] || raw.estado,
       fecha: raw.created_at ? new Date(raw.created_at) : new Date(),
       locker: raw.locker?.numero ?? null,
-      ubicacion: raw.locker?.ubicacion?.nombre ?? null,
+      ubicacion: raw.locker?.ubicacion?.nombre ?? raw.reserva?.ubicacion_destino?.nombre ?? null,
       usuario: raw.usuario ? {
         id: raw.usuario.id,
         nombre: raw.usuario.nombre,
@@ -250,6 +264,7 @@ export class AdminIncidencias implements OnInit {
         empresa: raw.reserva.empresa ?? null,
       } : null,
       puedeGestionar,
+      tieneSoporte24_7: raw.empresa_tiene_soporte_24_7 ?? false,
     };
   }
 

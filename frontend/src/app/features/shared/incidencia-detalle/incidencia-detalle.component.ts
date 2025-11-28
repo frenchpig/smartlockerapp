@@ -47,6 +47,7 @@ export interface IncidenciaDetalle {
         logistica_estado?: string;
     } | null;
     puedeGestionar?: boolean; // Para admin: solo true si es tipo 'locker'
+    tieneSoporte24_7?: boolean; // Si la empresa tiene plan con soporte 24/7
 }
 
 interface IncidenciaResponse {
@@ -85,7 +86,9 @@ interface IncidenciaResponse {
         fecha_reserva?: string;
         estado?: string;
         logistica_estado?: string;
+        ubicacion_destino?: { id: number; nombre: string } | null;
     } | null;
+    empresa_tiene_soporte_24_7?: boolean;
 }
 
 @Component({
@@ -189,7 +192,7 @@ export class IncidenciaDetalleComponent implements OnInit {
                 id: raw.locker.id,
                 numero: raw.locker.numero,
             } : null,
-            ubicacion: raw.locker?.ubicacion?.nombre ?? null,
+            ubicacion: raw.locker?.ubicacion?.nombre ?? raw.reserva?.ubicacion_destino?.nombre ?? null,
             usuario: raw.usuario ? {
                 id: raw.usuario.id,
                 nombre: raw.usuario.nombre,
@@ -212,8 +215,13 @@ export class IncidenciaDetalleComponent implements OnInit {
                 fecha_reserva: raw.reserva.fecha_reserva,
                 estado: raw.reserva.estado,
                 logistica_estado: raw.reserva.logistica_estado,
+                ubicacion_destino: raw.reserva.ubicacion_destino ? {
+                    id: raw.reserva.ubicacion_destino.id,
+                    nombre: raw.reserva.ubicacion_destino.nombre,
+                } : null,
             } : null,
             puedeGestionar,
+            tieneSoporte24_7: raw.empresa_tiene_soporte_24_7 ?? false,
         };
     }
 

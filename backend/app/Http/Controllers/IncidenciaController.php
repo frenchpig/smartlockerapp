@@ -16,7 +16,14 @@ class IncidenciaController extends Controller
         $perPage = (int) $request->query('per_page', 20);
         $perPage = max(1, min(100, $perPage));
 
-        $query = Incidencia::with(['locker', 'usuario', 'reserva.empresa', 'reserva.repartidor', 'reserva.articulos']);
+        $query = Incidencia::with([
+            'locker', 
+            'usuario', 
+            'reserva.empresa.datosEmpresa.tarifa', 
+            'reserva.repartidor', 
+            'reserva.articulos',
+            'reserva.ubicacionDestino'
+        ]);
 
         // Filtros
         if ($estado = trim((string) $request->query('estado', ''))) {
@@ -33,7 +40,26 @@ class IncidenciaController extends Controller
 
         $query->orderByDesc('created_at');
 
-        return $query->paginate($perPage);
+        $incidencias = $query->paginate($perPage);
+
+        // Agregar información de soporte 24/7 para cada incidencia
+        $incidencias->getCollection()->transform(function ($incidencia) {
+            if ($incidencia->reserva && $incidencia->reserva->empresa) {
+                $empresa = $incidencia->reserva->empresa;
+                // Cargar datos de empresa si no están cargados
+                if (!$empresa->relationLoaded('datosEmpresa')) {
+                    $empresa->load('datosEmpresa.tarifa');
+                }
+                
+                $tarifa = $empresa->datosEmpresa->tarifa ?? null;
+                $incidencia->empresa_tiene_soporte_24_7 = $tarifa && $tarifa->prioridad_soporte === 'Prioritario';
+            } else {
+                $incidencia->empresa_tiene_soporte_24_7 = false;
+            }
+            return $incidencia;
+        });
+
+        return $incidencias;
     }
 
     /**
@@ -50,7 +76,7 @@ class IncidenciaController extends Controller
         $perPage = (int) $request->query('per_page', 20);
         $perPage = max(1, min(100, $perPage));
 
-        $query = Incidencia::with(['locker', 'usuario', 'reserva.empresa', 'reserva.repartidor', 'reserva.articulos'])
+        $query = Incidencia::with(['locker', 'usuario', 'reserva.empresa', 'reserva.repartidor', 'reserva.articulos', 'reserva.ubicacionDestino'])
             ->where('tipo', 'pedido') // Solo incidencias de tipo pedido
             ->whereNotNull('reserva_id') // Solo incidencias relacionadas con pedidos
             ->whereHas('reserva', function ($q) use ($user) {
@@ -77,7 +103,18 @@ class IncidenciaController extends Controller
 
     public function show(Incidencia $incidencia)
     {
-        return $incidencia->load(['locker', 'usuario', 'reserva.empresa', 'reserva.repartidor', 'reserva.articulos']);
+        $incidencia->load(['locker', 'usuario', 'reserva.empresa.datosEmpresa.tarifa', 'reserva.repartidor', 'reserva.articulos', 'reserva.ubicacionDestino']);
+        
+        // Agregar información de soporte 24/7
+        if ($incidencia->reserva && $incidencia->reserva->empresa) {
+            $empresa = $incidencia->reserva->empresa;
+            $tarifa = $empresa->datosEmpresa->tarifa ?? null;
+            $incidencia->empresa_tiene_soporte_24_7 = $tarifa && $tarifa->prioridad_soporte === 'Prioritario';
+        } else {
+            $incidencia->empresa_tiene_soporte_24_7 = false;
+        }
+        
+        return $incidencia;
     }
 
     public function store(Request $request)

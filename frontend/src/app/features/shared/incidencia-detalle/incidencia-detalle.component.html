@@ -28,7 +28,14 @@
                         <!-- Header con estado -->
                         <div class="d-flex justify-content-between flex-wrap align-items-center border-bottom pb-3 mb-4">
                             <div>
-                                <h2 class="h5 fw-bold mb-1">Incidencia #{{ incidencia()!.id }}</h2>
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <h2 class="h5 fw-bold mb-0">Incidencia #{{ incidencia()!.id }}</h2>
+                                    <span *ngIf="incidencia()!.tieneSoporte24_7" 
+                                          class="badge bg-danger-subtle text-danger-emphasis" 
+                                          title="Cliente Prioritario - Soporte 24/7">
+                                        <i class="bi bi-star-fill"></i> Cliente Prioritario 24/7
+                                    </span>
+                                </div>
                                 <p class="text-muted small mb-0">
                                     <i class="bi bi-calendar-event"></i> 
                                     Creada: {{ incidencia()!.fecha | date: 'dd/MM/yyyy' }}
