@@ -1,8 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { AuthService } from '../../../../core/auth/auth';
 import { UserMenuButtonComponent, MenuItem } from '../../../../shared/components/user-menu-button/user-menu-button.component';
+import { filter, Subscription } from 'rxjs';
 
 @Component({
     standalone: true,
@@ -11,9 +12,10 @@ import { UserMenuButtonComponent, MenuItem } from '../../../../shared/components
     templateUrl: './headerAdmin.html',
     styleUrls: ['./headerAdmin.scss']
 })
-export class HeaderAdmin {
+export class HeaderAdmin implements OnInit, OnDestroy {
     private auth = inject(AuthService);
     private router = inject(Router);
+    private routerSubscription?: Subscription;
 
     user = this.auth.user;
 
@@ -72,22 +74,59 @@ export class HeaderAdmin {
 
     menuMobileAbierto = false;
 
+    ngOnInit() {
+        // Determinar la vista actual al inicializar
+        this.actualizarVistaActual();
+        
+        // Suscribirse a los cambios de ruta
+        this.routerSubscription = this.router.events
+            .pipe(filter(event => event instanceof NavigationEnd))
+            .subscribe(() => {
+                this.actualizarVistaActual();
+            });
+    }
+
+    ngOnDestroy() {
+        if (this.routerSubscription) {
+            this.routerSubscription.unsubscribe();
+        }
+    }
+
+    private actualizarVistaActual() {
+        const url = this.router.url;
+        
+        if (url === '/admin' || url === '/admin/') {
+            this.vistaActual = 'home';
+        } else if (url.startsWith('/admin/lockers')) {
+            this.vistaActual = 'lockers';
+        } else if (url.startsWith('/admin/AdminIncidencias')) {
+            this.vistaActual = 'incidencias';
+        } else if (url.startsWith('/admin/tarifas')) {
+            this.vistaActual = 'tarifas';
+        } else if (url.startsWith('/admin/empresa')) {
+            this.vistaActual = 'empresas';
+        } else {
+            // Para otras rutas (perfil, detalle, etc.), mantener la última vista conocida
+            // o establecer una por defecto
+            if (!this.vistaActual) {
+                this.vistaActual = 'home';
+            }
+        }
+    }
+
 
 
     irHome() {
-        this.vistaActual = 'home';
         this.router.navigate(['/admin']);
         this.cerrarMenuMobile();
     }
 
     irLockers() {
-        this.vistaActual = 'lockers';
         this.router.navigate(['/admin/lockers']);
         this.cerrarMenuMobile();
     }
 
     irIncidencias() {
-        this.vistaActual = 'incidencias';
         this.router.navigate(['/admin/AdminIncidencias']);
         this.cerrarMenuMobile();
     }
@@ -96,17 +135,12 @@ export class HeaderAdmin {
         this.router.navigate(['/admin/perfilAdmin']);
     }
 
-
     irTarifas() {
-        this.vistaActual = 'tarifas';
-        console.log('Ir a /admin/tarifas');
         this.router.navigate(['/admin/tarifas']);
         this.cerrarMenuMobile();
     }
 
     irEmpresas() {
-        this.vistaActual = 'empresas';
-        console.log('Ir a /admin/empresas');
         this.router.navigate(['/admin/empresa']);
         this.cerrarMenuMobile();
     }
