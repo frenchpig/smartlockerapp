@@ -32,6 +32,27 @@
   background: #f8fafc;
 }
 
+// Estilos para botones de acciones en desktop
+.table tbody td.acciones-cell {
+  .acciones-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center;
+    
+    .btn-action {
+      white-space: nowrap;
+      flex-shrink: 0;
+      
+      .btn-text {
+        white-space: nowrap;
+      }
+    }
+  }
+}
+
 .badge-logistica {
   display: inline-block;
   padding: .35rem .75rem;
@@ -167,7 +188,7 @@
     }
   }
 
-  // Celda de acciones responsive
+  // Celda de acciones responsive (solo en móvil)
   .table tbody td.acciones-cell {
     justify-content: flex-start !important;
     flex-direction: column;

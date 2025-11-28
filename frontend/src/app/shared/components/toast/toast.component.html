@@ -1,0 +1,10 @@
+<div [id]="'toast-' + toast.id" [class]="getToastClass()">
+  <div class="toast-content">
+    <i [class]="'bi ' + getIconClass()"></i>
+    <span class="toast-message">{{ toast.message }}</span>
+    <button type="button" class="toast-close" (click)="close()" aria-label="Cerrar">
+      <i class="bi bi-x"></i>
+    </button>
+  </div>
+</div>
+

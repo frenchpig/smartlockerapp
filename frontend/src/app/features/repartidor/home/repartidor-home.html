@@ -211,11 +211,10 @@
                           <button
                             class="btn btn-outline-danger btn-sm btn-action"
                             type="button"
-                            (click)="cancelarEntrega(r.id)"
+                            (click)="abrirModalCancelar(r)"
                             *ngIf="r.logisticaEstado === 'en_camino'"
                             [disabled]="actionLoading.has(r.id)"
                             title="Cancelar entrega (anula el pedido)">
-                            <span *ngIf="actionLoading.has(r.id)" class="spinner-border spinner-border-sm me-1" role="status"></span>
                             <i class="bi bi-x-circle"></i>
                             <span class="btn-text">Cancelar entrega</span>
                           </button>
@@ -342,3 +341,70 @@
   </div>
 </div>
 <div class="modal-backdrop fade" [class.show]="mostrarModalIncidencia" *ngIf="mostrarModalIncidencia"></div>
+
+<!-- Modal para confirmar cancelación de entrega -->
+<div class="modal fade" [class.show]="mostrarModalCancelar" [style.display]="mostrarModalCancelar ? 'block' : 'none'" tabindex="-1" role="dialog" *ngIf="mostrarModalCancelar">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title">
+          <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
+          Confirmar cancelación de entrega
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalCancelar()" [disabled]="cancelandoEntrega" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body pt-3">
+        <div class="alert alert-warning" role="alert">
+          <strong>¿Estás seguro de que deseas cancelar esta entrega?</strong>
+        </div>
+        
+        <p class="mb-3">
+          Esta acción <strong>anulará el pedido</strong> y la empresa tendrá que crear una nueva reserva.
+        </p>
+
+        <div class="card bg-light border-0 mb-3" *ngIf="reservaCancelar">
+          <div class="card-body p-3">
+            <div class="row g-2 small">
+              <div class="col-6">
+                <strong>Pedido:</strong> #{{ reservaCancelar.id }}
+              </div>
+              <div class="col-6">
+                <strong>Locker:</strong> {{ reservaCancelar.locker || 'No asignado' }}
+              </div>
+              <div class="col-12">
+                <strong>Destinatario:</strong> {{ reservaCancelar.destinatario }}
+              </div>
+              <div class="col-12">
+                <strong>Ubicación:</strong> {{ reservaCancelar.ubicacion }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="text-muted small mb-0">
+          <i class="bi bi-info-circle me-1"></i>
+          Esta acción no se puede deshacer. El locker será liberado y el pedido quedará anulado.
+        </p>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="cerrarModalCancelar()"
+          [disabled]="cancelandoEntrega">
+          No, mantener entrega
+        </button>
+        <button
+          type="button"
+          class="btn btn-danger"
+          (click)="confirmarCancelarEntrega()"
+          [disabled]="cancelandoEntrega">
+          <span *ngIf="cancelandoEntrega" class="spinner-border spinner-border-sm me-1" role="status"></span>
+          <i class="bi bi-x-circle me-1" *ngIf="!cancelandoEntrega"></i>
+          Sí, cancelar entrega
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="mostrarModalCancelar" *ngIf="mostrarModalCancelar"></div>

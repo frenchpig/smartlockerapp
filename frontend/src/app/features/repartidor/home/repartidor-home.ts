@@ -6,6 +6,7 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { environment } from '../../../../environments/environment';
 import { AuthService } from '../../../core/auth/auth';
 import { HeaderRepartidorComponent } from '../shared/header-repartidor/header-repartidor.component';
+import { ToastService } from '../../../shared/services/toast.service';
 
 type LogisticaEstado = 'pendiente_repartidor' | 'asignado' | 'en_camino' | 'completado';
 
@@ -58,6 +59,7 @@ export class RepartidorHome implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
+  private readonly toastService = inject(ToastService);
 
   reservas: ReservaAsignada[] = [];
   kpis: Kpi[] = [];
@@ -87,6 +89,11 @@ export class RepartidorHome implements OnInit {
   reservaIncidencia: ReservaAsignada | null = null;
   incidenciaForm: FormGroup;
   reportandoIncidencia = false;
+
+  // Modal de confirmar cancelación
+  mostrarModalCancelar = false;
+  reservaCancelar: ReservaAsignada | null = null;
+  cancelandoEntrega = false;
   problemasLocker: { value: string; label: string }[] = [
     { value: 'no_se_abre', label: 'No se abre' },
     { value: 'no_se_cierra', label: 'No se cierra' },
@@ -259,28 +266,33 @@ export class RepartidorHome implements OnInit {
     }
   }
 
-  async cancelarEntrega(reservaId: number): Promise<void> {
-    if (this.actionLoading.has(reservaId)) return;
-    
-    const reserva = this.reservas.find(r => r.id === reservaId);
-    if (!reserva) return;
+  abrirModalCancelar(reserva: ReservaAsignada): void {
+    this.reservaCancelar = reserva;
+    this.mostrarModalCancelar = true;
+  }
 
-    const confirmacion = confirm(
-      `¿Estás seguro de que deseas cancelar la entrega del pedido #${reservaId}?\n\n` +
-      `Esta acción anulará el pedido y la empresa tendrá que crear una nueva reserva.`
-    );
+  cerrarModalCancelar(): void {
+    this.mostrarModalCancelar = false;
+    this.reservaCancelar = null;
+  }
 
-    if (!confirmacion) return;
+  async confirmarCancelarEntrega(): Promise<void> {
+    if (!this.reservaCancelar || this.cancelandoEntrega) return;
 
+    const reservaId = this.reservaCancelar.id;
+    this.cancelandoEntrega = true;
     this.actionLoading.add(reservaId);
+
     try {
       await this.http.post(`${environment.apiUrl}/reservas/${reservaId}/cancelar-entrega`, {}).toPromise();
-      alert('Entrega cancelada exitosamente. El pedido ha sido anulado.');
+      this.cerrarModalCancelar();
       await this.cargarAsignaciones(this.page);
+      this.toastService.success('Entrega cancelada exitosamente. El pedido ha sido anulado.');
     } catch (error: any) {
       console.error('No se pudo cancelar la entrega', error);
-      alert(error?.error?.message ?? 'No se pudo cancelar la entrega. Intenta nuevamente.');
+      this.toastService.error(error?.error?.message ?? 'No se pudo cancelar la entrega. Intenta nuevamente.');
     } finally {
+      this.cancelandoEntrega = false;
       this.actionLoading.delete(reservaId);
     }
   }
