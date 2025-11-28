@@ -15,6 +15,7 @@ use App\Http\Controllers\UbicacionController;
 use App\Http\Controllers\EmpresaRepartidorController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ProductoEmpresaController;
+use App\Http\Controllers\TecnicoController;
 
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
@@ -98,9 +99,23 @@ Route::apiResources([
 Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('incidencias', IncidenciaController::class);
     Route::get('/incidencias/empresa/mis-incidencias', [IncidenciaController::class, 'empresaIncidencias']);
+    Route::post('/incidencias/{incidencia}/derivar-tecnico', [IncidenciaController::class, 'derivarATecnico']);
     
     // Dashboard del administrador
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
+    
+    // Rutas para técnicos (CRUD)
+    Route::apiResource('tecnicos', TecnicoController::class);
+    
+    // Rutas para técnicos autenticados
+    Route::prefix('tecnico')->group(function () {
+        // Mantenciones del técnico autenticado
+        // IMPORTANTE: Las rutas más específicas deben ir ANTES de las rutas con parámetros
+        Route::get('/mantenciones/historicas', [MantenimientoController::class, 'mantencionesHistoricas']);
+        Route::get('/mantenciones', [MantenimientoController::class, 'misMantenciones']);
+        Route::get('/mantenciones/{mantenimiento}', [MantenimientoController::class, 'showMantenimiento']);
+        Route::patch('/incidencias/{incidencia}/marcar-disponible', [IncidenciaController::class, 'marcarDisponibleParaCerrar']);
+    });
 });
 
 // Rutas para empresas

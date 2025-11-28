@@ -52,10 +52,14 @@ class Incidencia extends Model
         'descripcion',
         'estado',
         'datos_pedido',
+        'comentario_cierre',
+        'disponible_para_cerrar',
+        'tecnico_id',
     ];
 
     protected $casts = [
         'datos_pedido' => 'array',
+        'disponible_para_cerrar' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -74,6 +78,16 @@ class Incidencia extends Model
     public function usuario()
     {
         return $this->belongsTo(Usuario::class, 'usuario_id');
+    }
+    
+    public function tecnico()
+    {
+        return $this->belongsTo(Usuario::class, 'tecnico_id');
+    }
+    
+    public function mantenimientos()
+    {
+        return $this->hasMany(Mantenimiento::class, 'incidencia_id');
     }
 
     /**

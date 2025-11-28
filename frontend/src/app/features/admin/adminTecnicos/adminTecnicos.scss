@@ -1,0 +1,374 @@
+// ==============================
+// adminEmpresas.scss (ajustado a estilo Lockers)
+// ==============================
+$brand-green: #18884b;
+$brand-green-600: #157a44;
+$brand-green-700: #116b3b;
+
+$text: #0f172a;            // un poco más oscuro, como Lockers
+$muted: #6b7280;
+$bg-card: #ffffff;
+$bg-soft: #f8fafc;
+$border: #e5e7eb;
+
+$white: #fff;
+$success: #16a34a;
+$warning: #f59e0b;
+$danger: #ef4444;
+$info: #2563eb;
+
+// ---------- helpers ----------
+.text-success { color: $success; }
+.text-danger  { color: $danger; }
+.text-primary { color: $info; }
+.text-center  { text-align: center; }
+
+// ---------- layout ----------
+.empresas-wrap {
+  background: $bg-soft;
+  min-height: 100vh;
+  color: $text;
+
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+}
+
+// ---------- toolbar ----------
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin: 1rem 0 1.25rem;
+
+  .page-title {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #134e2b;
+  }
+
+  .toolbar-actions {
+    display: flex;
+    gap: .5rem;
+  }
+}
+
+// ---------- buttons ----------
+.btn {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #111827;
+  padding: .45rem .7rem;
+  border-radius: .5rem;
+  font-size: .85rem;
+  line-height: 1.1;
+  cursor: pointer;
+  transition: .2s ease;
+
+  &:hover { transform: translateY(-1px); }
+
+  &.btn-outline {
+    background: transparent;
+    border-color: #a7f3d0;
+    color: green;
+  }
+
+  &.btn-outline-secondary {
+    background: transparent;
+    border-color: #d1d5db;
+    color: #374151;
+    &:hover {
+      background: #f9fafb;
+      border-color: #9ca3af;
+    }
+  }
+
+  &.btn-success {
+    background: green;
+    color: #fff;
+    border-color: transparent;
+  }
+
+  &.btn-warning {
+    background: #f59e0b;
+    color: #fff;
+    border-color: transparent;
+  }
+
+  &.btn-danger {
+    background: #ef4444;
+    color: #fff;
+    border-color: transparent;
+  }
+}
+
+// ---------- KPIs ----------
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 1rem;
+  color: #0f172a;
+  margin-bottom: 1.25rem;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+
+  @media (max-width: 640px)  {
+    grid-template-columns: 1fr;
+  }
+
+  .kpi-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: .75rem;
+    padding: .9rem 1rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .04);
+
+    .kpi-label {
+      font-size: .8rem;
+      color: #6b7280;
+      margin-bottom: .25rem;
+    }
+
+    .kpi-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #111827;
+    }
+  }
+}
+
+// ---------- filtros ----------
+.filters {
+  display: grid;
+  grid-template-columns: 1fr 220px;
+  gap: .75rem;
+  margin-bottom: 1rem;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+
+  .input {
+    width: 100%;
+    background: $white;
+    border: 1px solid $border;
+    border-radius: .6rem;
+    padding: .58rem .8rem;
+    font-size: .95rem;
+    color: $text;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+
+    &:focus {
+      box-shadow: 0 0 0 3px rgba(24,136,75,.12);
+    }
+
+    &::placeholder {
+      color: $muted;
+    }
+  }
+}
+
+// ---------- tabla ----------
+.table-card {
+  background: $bg-card;
+  border: 1px solid $border;
+  border-radius: .9rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+
+  .table-responsive {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+
+    thead th {
+      text-align: left;
+      font-weight: 700;
+      font-size: .85rem;
+      color: $muted;
+      padding: .9rem .9rem;
+      border-bottom: 1px solid $border;
+      background: #fbfbfb;
+      white-space: nowrap;
+    }
+
+    tbody td {
+      padding: .9rem .9rem;
+      border-bottom: 1px solid $border;
+      vertical-align: middle;
+    }
+
+    tbody tr:hover {
+      background: #fcfdfc;
+    }
+
+    .text-end {
+      text-align: right;
+    }
+
+    .empty {
+      color: $muted;
+      padding: 2rem 1rem;
+    }
+  }
+}
+
+// ---------- badges ----------
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: .25rem .55rem;
+  font-size: .75rem;
+  font-weight: 700;
+  border-radius: 999px;
+  border: 1px solid transparent;
+
+  &.badge-success {
+    background: #ecfdf5;
+    color: $brand-green-700;
+    border-color: #86efac;
+  }
+
+  &.badge-danger {
+    background: #fef2f2;
+    color: #991b1b;
+    border-color: #fecaca;
+  }
+}
+
+// ---------- acciones de fila ----------
+.btns-row {
+  display: inline-flex;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
+// ---------- paginación ----------
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+
+.pagination-controls .btn {
+  min-width: 9rem;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
+.page-indicator {
+  font-weight: 600;
+  color: $muted;
+  font-size: .9rem;
+}
+
+// ---------- utilidades ----------
+.bg-main {
+  background: $brand-green;
+  color: $white;
+}
+
+// ---------- MODO MOBILE: tabla -> tarjetas ----------
+@media (max-width: 768px) {
+  .table-card {
+    .table-responsive {
+      overflow-x: visible; // para que no haya scroll horizontal
+    }
+
+    .table {
+      thead {
+        display: none;
+      }
+
+      tbody {
+        display: block;
+      }
+
+      tr {
+        display: block;
+        margin: 0 0 .75rem;
+        background: #fff;
+        border-radius: .75rem;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+        border: 1px solid #e5e7eb;
+      }
+
+      td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: .75rem;
+        padding: .55rem .75rem;
+        border-bottom: 1px solid #e5e7eb;
+        font-size: .85rem;
+        white-space: normal; // para que el texto pueda saltar de línea
+
+        &:last-child {
+          border-bottom: none;
+          padding-bottom: .65rem;
+        }
+
+        &::before {
+          content: attr(data-label);
+          font-weight: 600;
+          color: $muted;
+          margin-right: .75rem;
+        }
+      }
+
+      .text-end {
+        text-align: right;
+      }
+
+      // Acciones
+      td[data-label="Acciones"] {
+        flex-direction: column;
+        align-items: flex-start;
+
+        .btns-row {
+          width: 100%;
+          justify-content: flex-start;
+        }
+      }
+    }
+  }
+}
+
+/* Ajuste para el campo Acciones en responsive */
+@media (max-width: 640px) {
+  .table-responsive .table td.actions-cell {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+
+    .btns-row {
+      margin-left: auto;
+      display: inline-flex;
+      gap: .4rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+  }
+}

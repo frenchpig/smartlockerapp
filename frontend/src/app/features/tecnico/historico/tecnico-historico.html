@@ -1,0 +1,111 @@
+<app-header-tecnico titulo="Mantenimientos Históricos"></app-header-tecnico>
+
+<main class="py-4">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-12 col-xl-10">
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+          <div>
+            <h2 class="h5 mb-0">Historial de mantenimientos</h2>
+            <small class="text-muted">Total registros: {{ total() }}</small>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-outline-success btn-sm" type="button" (click)="cargarMantenciones()" [disabled]="loading()">
+              <i class="bi bi-arrow-repeat me-1"></i> Refrescar
+            </button>
+          </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="card mb-3">
+          <div class="card-body">
+            <div class="row g-3 align-items-end">
+              <div class="col-12 col-md-4">
+                <label class="form-label small text-muted mb-1">Estado</label>
+                <select class="form-select form-select-sm" [(ngModel)]="filtroEstado" (change)="aplicarFiltros()">
+                  <option value="">Todos</option>
+                  <option value="pendiente">Pendiente</option>
+                  <option value="resuelta">Resuelta</option>
+                  <option value="cancelado">Cancelado</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-4">
+                <button class="btn btn-outline-secondary btn-sm w-100" type="button" (click)="limpiarFiltros()">
+                  <i class="bi bi-x-circle me-1"></i> Limpiar Filtros
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <ng-container *ngIf="loading(); then cargando; else contenido"></ng-container>
+
+          <ng-template #cargando>
+            <div class="text-center py-5">
+              <div class="spinner-border text-success" role="status">
+                <span class="visually-hidden">Cargando...</span>
+              </div>
+              <p class="text-muted mt-3">Cargando historial...</p>
+            </div>
+          </ng-template>
+
+          <ng-template #contenido>
+            <div *ngIf="mantenciones().length === 0" class="text-center py-5 text-muted">
+              <i class="bi bi-inbox display-4 d-block mb-3"></i>
+              <p class="mb-0">No hay mantenciones históricas</p>
+            </div>
+
+            <table *ngIf="mantenciones().length > 0" class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Descripción</th>
+                  <th>Tipo</th>
+                  <th>Locker</th>
+                  <th>Ubicación</th>
+                  <th>Fecha</th>
+                  <th>Comentarios</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let m of mantenciones()">
+                  <td [attr.data-label]="'ID'">#{{ m.id }}</td>
+                  <td [attr.data-label]="'Descripción'">{{ m.descripcion }}</td>
+                  <td [attr.data-label]="'Tipo'">
+                    <span *ngIf="m.tipo" class="badge" [class.bg-info]="m.tipo === 'preventivo'" [class.bg-secondary]="m.tipo === 'correctivo'">
+                      {{ m.tipo === 'preventivo' ? 'Preventivo' : 'Correctivo' }}
+                    </span>
+                    <span *ngIf="!m.tipo" class="text-muted">—</span>
+                  </td>
+                  <td [attr.data-label]="'Locker'">Locker #{{ m.locker?.numero || '—' }}</td>
+                  <td [attr.data-label]="'Ubicación'">{{ m.locker?.ubicacion?.nombre || '—' }}</td>
+                  <td [attr.data-label]="'Fecha'">{{ m.fecha_mantenimiento | date:'short' }}</td>
+                  <td [attr.data-label]="'Comentarios'">{{ m.comentarios || '—' }}</td>
+                  <td [attr.data-label]="'Acciones'" class="text-end acciones-cell">
+                    <button class="btn btn-sm btn-success" (click)="verDetalle(m)">
+                      <i class="bi bi-eye me-1"></i> Ver Detalle
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </ng-template>
+        </div>
+
+        <nav *ngIf="!loading() && lastPage() > 1" class="pagination-controls mt-4">
+          <button class="btn btn-outline-secondary" (click)="anterior()" [disabled]="page() <= 1">
+            <i class="bi bi-chevron-left me-1"></i> Anterior
+          </button>
+          <span class="page-indicator">Página {{ page() }} de {{ lastPage() }}</span>
+          <button class="btn btn-outline-secondary" (click)="siguiente()" [disabled]="page() >= lastPage()">
+            Siguiente <i class="bi bi-chevron-right ms-1"></i>
+          </button>
+        </nav>
+      </div>
+    </div>
+  </div>
+</main>
+

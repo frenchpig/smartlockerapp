@@ -1,0 +1,147 @@
+<app-header-admin></app-header-admin>
+
+<main class="empresas-wrap">
+  <div class="container">
+
+    <div class="toolbar">
+      <h1 class="page-title">Gestión de Técnicos</h1>
+      <div class="toolbar-actions">
+        <button class="btn btn-outline" (click)="limpiarFiltros()">Limpiar filtros</button>
+        <button class="btn btn-success" (click)="nuevoTecnico()">Nuevo Técnico</button>
+      </div>
+    </div>
+
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Total de técnicos</div>
+        <div class="kpi-value">{{ kpiTotal() }}</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Técnicos activos</div>
+        <div class="kpi-value">{{ kpiActivos() }}</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Técnicos inactivos</div>
+        <div class="kpi-value">{{ kpiInactivos() }}</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Nuevos (últimos 7 días)</div>
+        <div class="kpi-value">{{ kpiNuevos7d() }}</div>
+      </div>
+    </section>
+
+    <section class="filters">
+      <input class="input" type="text" placeholder="Buscar por nombre, correo o teléfono..."
+        (input)="onBuscar($event)" />
+
+      <select class="input" (change)="onEstadoChange($event)">
+        <option value="Todos">Todos</option>
+        <option value="Activo">Activo</option>
+        <option value="Inactivo">Inactivo</option>
+      </select>
+    </section>
+
+    <div class="table-card">
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Correo</th>
+              <th>Teléfono</th>
+              <th>Estado</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+  <ng-container *ngIf="loading(); then cargando; else contenido"></ng-container>
+
+  <ng-template #cargando>
+    <tr>
+      <td colspan="6" class="empty text-center">Cargando técnicos...</td>
+    </tr>
+  </ng-template>
+
+  <ng-template #contenido>
+    <ng-container *ngIf="filtradas().length; else vacio">
+      <tr *ngFor="let t of filtradas(); trackBy: trackById">
+        <td [attr.data-label]="'ID'">
+          #{{ t.id }}
+        </td>
+
+        <td [attr.data-label]="'Nombre'">
+          {{ t.nombreCompleto }}
+        </td>
+
+        <td [attr.data-label]="'Correo'">
+          {{ t.email }}
+        </td>
+
+        <td [attr.data-label]="'Teléfono'">
+          {{ t.telefono || '—' }}
+        </td>
+
+        <td [attr.data-label]="'Estado'">
+          <span
+            class="badge"
+            [class.badge-success]="t.estado === 'Activo'"
+            [class.badge-danger]="t.estado === 'Inactivo'"
+          >
+            {{ t.estado }}
+          </span>
+        </td>
+
+        <td [attr.data-label]="''" class="text-end">
+          <div class="btns-row">
+            <button class="btn btn-light" (click)="verDetalle(t)">Detalle</button>
+            <button class="btn btn-outline" (click)="editar(t)">Editar</button>
+            <button
+              class="btn btn-success"
+              *ngIf="t.estado === 'Inactivo'"
+              (click)="activar(t)"
+            >
+              Activar
+            </button>
+            <button
+              class="btn btn-warning"
+              *ngIf="t.estado === 'Activo'"
+              (click)="desactivar(t)"
+            >
+              Desactivar
+            </button>
+          </div>
+        </td>
+      </tr>
+    </ng-container>
+
+    <ng-template #vacio>
+      <tr>
+        <td colspan="6" class="empty text-center">
+          No hay técnicos registrados
+        </td>
+      </tr>
+    </ng-template>
+  </ng-template>
+</tbody>
+
+        </table>
+      </div>
+    </div>
+
+    <nav class="pagination-controls mt-4" aria-label="Paginación técnicos" *ngIf="!loading() && lastPage() > 1">
+      <button class="btn btn-outline-secondary" type="button" (click)="anterior()" [disabled]="page() <= 1">
+        <i class="bi bi-chevron-left me-1"></i> Anterior
+      </button>
+      <span class="page-indicator">Página {{ page() }} de {{ lastPage() }}</span>
+      <button class="btn btn-outline-secondary" type="button" (click)="siguiente()" [disabled]="page() >= lastPage()">
+        Siguiente <i class="bi bi-chevron-right ms-1"></i>
+      </button>
+    </nav>
+  </div>
+</main>
+

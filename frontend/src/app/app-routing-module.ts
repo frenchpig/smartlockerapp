@@ -52,6 +52,13 @@ import { AdminIncidencias } from "./features/admin/adminIncidencias/adminInciden
 import { AdminIncidenciaDetalle } from "./features/admin/adminIncidenciaDetalle/adminIncidenciaDetalle";
 import { PerfilAdmin } from "./features/admin/perfilAdmin/perfilAdmin";
 import { UbicacionForm } from "./features/admin/ubicacionForm/ubicacionForm";
+import { AdminTecnicos } from "./features/admin/adminTecnicos/adminTecnicos";
+import { TecnicoForm } from "./features/admin/tecnicoForm/tecnicoForm";
+import { DetalleTecnico } from "./features/admin/detalleTecnico/detalleTecnico";
+import { TecnicoHome } from "./features/tecnico/home/tecnico-home";
+import { TecnicoDetalle } from "./features/tecnico/detalle/tecnico-detalle";
+import { TecnicoHistorico } from "./features/tecnico/historico/tecnico-historico";
+import { PerfilTecnico } from "./features/tecnico/perfil/perfil";
 
 
 const routes: Routes = [
@@ -121,6 +128,19 @@ const routes: Routes = [
   },
 
   {
+    path: 'tecnico',
+    canActivate: [authGuard],
+    canActivateChild: [authGuard],
+    data: { roles: ['tecnico'] },
+    children: [
+      { path: '', component: TecnicoHome },
+      { path: 'mantenciones/:id', component: TecnicoDetalle },
+      { path: 'historico', component: TecnicoHistorico },
+      { path: 'perfil', component: PerfilTecnico },
+    ],
+  },
+
+  {
     path: 'admin',
     canActivate: [authGuard],
     canActivateChild: [authGuard],
@@ -143,6 +163,10 @@ const routes: Routes = [
       { path: 'perfilAdmin', component: PerfilAdmin },
       { path: 'ubicaciones/nueva', component: UbicacionForm },
       { path: 'ubicaciones/editar/:id', component: UbicacionForm },
+      { path: 'tecnicos', component: AdminTecnicos },
+      { path: 'tecnicoForm', component: TecnicoForm },
+      { path: 'editarTecnico/:id', component: TecnicoForm },
+      { path: 'detalleTecnico/:id', component: DetalleTecnico },
 
     ]
   },

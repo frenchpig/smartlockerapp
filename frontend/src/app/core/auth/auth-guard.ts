@@ -6,7 +6,7 @@ const fallbackRoutes: Record<string, string> = {
   empresa: 'empresa',
   usuario: 'cliente',
   administrador: 'admin',
-  tecnico: 'dashboard',
+  tecnico: 'tecnico',
   repartidor: 'repartidor',
 };
 

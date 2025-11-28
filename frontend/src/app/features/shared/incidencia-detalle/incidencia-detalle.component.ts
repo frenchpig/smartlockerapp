@@ -2,6 +2,7 @@ import { Component, Input, OnInit, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
@@ -19,6 +20,9 @@ export interface IncidenciaDetalle {
     estadoLabel: string;
     fecha: Date;
     fechaActualizacion: Date | null;
+    comentario_cierre?: string | null;
+    disponible_para_cerrar?: boolean;
+    tecnico?: { id: number; nombre: string; email: string } | null;
     locker: {
         id: number;
         numero: string;
@@ -45,9 +49,24 @@ export interface IncidenciaDetalle {
         fecha_reserva?: string;
         estado?: string;
         logistica_estado?: string;
+        ubicacion_destino?: { id: number; nombre: string } | null;
     } | null;
     puedeGestionar?: boolean; // Para admin: solo true si es tipo 'locker'
     tieneSoporte24_7?: boolean; // Si la empresa tiene plan con soporte 24/7
+    mantenimiento_correctivo?: {
+        id: number;
+        estado: string;
+        descripcion: string;
+        comentarios?: string | null;
+        fecha_mantenimiento: string;
+        tipo: string;
+        usuario?: {
+            id: number;
+            nombre: string;
+            apellido?: string;
+            email: string;
+        } | null;
+    } | null;
 }
 
 interface IncidenciaResponse {
@@ -58,6 +77,10 @@ interface IncidenciaResponse {
     estado: string;
     created_at: string;
     updated_at: string;
+    comentario_cierre?: string | null;
+    disponible_para_cerrar?: boolean;
+    tecnico?: { id: number; nombre: string; email: string } | null;
+    tecnico_id?: number | null;
     locker?: {
         id: number;
         numero: string;
@@ -89,12 +112,26 @@ interface IncidenciaResponse {
         ubicacion_destino?: { id: number; nombre: string } | null;
     } | null;
     empresa_tiene_soporte_24_7?: boolean;
+    mantenimiento_correctivo?: {
+        id: number;
+        estado: string;
+        descripcion: string;
+        comentarios?: string | null;
+        fecha_mantenimiento: string;
+        tipo: string;
+        usuario?: {
+            id: number;
+            nombre: string;
+            apellido?: string;
+            email: string;
+        } | null;
+    } | null;
 }
 
 @Component({
     standalone: true,
     selector: 'app-incidencia-detalle',
-    imports: [CommonModule, RouterModule, DatePipe],
+    imports: [CommonModule, RouterModule, DatePipe, FormsModule],
     templateUrl: './incidencia-detalle.component.html',
     styleUrls: ['./incidencia-detalle.component.scss'],
 })
@@ -113,6 +150,15 @@ export class IncidenciaDetalleComponent implements OnInit {
     // Modal de confirmación
     mostrarModalConfirmacion = signal(false);
     nuevoEstadoSeleccionado: 'resuelto' | 'pendiente' | 'anulada' | null = null;
+    comentarioCierre = signal('');
+
+    // Modal de derivar a técnico
+    mostrarModalDerivar = signal(false);
+    tecnicos: Array<{ id: number; nombre: string; apellido: string; email: string }> = [];
+    tecnicoSeleccionado: number | null = null;
+    fechaMantenimiento: string = '';
+    descripcionMantenimiento: string = '';
+    derivando = signal(false);
 
     async ngOnInit(): Promise<void> {
         if (!this.incidenciaId) {
@@ -120,7 +166,26 @@ export class IncidenciaDetalleComponent implements OnInit {
             this.cargando.set(false);
             return;
         }
-        await this.cargarIncidencia();
+        await Promise.all([
+            this.cargarIncidencia(),
+            this.cargarTecnicos()
+        ]);
+    }
+
+    private async cargarTecnicos(): Promise<void> {
+        try {
+            const response: any = await firstValueFrom(
+                this.http.get(`${environment.apiUrl}/tecnicos`, { params: { per_page: 1000 } })
+            );
+            this.tecnicos = (response?.data || response || []).map((t: any) => ({
+                id: t.id,
+                nombre: t.nombre || '',
+                apellido: t.apellido || '',
+                email: t.email || ''
+            }));
+        } catch (error) {
+            console.error('Error cargando técnicos:', error);
+        }
     }
 
     async cargarIncidencia(): Promise<void> {
@@ -222,6 +287,10 @@ export class IncidenciaDetalleComponent implements OnInit {
             } : null,
             puedeGestionar,
             tieneSoporte24_7: raw.empresa_tiene_soporte_24_7 ?? false,
+            comentario_cierre: raw.comentario_cierre ?? null,
+            disponible_para_cerrar: raw.disponible_para_cerrar ?? false,
+            tecnico: raw.tecnico ?? null,
+            mantenimiento_correctivo: raw.mantenimiento_correctivo ?? null,
         };
     }
 
@@ -247,6 +316,7 @@ export class IncidenciaDetalleComponent implements OnInit {
     cerrarModalConfirmacion(): void {
         this.mostrarModalConfirmacion.set(false);
         this.nuevoEstadoSeleccionado = null;
+        this.comentarioCierre.set('');
     }
 
     async confirmarCambioEstado(): Promise<void> {
@@ -261,10 +331,17 @@ export class IncidenciaDetalleComponent implements OnInit {
         this.successMsg.set('');
 
         try {
+            const payload: any = { estado: nuevoEstado };
+            
+            // Si se está resolviendo o anulando, incluir comentario de cierre si existe
+            if ((nuevoEstado === 'resuelto' || nuevoEstado === 'anulada') && this.comentarioCierre().trim()) {
+                payload.comentario_cierre = this.comentarioCierre().trim();
+            }
+
             await firstValueFrom(
                 this.http.patch<IncidenciaResponse>(
                     `${environment.apiUrl}/incidencias/${incidencia.id}`,
-                    { estado: nuevoEstado }
+                    payload
                 )
             );
 
@@ -288,6 +365,96 @@ export class IncidenciaDetalleComponent implements OnInit {
         if (estado === 'resuelto') return 'Resuelta';
         if (estado === 'anulada') return 'Anulada';
         return 'Pendiente';
+    }
+
+    getEstadoMantenimientoBadge(estado: string): string {
+        switch (estado) {
+            case 'resuelta': return 'bg-success';
+            case 'pendiente': return 'bg-warning';
+            case 'cancelado': return 'bg-danger';
+            default: return 'bg-secondary';
+        }
+    }
+
+    getEstadoMantenimientoLabel(estado: string): string {
+        switch (estado) {
+            case 'resuelta': return 'Resuelta';
+            case 'pendiente': return 'Pendiente';
+            case 'cancelado': return 'Cancelado';
+            default: return estado;
+        }
+    }
+
+    abrirModalDerivar(): void {
+        const incidencia = this.incidencia();
+        if (!incidencia || incidencia.tipo !== 'locker' || !incidencia.locker) {
+            this.error.set('Solo las incidencias de locker pueden derivarse a técnico');
+            return;
+        }
+
+        // Establecer fecha por defecto (hoy)
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        this.fechaMantenimiento = hoy.toISOString().split('T')[0];
+        
+        // Establecer descripción por defecto
+        this.descripcionMantenimiento = `Mantenimiento correctivo derivado de incidencia #${incidencia.id}: ${incidencia.descripcion}`;
+        
+        this.tecnicoSeleccionado = null;
+        this.mostrarModalDerivar.set(true);
+    }
+
+    cerrarModalDerivar(): void {
+        this.mostrarModalDerivar.set(false);
+        this.tecnicoSeleccionado = null;
+        this.fechaMantenimiento = '';
+        this.descripcionMantenimiento = '';
+    }
+
+    async derivarATecnico(): Promise<void> {
+        if (!this.tecnicoSeleccionado) {
+            this.error.set('Debes seleccionar un técnico');
+            return;
+        }
+
+        const incidencia = this.incidencia();
+        if (!incidencia) return;
+
+        this.derivando.set(true);
+        this.error.set('');
+        this.successMsg.set('');
+
+        try {
+            const payload: any = {
+                tecnico_id: this.tecnicoSeleccionado
+            };
+
+            if (this.fechaMantenimiento) {
+                payload.fecha_mantenimiento = this.fechaMantenimiento;
+            }
+
+            if (this.descripcionMantenimiento.trim()) {
+                payload.descripcion_mantenimiento = this.descripcionMantenimiento.trim();
+            }
+
+            await firstValueFrom(
+                this.http.post(
+                    `${environment.apiUrl}/incidencias/${incidencia.id}/derivar-tecnico`,
+                    payload
+                )
+            );
+
+            this.successMsg.set('Incidencia derivada a técnico y mantenimiento correctivo creado exitosamente.');
+            this.cerrarModalDerivar();
+            await this.cargarIncidencia();
+        } catch (err: any) {
+            console.error('Error derivando incidencia:', err);
+            this.error.set(
+                err?.error?.message || 'No fue posible derivar la incidencia. Intenta nuevamente.'
+            );
+        } finally {
+            this.derivando.set(false);
+        }
     }
 }
 

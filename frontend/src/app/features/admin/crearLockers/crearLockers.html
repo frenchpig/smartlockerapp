@@ -92,30 +92,30 @@
                 </div>
             </section>
 
-            <!-- Mantenimiento (Opcional) -->
+            <!-- Información de Mantenimiento Preventivo -->
             <section class="group-card">
-                <h2 class="group-title">Mantenimiento (Opcional)</h2>
-                <div class="form-grid" formGroupName="mantenimiento">
-                    <div class="field">
-                        <label>Técnico asignado</label>
-                        <select class="input" formControlName="tecnico_id" [disabled]="loadingTecnicos || tecnicos.length === 0">
-                            <option value="" disabled>Selecciona un técnico…</option>
-                            <option *ngIf="loadingTecnicos" disabled>Cargando técnicos...</option>
-                            <option *ngIf="tecnicos.length === 0" disabled>No hay técnicos disponibles</option>
-                            <option *ngFor="let t of tecnicos" [value]="t.id">{{ t.nombre }} {{ t.apellido }}</option>
-                        </select>
-                        <small class="text-muted" *ngIf="tecnicos.length > 0">
-                            Se asigna automáticamente un técnico, pero puedes cambiarlo.
-                        </small>
-                    </div>
-                    <div class="field">
-                        <label>Fecha programada</label>
-                        <input class="input" type="date" formControlName="fecha_programada" />
-                    </div>
-                    <div class="field" style="grid-column:1 / -1">
-                        <label>Descripción</label>
-                        <textarea class="input" formControlName="descripcion" rows="3"
-                            placeholder="Describe el tipo de mantenimiento a realizar..."></textarea>
+                <h2 class="group-title">Mantenimiento Preventivo</h2>
+                <div class="info-box" style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 1rem; margin-top: 1rem;">
+                    <div style="display: flex; align-items: start; gap: 0.75rem;">
+                        <i class="bi bi-info-circle" style="color: #0284c7; font-size: 1.25rem; flex-shrink: 0; margin-top: 0.125rem;"></i>
+                        <div style="flex: 1;">
+                            <p style="margin: 0 0 0.5rem 0; font-weight: 600; color: #0c4a6e;">
+                                Mantenimiento automático
+                            </p>
+                            <p style="margin: 0; color: #075985; font-size: 0.9rem; line-height: 1.5;">
+                                Al crear el locker, se asignará automáticamente un <strong>mantenimiento preventivo</strong> 
+                                programado para <strong>1 mes después</strong> de la fecha de creación. 
+                                El mantenimiento será asignado al primer técnico habilitado disponible.
+                            </p>
+                            <p style="margin: 0.5rem 0 0 0; color: #075985; font-size: 0.85rem; font-style: italic;">
+                                <span *ngIf="tecnicos.length > 0">
+                                    ✓ Hay {{ tecnicos.length }} técnico(s) disponible(s) para asignación automática.
+                                </span>
+                                <span *ngIf="tecnicos.length === 0" style="color: #dc2626;">
+                                    ⚠ No hay técnicos disponibles. Se recomienda crear al menos un técnico antes de crear lockers.
+                                </span>
+                            </p>
+                        </div>
                     </div>
                 </div>
             </section>

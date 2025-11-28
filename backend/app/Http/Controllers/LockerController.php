@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Locker;
 use App\Models\Reserva;
 use App\Models\HistorialLocker;
+use App\Models\Mantenimiento;
+use App\Models\Usuario;
 use App\Services\HistorialLockerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class LockerController extends Controller
@@ -146,6 +149,9 @@ class LockerController extends Controller
             Auth::id()
         );
 
+        // Crear mantenimiento preventivo automático 1 mes después de la creación
+        $this->crearMantenimientoPreventivo($locker->id, Auth::id());
+
         return response()->json($locker, 201);
     }
 
@@ -180,5 +186,37 @@ class LockerController extends Controller
     {
         $locker->delete();
         return response()->noContent();
+    }
+
+    /**
+     * Crear mantenimiento preventivo automático para un locker
+     * Se programa 1 mes después de la fecha actual
+     */
+    private function crearMantenimientoPreventivo(int $lockerId, ?int $usuarioId = null): void
+    {
+        // Buscar un técnico habilitado (el primero disponible)
+        $tecnico = Usuario::where('rol', 'tecnico')
+            ->where('habilitado', true)
+            ->orderBy('id')
+            ->first();
+
+        // Si no hay técnico, no crear el mantenimiento (se puede asignar manualmente después)
+        if (!$tecnico) {
+            return;
+        }
+
+        // Calcular fecha: 1 mes después de hoy
+        $fechaMantenimiento = now()->addMonth();
+
+        Mantenimiento::create([
+            'locker_id' => $lockerId,
+            'usuario_id' => $tecnico->id,
+            'descripcion' => 'Mantenimiento preventivo programado automáticamente',
+            'fecha_mantenimiento' => $fechaMantenimiento,
+            'fecha_programada' => $fechaMantenimiento, // mantener compatibilidad
+            'es_urgente' => false,
+            'estado' => 'pendiente',
+            'tipo' => 'preventivo',
+        ]);
     }
 }

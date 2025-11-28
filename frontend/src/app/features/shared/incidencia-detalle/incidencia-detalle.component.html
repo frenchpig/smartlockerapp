@@ -58,14 +58,22 @@
                                 
                                 <!-- Botones de acción (solo para admin, solo si puede gestionar Y está pendiente) -->
                                 <div *ngIf="mostrarAcciones && incidencia()!.puedeGestionar && incidencia()!.estado === 'pendiente'" class="btn-group">
+                                    <button class="btn btn-primary btn-sm" 
+                                        (click)="abrirModalDerivar()"
+                                        title="Derivar a técnico"
+                                        *ngIf="!incidencia()!.tecnico">
+                                        <i class="bi bi-person-wrench"></i> Derivar a Técnico
+                                    </button>
                                     <button class="btn btn-success btn-sm" 
                                         (click)="abrirModalConfirmacion('resuelto')"
-                                        title="Marcar como resuelta">
+                                        title="Marcar como resuelta"
+                                        [disabled]="incidencia()!.tecnico && !incidencia()!.disponible_para_cerrar">
                                         <i class="bi bi-check-circle"></i> Resolver
                                     </button>
                                     <button class="btn btn-outline-secondary btn-sm" 
                                         (click)="abrirModalConfirmacion('anulada')"
-                                        title="Anular incidencia">
+                                        title="Anular incidencia"
+                                        [disabled]="incidencia()!.tecnico && !incidencia()!.disponible_para_cerrar">
                                         <i class="bi bi-x-circle"></i> Anular
                                     </button>
                                 </div>
@@ -106,6 +114,92 @@
                         <div class="mb-4">
                             <p class="fw-semibold mb-2 text-muted small">Descripción</p>
                             <p class="fs-6 mb-0">{{ incidencia()!.descripcion || 'Sin descripción' }}</p>
+                        </div>
+
+                        <!-- Comentario de Cierre -->
+                        <div class="mb-4" *ngIf="incidencia()!.comentario_cierre">
+                            <p class="fw-semibold mb-2 text-muted small">Comentario de Cierre</p>
+                            <div class="card bg-light border-0">
+                                <div class="card-body">
+                                    <p class="fs-6 mb-0">{{ incidencia()!.comentario_cierre }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mantenimiento Correctivo Asociado / Técnico Asignado -->
+                        <div class="mb-4" *ngIf="incidencia()!.mantenimiento_correctivo || incidencia()!.tecnico">
+                            <p class="fw-semibold mb-2 text-muted small">
+                                {{ incidencia()!.mantenimiento_correctivo ? 'Mantenimiento Correctivo' : 'Técnico Asignado' }}
+                            </p>
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body">
+                                    <!-- Si hay mantenimiento correctivo, mostrar información completa -->
+                                    <ng-container *ngIf="incidencia()!.mantenimiento_correctivo">
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <p class="mb-2">
+                                                    <strong>Estado del Mantenimiento:</strong>
+                                                    <span class="badge ms-2" [ngClass]="getEstadoMantenimientoBadge(incidencia()!.mantenimiento_correctivo!.estado)">
+                                                        {{ getEstadoMantenimientoLabel(incidencia()!.mantenimiento_correctivo!.estado) }}
+                                                    </span>
+                                                </p>
+                                                <p class="mb-2" *ngIf="incidencia()!.mantenimiento_correctivo!.fecha_mantenimiento">
+                                                    <strong>Fecha:</strong> {{ incidencia()!.mantenimiento_correctivo!.fecha_mantenimiento | date:'dd/MM/yyyy HH:mm' }}
+                                                </p>
+                                                <p class="mb-0" *ngIf="incidencia()!.mantenimiento_correctivo!.usuario">
+                                                    <strong>Técnico:</strong> {{ incidencia()!.mantenimiento_correctivo!.usuario!.nombre }} 
+                                                    {{ incidencia()!.mantenimiento_correctivo!.usuario!.apellido }}
+                                                </p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p class="mb-2">
+                                                    <strong>Descripción:</strong><br>
+                                                    <span class="text-muted">{{ incidencia()!.mantenimiento_correctivo!.descripcion }}</span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Comentarios del Técnico -->
+                                        <div *ngIf="incidencia()!.mantenimiento_correctivo!.comentarios" class="mt-3 pt-3 border-top">
+                                            <p class="fw-semibold mb-2">
+                                                <i class="bi bi-chat-left-text me-2"></i>
+                                                Comentarios del Técnico:
+                                            </p>
+                                            <div class="bg-light p-3 rounded">
+                                                <p class="mb-0">{{ incidencia()!.mantenimiento_correctivo!.comentarios }}</p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Mensaje si está resuelto o cancelado -->
+                                        <div *ngIf="incidencia()!.mantenimiento_correctivo!.estado === 'resuelta' || incidencia()!.mantenimiento_correctivo!.estado === 'cancelado'" 
+                                             class="alert mt-3 mb-0 py-2"
+                                             [class.alert-success]="incidencia()!.mantenimiento_correctivo!.estado === 'resuelta'"
+                                             [class.alert-warning]="incidencia()!.mantenimiento_correctivo!.estado === 'cancelado'">
+                                            <i class="bi me-2" 
+                                               [class.bi-check-circle-fill]="incidencia()!.mantenimiento_correctivo!.estado === 'resuelta'"
+                                               [class.bi-x-circle-fill]="incidencia()!.mantenimiento_correctivo!.estado === 'cancelado'"></i>
+                                            <strong>Mantenimiento {{ incidencia()!.mantenimiento_correctivo!.estado === 'resuelta' ? 'resuelto' : 'cancelado' }}:</strong> 
+                                            La incidencia está disponible para ser cerrada.
+                                        </div>
+                                    </ng-container>
+
+                                    <!-- Si solo hay técnico asignado pero no mantenimiento aún -->
+                                    <div *ngIf="!incidencia()!.mantenimiento_correctivo && incidencia()!.tecnico">
+                                        <p class="fs-6 mb-2">
+                                            <strong>Nombre:</strong> {{ incidencia()!.tecnico!.nombre }}<br>
+                                            <strong>Email:</strong> {{ incidencia()!.tecnico!.email }}
+                                        </p>
+                                        <div *ngIf="incidencia()!.disponible_para_cerrar" class="alert alert-success mb-0 py-2">
+                                            <i class="bi bi-check-circle-fill me-2"></i>
+                                            <strong>Disponible para cerrar:</strong> El técnico ha indicado que la incidencia está lista para ser cerrada.
+                                        </div>
+                                        <div *ngIf="!incidencia()!.disponible_para_cerrar && incidencia()!.estado === 'pendiente'" class="alert alert-warning mb-0 py-2">
+                                            <i class="bi bi-clock-history me-2"></i>
+                                            <strong>En proceso:</strong> Esta incidencia no puede cerrarse hasta que el técnico indique que está disponible para cerrarse.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Información del Locker -->
@@ -291,10 +385,21 @@
                 </div>
 
                 <div class="mb-3">
-                    <p class="mb-0">
+                    <p class="mb-2">
                         ¿Estás seguro de que deseas cambiar el estado de esta incidencia a 
                         <strong>"{{ getEstadoLabel(nuevoEstadoSeleccionado) }}"</strong>?
                     </p>
+                    <div *ngIf="nuevoEstadoSeleccionado === 'resuelto' || nuevoEstadoSeleccionado === 'anulada'">
+                        <label class="form-label small">Comentario de cierre (opcional)</label>
+                        <textarea 
+                            class="form-control" 
+                            rows="3"
+                            placeholder="Detalles sobre por qué se cierra o resuelve la incidencia..."
+                            [value]="comentarioCierre()"
+                            (input)="comentarioCierre.set($any($event.target).value)">
+                        </textarea>
+                        <small class="text-muted">Este comentario será visible en el historial de la incidencia.</small>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer border-0 pt-0">
@@ -318,4 +423,70 @@
     </div>
 </div>
 <div class="modal-backdrop fade" [class.show]="mostrarModalConfirmacion()" *ngIf="mostrarModalConfirmacion()"></div>
+
+<!-- Modal de Derivar a Técnico -->
+<div class="modal fade" [class.show]="mostrarModalDerivar()" [style.display]="mostrarModalDerivar() ? 'block' : 'none'" tabindex="-1" role="dialog" *ngIf="mostrarModalDerivar()">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-person-wrench me-2"></i>
+                    Derivar Incidencia a Técnico
+                </h5>
+                <button type="button" class="btn-close" (click)="cerrarModalDerivar()" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3 text-muted">
+                    Al derivar esta incidencia a un técnico, se creará automáticamente un <strong>mantenimiento correctivo</strong> 
+                    asociado a la incidencia. La incidencia no podrá cerrarse hasta que el técnico indique que está disponible para cerrarse.
+                </p>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Técnico*</label>
+                    <select class="form-select" [(ngModel)]="tecnicoSeleccionado" [disabled]="derivando()">
+                        <option [value]="null">Selecciona un técnico...</option>
+                        <option *ngFor="let t of tecnicos" [value]="t.id">
+                            {{ t.nombre }} {{ t.apellido }} ({{ t.email }})
+                        </option>
+                    </select>
+                    <small class="text-muted">Selecciona el técnico que se encargará de resolver esta incidencia.</small>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Fecha de Mantenimiento</label>
+                    <input type="date" class="form-control" [(ngModel)]="fechaMantenimiento" [disabled]="derivando()" />
+                    <small class="text-muted">Fecha programada para el mantenimiento correctivo (por defecto: hoy).</small>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Descripción del Mantenimiento</label>
+                    <textarea 
+                        class="form-control" 
+                        rows="3"
+                        [(ngModel)]="descripcionMantenimiento"
+                        [disabled]="derivando()"
+                        placeholder="Descripción del mantenimiento correctivo a realizar...">
+                    </textarea>
+                    <small class="text-muted">Descripción que se usará para el mantenimiento correctivo.</small>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    (click)="cerrarModalDerivar()"
+                    [disabled]="derivando()">
+                    Cancelar
+                </button>
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    (click)="derivarATecnico()"
+                    [disabled]="derivando() || !tecnicoSeleccionado">
+                    <span *ngIf="derivando()" class="spinner-border spinner-border-sm me-2"></span>
+                    <i *ngIf="!derivando()" class="bi bi-check-circle me-1"></i>
+                    {{ derivando() ? 'Derivando...' : 'Derivar a Técnico' }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="mostrarModalDerivar()" *ngIf="mostrarModalDerivar()"></div>
 

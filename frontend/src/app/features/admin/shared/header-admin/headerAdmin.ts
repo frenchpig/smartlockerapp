@@ -66,6 +66,11 @@ export class HeaderAdmin implements OnInit, OnDestroy {
             action: () => this.irTarifas(),
             icon: 'bi bi-currency-dollar',
             label: 'Tarifas'
+        },
+        {
+            action: () => this.irTecnicos(),
+            icon: 'bi bi-tools',
+            label: 'Técnicos'
         }
     ];
 
@@ -105,6 +110,8 @@ export class HeaderAdmin implements OnInit, OnDestroy {
             this.vistaActual = 'tarifas';
         } else if (url.startsWith('/admin/empresa')) {
             this.vistaActual = 'empresas';
+        } else if (url.startsWith('/admin/tecnicos')) {
+            this.vistaActual = 'tecnicos';
         } else {
             // Para otras rutas (perfil, detalle, etc.), mantener la última vista conocida
             // o establecer una por defecto
@@ -142,6 +149,11 @@ export class HeaderAdmin implements OnInit, OnDestroy {
 
     irEmpresas() {
         this.router.navigate(['/admin/empresa']);
+        this.cerrarMenuMobile();
+    }
+
+    irTecnicos() {
+        this.router.navigate(['/admin/tecnicos']);
         this.cerrarMenuMobile();
     }
 

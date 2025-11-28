@@ -1,0 +1,100 @@
+<app-header-admin></app-header-admin>
+
+<main class="empresas-wrap">
+    <div class="container">
+        <div class="toolbar">
+            <h1 class="page-title">{{ isEditMode ? 'Editar Técnico' : 'Nuevo Técnico' }}</h1>
+            <div class="toolbar-actions">
+                <button class="btn btn-light" type="button" (click)="volver()">
+                    <i class="bi bi-arrow-left me-1"></i> Volver
+                </button>
+            </div>
+        </div>
+
+        <section class="grid-two">
+            <form class="card ficha-card" [formGroup]="form" (ngSubmit)="guardar()">
+                <h2 class="card-title">Datos del Técnico</h2>
+
+                <div class="ficha-table">
+                    <div class="row">
+                        <div class="label">Nombre*</div>
+                        <div class="value">
+                            <input class="input" type="text" formControlName="nombre" placeholder="Ej: Juan" />
+                            <small class="error" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.invalid">
+                                Mínimo 3 caracteres.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="label">Apellido*</div>
+                        <div class="value">
+                            <input class="input" type="text" formControlName="apellido" placeholder="Ej: Pérez" />
+                            <small class="error" *ngIf="form.get('apellido')?.touched && form.get('apellido')?.invalid">
+                                Mínimo 3 caracteres.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="label">Correo*</div>
+                        <div class="value">
+                            <input class="input" type="email" formControlName="email"
+                                placeholder="correo@dominio.cl" />
+                            <small class="error" *ngIf="form.get('email')?.touched && form.get('email')?.invalid">
+                                Ingresa un correo válido.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="label">Teléfono</div>
+                        <div class="value">
+                            <div class="telefono-input-group">
+                                <span class="telefono-prefijo">+569</span>
+                                <input class="input telefono-input" type="text" 
+                                    formControlName="telefono"
+                                    placeholder="12345678"
+                                    maxlength="8"
+                                    (input)="onTelefonoInput($event)" />
+                            </div>
+                            <small class="hint">Ingresa los 8 dígitos del teléfono</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="label">Contraseña{{ isEditMode ? ' (dejar vacío para no cambiar)' : '*' }}</div>
+                        <div class="value">
+                            <input class="input" type="password" formControlName="contrasena"
+                                [placeholder]="isEditMode ? 'Dejar vacío para no cambiar' : 'Mínimo 6 caracteres'" />
+                            <small class="error" *ngIf="form.get('contrasena')?.touched && form.get('contrasena')?.invalid">
+                                Mínimo 6 caracteres.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="label">Estado</div>
+                        <div class="value">
+                            <label class="checkbox-label">
+                                <input type="checkbox" formControlName="habilitado" />
+                                <span>Habilitado</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn-success" type="submit" [disabled]="loading">
+                        <span *ngIf="loading" class="spinner-border spinner-border-sm me-2"></span>
+                        {{ isEditMode ? 'Actualizar' : 'Crear' }} Técnico
+                    </button>
+                    <button class="btn btn-light" type="button" (click)="volver()">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </section>
+    </div>
+</main>
+

@@ -33,6 +33,12 @@ interface Incidencia {
   } | null;
   puedeGestionar: boolean; // Solo true para incidencias de tipo 'locker'
   tieneSoporte24_7?: boolean; // Si la empresa tiene plan con soporte 24/7
+  tecnico?: {
+    id: number;
+    nombre: string;
+    email: string;
+  } | null;
+  disponible_para_cerrar?: boolean;
 }
 
 interface IncidenciaResponse {
@@ -60,6 +66,12 @@ interface IncidenciaResponse {
     ubicacion_destino?: { id: number; nombre: string } | null;
   } | null;
   empresa_tiene_soporte_24_7?: boolean;
+  tecnico?: {
+    id: number;
+    nombre: string;
+    email: string;
+  } | null;
+  disponible_para_cerrar?: boolean;
 }
 
 interface PaginatedResponse<T> {
@@ -265,6 +277,8 @@ export class AdminIncidencias implements OnInit {
       } : null,
       puedeGestionar,
       tieneSoporte24_7: raw.empresa_tiene_soporte_24_7 ?? false,
+      tecnico: raw.tecnico ?? null,
+      disponible_para_cerrar: raw.disponible_para_cerrar ?? false,
     };
   }
 

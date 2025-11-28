@@ -44,7 +44,7 @@ export class LoginComponent {
       let target = '/cliente';
       if (user?.rol === 'empresa') target = '/empresa';
       else if (user?.rol === 'administrador') target = '/admin';
-      else if (user?.rol === 'tecnico') target = '/dashboard';
+      else if (user?.rol === 'tecnico') target = '/tecnico';
       else if (user?.rol === 'repartidor') target = '/repartidor';
       await this.router.navigate([target]);
     } catch (err: any) {

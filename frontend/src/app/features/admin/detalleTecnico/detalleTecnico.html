@@ -1,0 +1,141 @@
+<app-header-admin></app-header-admin>
+
+<main class="empresas-wrap">
+    <div class="container">
+        <div class="toolbar">
+            <h1 class="page-title">Detalle del Técnico</h1>
+            <div class="toolbar-actions">
+                <button class="btn btn-outline" (click)="editar()" *ngIf="tecnico">Editar</button>
+                <button class="btn btn-light" (click)="volver()">
+                    <i class="bi bi-arrow-left me-1"></i> Volver
+                </button>
+            </div>
+        </div>
+
+        <ng-container *ngIf="loading; then cargando; else contenido"></ng-container>
+
+        <ng-template #cargando>
+            <div class="text-center py-5">
+                <div class="spinner-border text-success" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            </div>
+        </ng-template>
+
+        <ng-template #contenido>
+            <ng-container *ngIf="error; then errorTemplate; else detalleTemplate"></ng-container>
+        </ng-template>
+
+        <ng-template #errorTemplate>
+            <div class="alert alert-danger">
+                <strong>Error:</strong> {{ error }}
+            </div>
+        </ng-template>
+
+        <ng-template #detalleTemplate>
+            <section class="grid-two" *ngIf="tecnico">
+                <div class="card ficha-card">
+                    <h2 class="card-title">Información del Técnico</h2>
+
+                    <div class="ficha-table">
+                        <div class="row">
+                            <div class="label">ID</div>
+                            <div class="value">#{{ tecnico.id }}</div>
+                        </div>
+
+                        <div class="row">
+                            <div class="label">Nombre Completo</div>
+                            <div class="value">{{ tecnico.nombreCompleto }}</div>
+                        </div>
+
+                        <div class="row">
+                            <div class="label">Correo</div>
+                            <div class="value">{{ tecnico.email }}</div>
+                        </div>
+
+                        <div class="row">
+                            <div class="label">Teléfono</div>
+                            <div class="value">{{ formatearTelefono(tecnico.telefono) }}</div>
+                        </div>
+
+                        <div class="row">
+                            <div class="label">Estado</div>
+                            <div class="value">
+                                <span class="badge" [class.badge-success]="tecnico.estado === 'Activo'"
+                                    [class.badge-danger]="tecnico.estado === 'Inactivo'">
+                                    {{ tecnico.estado }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="row" *ngIf="tecnico.fechaAlta">
+                            <div class="label">Fecha de Alta</div>
+                            <div class="value">{{ tecnico.fechaAlta | date:'dd/MM/yyyy' }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card ficha-card">
+                    <h2 class="card-title">Estadísticas</h2>
+
+                    <div class="ficha-table">
+                        <div class="row">
+                            <div class="label">Total de Mantenimientos</div>
+                            <div class="value">{{ tecnico.mantenimientos_count || 0 }}</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="mt-4" *ngIf="tecnico && tecnico.mantenimientos && tecnico.mantenimientos.length > 0">
+                <div class="card">
+                    <h2 class="card-title">Últimas Mantenimientos</h2>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Descripción</th>
+                                    <th>Tipo</th>
+                                    <th>Locker</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let m of tecnico.mantenimientos">
+                                    <td>#{{ m.id }}</td>
+                                    <td>{{ m.descripcion }}</td>
+                                    <td>
+                                        <span *ngIf="m.tipo" class="badge" 
+                                            [class.bg-info]="m.tipo === 'preventivo'" 
+                                            [class.bg-secondary]="m.tipo === 'correctivo'">
+                                            {{ m.tipo === 'preventivo' ? 'Preventivo' : 'Correctivo' }}
+                                        </span>
+                                        <span *ngIf="!m.tipo" class="text-muted">—</span>
+                                    </td>
+                                    <td>
+                                        <span *ngIf="m.locker">
+                                            Locker #{{ m.locker.numero }}
+                                            <span *ngIf="m.locker.ubicacion" class="text-muted">
+                                                ({{ m.locker.ubicacion.nombre }})
+                                            </span>
+                                        </span>
+                                        <span *ngIf="!m.locker" class="text-muted">—</span>
+                                    </td>
+                                    <td>{{ m.fecha_mantenimiento | date:'dd/MM/yyyy' }}</td>
+                                    <td>
+                                        <span class="badge" [ngClass]="getEstadoBadge(m.estado)">
+                                            {{ getEstadoLabel(m.estado) }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </ng-template>
+    </div>
+</main>
+

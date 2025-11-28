@@ -97,6 +97,7 @@
                             <th>Ubicación</th>
                             <th>Empresa</th>
                             <th>Usuario</th>
+                            <th>Técnico</th>
                             <th>Estado</th>
                             <th class="text-end">Acciones</th>
                         </tr>
@@ -161,6 +162,23 @@
                             <td>
                                 <span *ngIf="inc.usuario">{{ inc.usuario.nombre }}</span>
                                 <span *ngIf="!inc.usuario" class="text-muted">—</span>
+                            </td>
+                            <td>
+                                <span *ngIf="inc.tecnico" class="badge bg-info-subtle text-info-emphasis">
+                                    <i class="bi bi-person-wrench me-1"></i>
+                                    {{ inc.tecnico.nombre }}
+                                </span>
+                                <span *ngIf="inc.tecnico && !inc.disponible_para_cerrar && inc.estado === 'pendiente'" 
+                                    class="badge bg-warning-subtle text-warning-emphasis ms-1" 
+                                    title="Esperando disponibilidad del técnico">
+                                    <i class="bi bi-clock-history"></i>
+                                </span>
+                                <span *ngIf="inc.tecnico && inc.disponible_para_cerrar" 
+                                    class="badge bg-success-subtle text-success-emphasis ms-1" 
+                                    title="Disponible para cerrar">
+                                    <i class="bi bi-check-circle"></i>
+                                </span>
+                                <span *ngIf="!inc.tecnico" class="text-muted">—</span>
                             </td>
                             <td>
                                 <span class="badge" [class.bg-warning-subtle]="inc.estado === 'pendiente'"

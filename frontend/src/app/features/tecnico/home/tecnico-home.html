@@ -1,0 +1,128 @@
+<app-header-tecnico titulo="Mantenimientos del Día"></app-header-tecnico>
+
+<main class="py-4">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-12 col-xl-10">
+
+        <div class="row g-4 mb-4">
+          <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-body">
+                <p class="text-muted mb-1 fw-semibold">Pendientes</p>
+                <div class="display-6 fw-bold">{{ kpiPendientes() }}</div>
+                <small class="text-muted">Mantenimientos pendientes</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-body">
+                <p class="text-muted mb-1 fw-semibold">Urgentes</p>
+                <div class="display-6 fw-bold text-danger">{{ kpiUrgentes() }}</div>
+                <small class="text-muted">Requieren atención inmediata</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-body">
+                <p class="text-muted mb-1 fw-semibold">Resueltas</p>
+                <div class="display-6 fw-bold text-success">{{ kpiResueltas() }}</div>
+                <small class="text-muted">Completadas exitosamente</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+          <div>
+            <h2 class="h5 mb-0">Mantenimientos del día</h2>
+            <small class="text-muted">Total registros: {{ total() }} - Mostrando solo las mantenciones asignadas para hoy</small>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-outline-success btn-sm" type="button" (click)="cargarMantenciones()" [disabled]="loading()">
+              <i class="bi bi-arrow-repeat me-1"></i> Refrescar
+            </button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <ng-container *ngIf="loading(); then cargando; else contenido"></ng-container>
+
+          <ng-template #cargando>
+            <div class="text-center py-5">
+              <div class="spinner-border text-success" role="status">
+                <span class="visually-hidden">Cargando...</span>
+              </div>
+              <p class="text-muted mt-3">Cargando mantenimientos...</p>
+            </div>
+          </ng-template>
+
+          <ng-template #contenido>
+            <div *ngIf="mantenciones().length === 0" class="text-center py-5 text-muted">
+              <i class="bi bi-inbox display-4 d-block mb-3"></i>
+              <p class="mb-0">No hay mantenciones asignadas</p>
+            </div>
+
+            <table *ngIf="mantenciones().length > 0" class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Descripción</th>
+                  <th>Tipo</th>
+                  <th>Locker</th>
+                  <th>Ubicación</th>
+                  <th>Fecha</th>
+                  <th>Urgente</th>
+                  <th>Estado</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let m of mantenciones()">
+                  <td [attr.data-label]="'ID'">#{{ m.id }}</td>
+                  <td [attr.data-label]="'Descripción'">{{ m.descripcion }}</td>
+                  <td [attr.data-label]="'Tipo'">
+                    <span *ngIf="m.tipo" class="badge" [class.bg-info]="m.tipo === 'preventivo'" [class.bg-secondary]="m.tipo === 'correctivo'">
+                      {{ m.tipo === 'preventivo' ? 'Preventivo' : 'Correctivo' }}
+                    </span>
+                    <span *ngIf="!m.tipo" class="text-muted">—</span>
+                  </td>
+                  <td [attr.data-label]="'Locker'">Locker #{{ m.locker?.numero || '—' }}</td>
+                  <td [attr.data-label]="'Ubicación'">{{ m.locker?.ubicacion?.nombre || '—' }}</td>
+                  <td [attr.data-label]="'Fecha'">{{ m.fecha_mantenimiento | date:'short' }}</td>
+                  <td [attr.data-label]="'Urgente'">
+                    <span *ngIf="m.es_urgente" class="badge bg-danger">Urgente</span>
+                    <span *ngIf="!m.es_urgente" class="text-muted">—</span>
+                  </td>
+                  <td [attr.data-label]="'Estado'">
+                    <span class="badge" [ngClass]="getEstadoBadge(m.estado)">
+                      {{ getEstadoLabel(m.estado) }}
+                    </span>
+                  </td>
+                  <td [attr.data-label]="'Acciones'" class="text-end acciones-cell">
+                    <button class="btn btn-sm btn-success" (click)="verDetalle(m)">
+                      <i class="bi bi-eye me-1"></i> Ver Detalle
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </ng-template>
+        </div>
+
+        <nav *ngIf="!loading() && lastPage() > 1" class="pagination-controls mt-4">
+          <button class="btn btn-outline-secondary" (click)="anterior()" [disabled]="page() <= 1">
+            <i class="bi bi-chevron-left me-1"></i> Anterior
+          </button>
+          <span class="page-indicator">Página {{ page() }} de {{ lastPage() }}</span>
+          <button class="btn btn-outline-secondary" (click)="siguiente()" [disabled]="page() >= lastPage()">
+            Siguiente <i class="bi bi-chevron-right ms-1"></i>
+          </button>
+        </nav>
+      </div>
+    </div>
+  </div>
+</main>
+

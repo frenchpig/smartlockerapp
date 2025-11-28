@@ -40,6 +40,10 @@ export class CrearLockers implements OnInit {
     loading = false;
     loadingUbicaciones = false;
     loadingTecnicos = false;
+
+    get hayTecnicos(): boolean {
+        return this.tecnicos.length > 0;
+    }
     siguienteNumero: number | null = null;
     cantidad = 1;
 
@@ -48,12 +52,7 @@ export class CrearLockers implements OnInit {
         ubicacion_id: [null, Validators.required],
         estado: ['activo' as LockerEstado],
         tamano: ['', Validators.required],
-        cantidad: [1, [Validators.required, Validators.min(1), Validators.max(50)]],
-        mantenimiento: this.fb.group({
-            fecha_programada: [''],
-            descripcion: [''],
-            tecnico_id: [null as number | null]
-        })
+        cantidad: [1, [Validators.required, Validators.min(1), Validators.max(50)]]
     });
 
     async ngOnInit(): Promise<void> {
@@ -75,17 +74,6 @@ export class CrearLockers implements OnInit {
         this.form.get('cantidad')?.valueChanges.subscribe((cantidad) => {
             this.cantidad = cantidad || 1;
         });
-
-        // Asignar técnico automáticamente si hay técnicos disponibles (después de cargar)
-        setTimeout(() => {
-            if (this.tecnicos.length > 0 && !this.form.get('mantenimiento.tecnico_id')?.value) {
-                this.form.patchValue({
-                    mantenimiento: {
-                        tecnico_id: this.tecnicos[0].id
-                    }
-                });
-            }
-        }, 100);
     }
 
     private async cargarUbicaciones(): Promise<void> {
@@ -199,29 +187,8 @@ export class CrearLockers implements OnInit {
 
                 lockersCreados.push(locker);
 
-                // Si hay datos de mantenimiento, crear el registro para cada locker
-                if (formValue.mantenimiento?.fecha_programada || formValue.mantenimiento?.descripcion) {
-                    const tecnicoId = formValue.mantenimiento.tecnico_id || this.tecnicos[0]?.id;
-                    if (!tecnicoId) {
-                        alert('No hay técnicos disponibles. Por favor, crea al menos un técnico.');
-                        return;
-                    }
-
-                    // Asegurar que siempre haya una descripción
-                    const descripcion = formValue.mantenimiento.descripcion?.trim() || 'Mantenimiento programado';
-
-                    const mantenimientoData = {
-                        locker_id: locker.id,
-                        usuario_id: tecnicoId,
-                        fecha_programada: formValue.mantenimiento.fecha_programada || null,
-                        descripcion: descripcion,
-                        estado: 'programado'
-                    };
-
-                    await this.http
-                        .post<any>(`${environment.apiUrl}/mantenimientos`, mantenimientoData)
-                        .toPromise();
-                }
+                // El mantenimiento preventivo se crea automáticamente en el backend
+                // 1 mes después de la creación del locker
             }
 
             const mensaje = cantidad > 1 

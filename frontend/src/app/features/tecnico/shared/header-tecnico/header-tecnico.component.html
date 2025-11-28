@@ -1,0 +1,31 @@
+<header class="bg-success text-white py-3 shadow-sm">
+    <div class="container d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <h1 class="h5 mb-0 fw-bold">{{ titulo }}</h1>
+            
+            <nav class="d-none d-md-flex gap-2">
+                <a routerLink="/tecnico" 
+                   routerLinkActive="active" 
+                   [routerLinkActiveOptions]="{exact: true}"
+                   class="nav-link-custom">
+                    <i class="bi bi-tools me-1"></i> Mantenimientos
+                </a>
+                <a routerLink="/tecnico/historico" 
+                   routerLinkActive="active" 
+                   class="nav-link-custom">
+                    <i class="bi bi-clock-history me-1"></i> Historial
+                </a>
+            </nav>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 ms-auto">
+            <app-user-menu-button
+                [userRole]="'Técnico'"
+                [menuItems]="menuItems"
+                [nombreUsuario]="nombreCompleto"
+                (logout)="onLogout()">
+            </app-user-menu-button>
+        </div>
+    </div>
+</header>
+

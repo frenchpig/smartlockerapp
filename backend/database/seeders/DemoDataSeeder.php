@@ -508,6 +508,15 @@ class DemoDataSeeder extends Seeder
                 $locker = $lockerSeleccionado;
                 $repartidor = $repartidores[$i % count($repartidores)];
 
+                // Determinar estado de logística según el estado de la reserva
+                $logisticaEstado = 'asignado';
+                if ($estado === 'completado') {
+                    $logisticaEstado = 'completado';
+                } elseif ($estado === 'pendiente') {
+                    // Variar entre asignado y en_camino para pedidos pendientes
+                    $logisticaEstado = ($i % 3 === 0) ? 'en_camino' : 'asignado';
+                }
+
                 $reserva = new Reserva([
                     'usuario_id' => $usuario->id,
                     'empresa_id' => $empresa->id,
@@ -517,7 +526,7 @@ class DemoDataSeeder extends Seeder
                     'hora_inicio' => $horaInicio,
                     'hora_fin' => $horaFin,
                     'estado' => $estado,
-                    'logistica_estado' => $estado === 'completado' ? 'completado' : 'asignado',
+                    'logistica_estado' => $logisticaEstado,
                     'tipo_acceso' => $i % 2 === 0 ? 'codigo_temporal' : 'qr',
                     'codigo_acceso' => null,
                 ]);
@@ -597,7 +606,7 @@ class DemoDataSeeder extends Seeder
                     'hora_inicio' => $horaInicio,
                     'hora_fin' => $horaFin,
                     'estado' => $estado,
-                    'logistica_estado' => 'completado', // Los antiguos están completados
+                    'logistica_estado' => $estado === 'completado' ? 'completado' : ($estado === 'anulado' ? 'asignado' : 'completado'),
                     'tipo_acceso' => $i % 2 === 0 ? 'qr' : 'codigo_temporal',
                     'codigo_acceso' => null,
                 ]);
@@ -681,29 +690,72 @@ class DemoDataSeeder extends Seeder
                 }
             }
 
-            // Crear mantenimiento programado para TODOS los lockers (después de las reservas)
-            $tecnico = $tecnicos[array_rand($tecnicos)];
-            $fechaProgramada = $now->copy()->addDays(rand(7, 30));
-            $fechaMantenimientoProgramado = $now->copy()->subDays(rand(1, 5)); // Fecha en el pasado
-            
-            $mantenimiento = Mantenimiento::create([
-                'locker_id' => $locker->id,
-                'usuario_id' => $tecnico->id,
-                'fecha_programada' => $fechaProgramada,
-                'descripcion' => 'Mantenimiento preventivo programado',
-                'estado' => 'programado',
-                'created_at' => $fechaMantenimientoProgramado,
-                'updated_at' => $fechaMantenimientoProgramado,
-            ]);
+            // Crear mantenimiento preventivo programado solo para algunos lockers (30% de los lockers)
+            // No todos los lockers necesitan mantenimiento preventivo al mismo tiempo
+            if (rand(1, 100) <= 30) {
+                $tecnico = $tecnicos[array_rand($tecnicos)];
+                $fechaMantenimiento = $now->copy()->addDays(rand(7, 30));
+                $fechaMantenimientoProgramado = $now->copy()->subDays(rand(1, 10)); // Fecha en el pasado
+                
+                $mantenimiento = Mantenimiento::create([
+                    'locker_id' => $locker->id,
+                    'usuario_id' => $tecnico->id,
+                    'fecha_mantenimiento' => $fechaMantenimiento,
+                    'fecha_programada' => $fechaMantenimiento, // Compatibilidad
+                    'descripcion' => 'Mantenimiento preventivo programado',
+                    'estado' => 'pendiente',
+                    'tipo' => 'preventivo',
+                    'es_urgente' => false,
+                    'created_at' => $fechaMantenimientoProgramado,
+                    'updated_at' => $fechaMantenimientoProgramado,
+                ]);
 
-            // Historial de mantenimiento programado (con fecha retroactiva)
-            HistorialLockerService::registrarMantenimientoProgramado(
-                $locker->id,
-                $mantenimiento->id,
-                $fechaProgramada->format('Y-m-d'),
-                $admin->id,
-                $fechaMantenimientoProgramado->format('Y-m-d H:i:s')
-            );
+                // Historial de mantenimiento programado (con fecha retroactiva)
+                HistorialLockerService::registrarMantenimientoProgramado(
+                    $locker->id,
+                    $mantenimiento->id,
+                    $fechaMantenimiento->format('Y-m-d'),
+                    $admin->id,
+                    $fechaMantenimientoProgramado->format('Y-m-d H:i:s')
+                );
+            }
+
+            // Crear algunos mantenimientos preventivos resueltos (históricos)
+            if (rand(1, 100) <= 20) {
+                $tecnico = $tecnicos[array_rand($tecnicos)];
+                $fechaMantenimientoRealizado = $now->copy()->subDays(rand(10, 60));
+                $fechaCreacionMantenimiento = $fechaMantenimientoRealizado->copy()->subDays(rand(5, 15));
+                
+                $mantenimiento = Mantenimiento::create([
+                    'locker_id' => $locker->id,
+                    'usuario_id' => $tecnico->id,
+                    'fecha_mantenimiento' => $fechaMantenimientoRealizado,
+                    'fecha_programada' => $fechaMantenimientoRealizado,
+                    'fecha_real' => $fechaMantenimientoRealizado,
+                    'descripcion' => 'Mantenimiento preventivo realizado',
+                    'estado' => 'resuelta',
+                    'tipo' => 'preventivo',
+                    'es_urgente' => false,
+                    'comentarios' => 'Mantención preventiva completada exitosamente. Todos los sistemas funcionando correctamente.',
+                    'created_at' => $fechaCreacionMantenimiento,
+                    'updated_at' => $fechaMantenimientoRealizado,
+                ]);
+
+                // Registrar en historial
+                HistorialLockerService::registrarMantenimientoProgramado(
+                    $locker->id,
+                    $mantenimiento->id,
+                    $fechaMantenimientoRealizado->format('Y-m-d'),
+                    $admin->id,
+                    $fechaCreacionMantenimiento->format('Y-m-d H:i:s')
+                );
+                
+                HistorialLockerService::registrarMantenimientoRealizado(
+                    $locker->id,
+                    $mantenimiento->id,
+                    $tecnico->id
+                );
+            }
         }
 
         // Actualizar estados de lockers según reservas pendientes
@@ -826,6 +878,14 @@ class DemoDataSeeder extends Seeder
                     'logistica_estado' => $reserva->logistica_estado,
                 ];
 
+                // Asignar técnico a algunas incidencias de pedido que requieren intervención técnica (30%)
+                // Solo para problemas que pueden requerir revisión técnica del locker
+                $tecnicoAsignado = null;
+                $problemasQueRequierenTecnico = ['pedido_extraviado', 'pedido_faltante'];
+                if (in_array($problemaTipo, $problemasQueRequierenTecnico) && rand(1, 100) <= 50) {
+                    $tecnicoAsignado = $tecnicos[array_rand($tecnicos)];
+                }
+
                 // Crear la incidencia
                 $incidencia = new Incidencia([
                     'tipo' => 'pedido',
@@ -833,6 +893,7 @@ class DemoDataSeeder extends Seeder
                     'locker_id' => $reserva->locker_id,
                     'reserva_id' => $reserva->id,
                     'usuario_id' => $reserva->usuario_id,
+                    'tecnico_id' => $tecnicoAsignado ? $tecnicoAsignado->id : null,
                     'descripcion' => $descripcion,
                     'estado' => $estadoIncidencia,
                     'datos_pedido' => $datosPedido,
@@ -858,10 +919,12 @@ class DemoDataSeeder extends Seeder
                 // Si la incidencia está resuelta, registrar también la resolución
                 if ($estadoIncidencia === 'resuelto') {
                     $fechaResolucion = $fechaIncidencia->copy()->addDays(rand(1, 5));
+                    $usuarioResolucion = $tecnicoAsignado ? $tecnicoAsignado->id : $admin->id;
+                    
                     $historialResolucion = HistorialLockerService::registrarIncidenciaResuelta(
                         $reserva->locker_id,
                         $incidencia->id,
-                        $admin->id
+                        $usuarioResolucion
                     );
                     // Ajustar fecha del historial de resolución
                     $historialResolucion->created_at = $fechaResolucion;
@@ -934,6 +997,17 @@ class DemoDataSeeder extends Seeder
                     $fechaIncidencia = $now->copy()->subDays(rand(1, 7));
                 }
 
+                // Asignar técnico a algunas incidencias de locker (60% de las incidencias)
+                $tecnicoAsignado = null;
+                $disponibleParaCerrar = false;
+                if (rand(1, 100) <= 60) {
+                    $tecnicoAsignado = $tecnicos[array_rand($tecnicos)];
+                    // Si está resuelta y tiene técnico, marcar como disponible para cerrar
+                    if ($estadoIncidencia === 'resuelto') {
+                        $disponibleParaCerrar = true;
+                    }
+                }
+
                 // Crear la incidencia de locker (sin reserva_id)
                 $incidencia = new Incidencia([
                     'tipo' => 'locker',
@@ -941,9 +1015,11 @@ class DemoDataSeeder extends Seeder
                     'locker_id' => $locker->id,
                     'reserva_id' => null, // Incidencias de locker no tienen reserva
                     'usuario_id' => $usuario->id,
+                    'tecnico_id' => $tecnicoAsignado ? $tecnicoAsignado->id : null,
                     'descripcion' => $descripcion,
                     'estado' => $estadoIncidencia,
                     'datos_pedido' => null, // No hay datos de pedido para incidencias de locker
+                    'disponible_para_cerrar' => $disponibleParaCerrar,
                 ]);
 
                 // Forzar los timestamps para que coincidan con la fecha retroactiva
@@ -966,10 +1042,12 @@ class DemoDataSeeder extends Seeder
                 // Si la incidencia está resuelta, registrar también la resolución
                 if ($estadoIncidencia === 'resuelto') {
                     $fechaResolucion = $fechaIncidencia->copy()->addDays(rand(1, 5));
+                    $usuarioResolucion = $tecnicoAsignado ? $tecnicoAsignado->id : $admin->id;
+                    
                     $historialResolucion = HistorialLockerService::registrarIncidenciaResuelta(
                         $locker->id,
                         $incidencia->id,
-                        $admin->id
+                        $usuarioResolucion
                     );
                     // Ajustar fecha del historial de resolución
                     $historialResolucion->created_at = $fechaResolucion;
@@ -978,6 +1056,51 @@ class DemoDataSeeder extends Seeder
                     
                     $incidencia->updated_at = $fechaResolucion;
                     $incidencia->save();
+
+                    // Si la incidencia tiene técnico asignado, crear un mantenimiento correctivo relacionado
+                    // (Esto refleja el flujo: incidencia → asignación a técnico → mantenimiento)
+                    if ($tecnicoAsignado && rand(1, 100) <= 70) {
+                        $fechaMantenimiento = $fechaIncidencia->copy()->addDays(rand(1, 3));
+                        $fechaCreacionMantenimiento = $fechaIncidencia->copy()->addHours(rand(2, 12));
+                        
+                        // Determinar si el mantenimiento ya fue realizado o está pendiente
+                        $mantenimientoResuelto = rand(1, 100) <= 60; // 60% ya resueltos
+                        $estadoMantenimiento = $mantenimientoResuelto ? 'resuelta' : 'pendiente';
+                        $fechaRealMantenimiento = $mantenimientoResuelto ? $fechaMantenimiento : null;
+                        
+                        $mantenimiento = Mantenimiento::create([
+                            'locker_id' => $locker->id,
+                            'usuario_id' => $tecnicoAsignado->id,
+                            'incidencia_id' => $incidencia->id,
+                            'fecha_mantenimiento' => $fechaMantenimiento,
+                            'fecha_programada' => $fechaMantenimiento,
+                            'fecha_real' => $fechaRealMantenimiento,
+                            'descripcion' => "Mantenimiento correctivo derivado de incidencia: {$descripcion}",
+                            'estado' => $estadoMantenimiento,
+                            'tipo' => 'correctivo',
+                            'es_urgente' => in_array($problemaTipo, ['bloqueado', 'sin_energia', 'dañado']),
+                            'comentarios' => $mantenimientoResuelto ? 'Problema solucionado. Locker operativo nuevamente.' : null,
+                            'created_at' => $fechaCreacionMantenimiento,
+                            'updated_at' => $mantenimientoResuelto ? $fechaMantenimiento : $fechaCreacionMantenimiento,
+                        ]);
+
+                        // Registrar en historial
+                        HistorialLockerService::registrarMantenimientoProgramado(
+                            $locker->id,
+                            $mantenimiento->id,
+                            $fechaMantenimiento->format('Y-m-d'),
+                            $admin->id,
+                            $fechaCreacionMantenimiento->format('Y-m-d H:i:s')
+                        );
+
+                        if ($mantenimientoResuelto) {
+                            HistorialLockerService::registrarMantenimientoRealizado(
+                                $locker->id,
+                                $mantenimiento->id,
+                                $tecnicoAsignado->id
+                            );
+                        }
+                    }
                 }
             }
         }
