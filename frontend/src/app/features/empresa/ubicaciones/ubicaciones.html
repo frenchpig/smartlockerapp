@@ -22,17 +22,17 @@
                 </div>
                 <div class="col-md-6">
                   <strong>Sedes permitidas:</strong> 
-                  <span class="badge bg-primary">{{ limitaciones.tarifa.sedes_permitidas }}</span>
+                  <span class="badge bg-primary">{{ transformCantidad(limitaciones.tarifa.sedes_permitidas) }}</span>
                 </div>
                 <div class="col-md-6">
                   <strong>Lockers por sede:</strong> 
-                  <span class="badge bg-info">{{ limitaciones.tarifa.lockers_por_sede }}</span>
+                  <span class="badge bg-info">{{ transformCantidad(limitaciones.tarifa.lockers_por_sede) }}</span>
                 </div>
                 <div class="col-md-6">
                   <strong>Ubicaciones seleccionadas:</strong> 
                   <span class="badge" [class.bg-success]="ubicacionesSeleccionadas.length > 0" 
                         [class.bg-secondary]="ubicacionesSeleccionadas.length === 0">
-                    {{ ubicacionesSeleccionadas.length }} / {{ limitaciones.tarifa.sedes_permitidas }}
+                    {{ ubicacionesSeleccionadas.length }} / {{ transformCantidad(limitaciones.tarifa.sedes_permitidas) }}
                   </span>
                 </div>
               </div>
@@ -56,7 +56,7 @@
           <i class="bi bi-info-circle me-2"></i>
           <strong>Instrucciones:</strong> Selecciona las ubicaciones donde deseas utilizar lockers. 
           Solo podrás crear reservas en las ubicaciones que selecciones aquí. 
-          Tu tarifa permite máximo <strong>{{ sedesPermitidas }}</strong> sede(s).
+          Tu tarifa permite máximo <strong>{{ transformCantidad(sedesPermitidas) }}</strong> sede(s).
         </div>
 
         <!-- Lista de ubicaciones -->

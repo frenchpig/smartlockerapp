@@ -68,19 +68,22 @@ class TarifaLimitacionService
         }
 
         // Verificar límite de lockers por sede
-        $lockersEnUsoEnEstaSede = Reserva::where('empresa_id', $empresa->id)
-            ->where('estado', 'pendiente')
-            ->whereHas('locker', function ($query) use ($ubicacion) {
-                $query->where('ubicacion_id', $ubicacion->id);
-            })
-            ->count();
+        // Si lockers_por_sede es 0, significa capacidad infinita, no se valida límite
+        if ($tarifa->lockers_por_sede > 0) {
+            $lockersEnUsoEnEstaSede = Reserva::where('empresa_id', $empresa->id)
+                ->where('estado', 'pendiente')
+                ->whereHas('locker', function ($query) use ($ubicacion) {
+                    $query->where('ubicacion_id', $ubicacion->id);
+                })
+                ->count();
 
-        if ($lockersEnUsoEnEstaSede >= $tarifa->lockers_por_sede) {
-            throw new \Exception(
-                "Has alcanzado el límite de lockers permitidos en esta sede ({$tarifa->lockers_por_sede}). " .
-                "Tu tarifa '{$tarifa->nombre_publico}' permite máximo {$tarifa->lockers_por_sede} locker(s) por sede. " .
-                "Actualmente tienes {$lockersEnUsoEnEstaSede} locker(s) en uso en '{$ubicacion->nombre}'."
-            );
+            if ($lockersEnUsoEnEstaSede >= $tarifa->lockers_por_sede) {
+                throw new \Exception(
+                    "Has alcanzado el límite de lockers permitidos en esta sede ({$tarifa->lockers_por_sede}). " .
+                    "Tu tarifa '{$tarifa->nombre_publico}' permite máximo {$tarifa->lockers_por_sede} locker(s) por sede. " .
+                    "Actualmente tienes {$lockersEnUsoEnEstaSede} locker(s) en uso en '{$ubicacion->nombre}'."
+                );
+            }
         }
     }
 

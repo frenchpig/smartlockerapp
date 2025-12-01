@@ -163,5 +163,9 @@ export class UbicacionesEmpresa implements OnInit {
     if (this.sedesPermitidas === 0) return false;
     return this.ubicacionesSeleccionadas.length < this.sedesPermitidas;
   }
+
+  transformCantidad(value: number): number | 'ilimitado' {
+    return value === 0 ? 'ilimitado' : value;
+  }
 }
 

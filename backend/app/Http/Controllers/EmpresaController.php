@@ -297,7 +297,8 @@ class EmpresaController extends Controller
         $cantidadUbicaciones = count($ubicacionesIds);
 
         // Validar que no exceda el límite de sedes permitidas
-        if ($cantidadUbicaciones > $tarifa->sedes_permitidas) {
+        // Si sedes_permitidas es 0, significa ilimitado, no se valida límite
+        if ($tarifa->sedes_permitidas > 0 && $cantidadUbicaciones > $tarifa->sedes_permitidas) {
             return response()->json([
                 'message' => "Tu tarifa '{$tarifa->nombre_publico}' permite máximo {$tarifa->sedes_permitidas} sede(s). Has seleccionado {$cantidadUbicaciones}."
             ], 422);
@@ -431,7 +432,8 @@ class EmpresaController extends Controller
             $datosEmpresa->save();
 
             // Si cambió la tarifa y tenía ubicaciones seleccionadas, verificar que no exceda el nuevo límite
-            if ($tarifaAnteriorId !== $data['tarifa_id']) {
+            // Si sedes_permitidas es 0, significa ilimitado, no se valida límite
+            if ($tarifaAnteriorId !== $data['tarifa_id'] && $tarifa->sedes_permitidas > 0) {
                 $ubicacionesSeleccionadas = EmpresaUbicacion::where('empresa_id', $user->id)->count();
                 
                 if ($ubicacionesSeleccionadas > $tarifa->sedes_permitidas) {
