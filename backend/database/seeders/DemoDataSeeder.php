@@ -1104,5 +1104,524 @@ class DemoDataSeeder extends Seeder
                 }
             }
         }
+
+        // ============================================
+        // DATOS ESPECÍFICOS PARA MUESTRA
+        // ============================================
+
+        // 1. Crear ubicación Metro Los Dominicos
+        $ubicacionLosDominicos = Ubicacion::firstOrCreate(
+            ['nombre' => 'Metro Los Dominicos'],
+            [
+                'nombre' => 'Metro Los Dominicos',
+                'latitud' => -33.4079,
+                'longitud' => -70.5451,
+                'device_username' => 'totem-los-dominicos',
+                'device_password' => '123456',
+            ]
+        );
+
+        // 2. Crear 5 lockers tamaño M en Metro Los Dominicos
+        $lockersLosDominicos = [];
+        $fechaCreacionLockers = $now->copy()->subDays(30);
+        for ($i = 1; $i <= 5; $i++) {
+            $locker = new Locker([
+                'numero' => $i,
+                'ubicacion_id' => $ubicacionLosDominicos->id,
+                'estado' => 'activo',
+                'tamano' => 'M',
+            ]);
+            $locker->created_at = $fechaCreacionLockers;
+            $locker->updated_at = $fechaCreacionLockers;
+            $locker->save();
+            $lockersLosDominicos[] = $locker;
+
+            // Registrar creación en historial
+            HistorialLockerService::registrarCreacion(
+                $locker->id,
+                $locker->numero,
+                $ubicacionLosDominicos->nombre,
+                $admin->id,
+                $fechaCreacionLockers->format('Y-m-d H:i:s')
+            );
+
+            // Crear mantenimiento programado para cada locker
+            // Asignar a tecnico1 y crear algunos para hoy y otros para el futuro
+            $diasFuturo = $i <= 2 ? 0 : rand(7, 30); // Los primeros 2 lockers tienen mantenimiento para hoy
+            $fechaMantenimiento = $now->copy()->addDays($diasFuturo)->startOfDay();
+            $fechaMantenimientoProgramado = $now->copy()->subDays(rand(1, 10));
+            
+            $mantenimiento = Mantenimiento::create([
+                'locker_id' => $locker->id,
+                'usuario_id' => $tecnico1->id, // Asignar al técnico existente
+                'fecha_mantenimiento' => $fechaMantenimiento,
+                'fecha_programada' => $fechaMantenimiento,
+                'descripcion' => 'Mantenimiento preventivo programado',
+                'estado' => 'pendiente',
+                'tipo' => 'preventivo',
+                'es_urgente' => false,
+                'created_at' => $fechaMantenimientoProgramado,
+                'updated_at' => $fechaMantenimientoProgramado,
+            ]);
+
+            HistorialLockerService::registrarMantenimientoProgramado(
+                $locker->id,
+                $mantenimiento->id,
+                $fechaMantenimiento->format('Y-m-d'),
+                $admin->id,
+                $fechaMantenimientoProgramado->format('Y-m-d H:i:s')
+            );
+        }
+
+        // 3. Crear tarifa Smart Tiny
+        $tarifaTiny = Tarifa::firstOrCreate(
+            ['codigo_interno' => 'PLAN_TINY_01'],
+            [
+                'nombre_publico' => 'Smart Tiny',
+                'codigo_interno' => 'PLAN_TINY_01',
+                'precio_mensual' => 20000,
+                'estado' => 'Activo',
+                'descripcion_corta' => 'Para empresas pequeñas',
+                'sedes_permitidas' => 1,
+                'lockers_por_sede' => 0, // Ilimitado
+                'prioridad_soporte' => 'Prioritario',
+                'incluye' => [
+                    'Hasta 1 sede',
+                    'Lockers ilimitados por sede',
+                    'Soporte 24/7',
+                ],
+                'no_incluye' => [
+                    'Sedes extra',
+                ],
+            ]
+        );
+
+        // 4. Crear comuna San Miguel si no existe
+        $regionMetropolitana = Region::firstOrCreate(
+            ['nombre' => 'Región Metropolitana de Santiago'],
+            ['nombre' => 'Región Metropolitana de Santiago']
+        );
+
+        $comunaSanMiguel = Comuna::firstOrCreate(
+            ['nombre' => 'San Miguel', 'region_id' => $regionMetropolitana->id],
+            ['nombre' => 'San Miguel', 'region_id' => $regionMetropolitana->id]
+        );
+
+        // 5. Crear empresa Importadora Auspont
+        $usuarioEmpresaAuspont = Usuario::firstOrCreate(
+            ['email' => 'javier@example.com'],
+            [
+                'nombre' => 'Javier',
+                'apellido' => 'Auspont',
+                'email' => 'javier@example.com',
+                'telefono' => '94134989',
+                'contrasena' => '123456',
+                'rol' => 'empresa',
+            ]
+        );
+
+        $datosEmpresaAuspont = DatosEmpresa::firstOrCreate(
+            ['usuario_id' => $usuarioEmpresaAuspont->id],
+            [
+                'usuario_id' => $usuarioEmpresaAuspont->id,
+                'nombre' => 'Importadora Auspont',
+                'razon_social' => 'Importadora Auspont SpA',
+                'rut' => '76845321K',
+                'direccion' => 'Calle Falsa 123',
+                'comuna_id' => $comunaSanMiguel->id,
+                'tarifa_id' => $tarifaTiny->id,
+            ]
+        );
+
+        // Registrar creación de cuenta
+        HistorialEmpresaService::registrarCreacionCuenta($usuarioEmpresaAuspont->id, $datosEmpresaAuspont->nombre);
+
+        // Asignar ubicación Metro Los Dominicos a la empresa
+        EmpresaUbicacion::firstOrCreate(
+            [
+                'empresa_id' => $usuarioEmpresaAuspont->id,
+                'ubicacion_id' => $ubicacionLosDominicos->id,
+            ],
+            [
+                'empresa_id' => $usuarioEmpresaAuspont->id,
+                'ubicacion_id' => $ubicacionLosDominicos->id,
+            ]
+        );
+
+        // 6. Crear repartidor Adela Auspont
+        $usuarioRepartidorAdela = Usuario::firstOrCreate(
+            ['email' => 'adela@example.com'],
+            [
+                'nombre' => 'Adela',
+                'apellido' => 'Auspont',
+                'email' => 'adela@example.com',
+                'telefono' => '12341234',
+                'contrasena' => '123456',
+                'rol' => 'repartidor',
+            ]
+        );
+
+        $repartidorAdela = Repartidor::firstOrCreate(
+            ['usuario_id' => $usuarioRepartidorAdela->id],
+            [
+                'usuario_id' => $usuarioRepartidorAdela->id,
+                'empresa_id' => $usuarioEmpresaAuspont->id,
+                'nombre' => 'Adela',
+                'apellido' => 'Auspont',
+                'email' => 'adela@example.com',
+                'telefono' => '12341234',
+                'rut' => '215064883',
+                'disponible' => true,
+            ]
+        );
+
+        // 7. Crear usuario cliente Eliseo Perez
+        $usuarioClienteEliseo = Usuario::firstOrCreate(
+            ['email' => 'eliseo@example.com'],
+            [
+                'nombre' => 'Eliseo',
+                'apellido' => 'Perez',
+                'email' => 'eliseo@example.com',
+                'telefono' => '56912341234',
+                'contrasena' => '123456',
+                'rol' => 'usuario',
+            ]
+        );
+
+        // 8. Crear producto Aiphone 17
+        $productoAiphone = ProductoEmpresa::firstOrCreate(
+            [
+                'empresa_id' => $usuarioEmpresaAuspont->id,
+                'sku' => 'AIPHONE-17-001',
+            ],
+            [
+                'empresa_id' => $usuarioEmpresaAuspont->id,
+                'nombre' => 'Aiphone 17',
+                'descripcion' => 'Aiphone 17',
+                'sku' => 'AIPHONE-17-001',
+                'peso' => 0.5,
+                'activo' => true,
+            ]
+        );
+
+        // 9. Crear 3 reservas
+        $fechaManana = $now->copy()->addDay()->startOfDay();
+        
+        // Reserva 1: Código temporal - COMPLETA
+        $reserva1 = new Reserva([
+            'usuario_id' => $usuarioClienteEliseo->id,
+            'empresa_id' => $usuarioEmpresaAuspont->id,
+            'locker_id' => $lockersLosDominicos[0]->id,
+            'tamano_pedido' => 'M',
+            'ubicacion_destino_id' => $ubicacionLosDominicos->id,
+            'repartidor_id' => $repartidorAdela->id,
+            'fecha_reserva' => $fechaManana,
+            'hora_inicio' => $fechaManana->copy()->addHours(10),
+            'hora_fin' => $fechaManana->copy()->addHours(12),
+            'estado' => 'completado',
+            'tipo_acceso' => 'codigo_temporal',
+            'codigo_acceso' => str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT),
+            'logistica_estado' => 'completado',
+        ]);
+        $reserva1->created_at = $fechaManana->copy()->subDays(1);
+        $reserva1->updated_at = $fechaManana->copy()->addHours(12);
+        $reserva1->save();
+
+        // Artículo para reserva 1
+        ArticuloReserva::create([
+            'reserva_id' => $reserva1->id,
+            'nombre' => 'Aiphone 17',
+            'cantidad' => 1,
+            'descripcion' => 'Aiphone 17',
+            'sku' => 'AIPHONE-17-001',
+            'peso' => 0.5,
+        ]);
+
+        // Registrar historial
+        HistorialLockerService::registrarReservaCreada(
+            $lockersLosDominicos[0]->id,
+            $reserva1->id,
+            $usuarioEmpresaAuspont->id,
+            $reserva1->created_at->format('Y-m-d H:i:s')
+        );
+        HistorialLockerService::registrarReservaCompletada(
+            $lockersLosDominicos[0]->id,
+            $reserva1->id,
+            $lockersLosDominicos[0]->numero,
+            trim($usuarioClienteEliseo->nombre . ' ' . $usuarioClienteEliseo->apellido),
+            'ocupado',
+            'activo',
+            $usuarioClienteEliseo->id,
+            $reserva1->hora_fin->format('Y-m-d H:i:s')
+        );
+        HistorialEmpresaService::registrarReservaCreada(
+            $usuarioEmpresaAuspont->id,
+            $reserva1->id,
+            $ubicacionLosDominicos->nombre
+        );
+        HistorialEmpresaService::registrarReservaCompletada(
+            $usuarioEmpresaAuspont->id,
+            $reserva1->id
+        );
+
+        // Reserva 2: QR - PENDIENTE
+        $reserva2 = new Reserva([
+            'usuario_id' => $usuarioClienteEliseo->id,
+            'empresa_id' => $usuarioEmpresaAuspont->id,
+            'locker_id' => $lockersLosDominicos[1]->id,
+            'tamano_pedido' => 'M',
+            'ubicacion_destino_id' => $ubicacionLosDominicos->id,
+            'repartidor_id' => $repartidorAdela->id,
+            'fecha_reserva' => $fechaManana,
+            'hora_inicio' => $fechaManana->copy()->addHours(14),
+            'hora_fin' => null,
+            'estado' => 'pendiente',
+            'tipo_acceso' => 'qr',
+            'codigo_acceso' => null,
+            'logistica_estado' => 'asignado',
+        ]);
+        $reserva2->created_at = $now->copy()->subHours(2);
+        $reserva2->updated_at = $now->copy()->subHours(2);
+        $reserva2->save();
+
+        // Artículo para reserva 2
+        ArticuloReserva::create([
+            'reserva_id' => $reserva2->id,
+            'nombre' => 'Aiphone 17',
+            'cantidad' => 1,
+            'descripcion' => 'Aiphone 17',
+            'sku' => 'AIPHONE-17-001',
+            'peso' => 0.5,
+        ]);
+
+        // Registrar historial
+        HistorialLockerService::registrarReservaCreada(
+            $lockersLosDominicos[1]->id,
+            $reserva2->id,
+            $usuarioEmpresaAuspont->id,
+            $reserva2->created_at->format('Y-m-d H:i:s')
+        );
+        HistorialEmpresaService::registrarReservaCreada(
+            $usuarioEmpresaAuspont->id,
+            $reserva2->id,
+            $ubicacionLosDominicos->nombre
+        );
+
+        // Actualizar estado del locker
+        $lockersLosDominicos[1]->estado = 'ocupado';
+        $lockersLosDominicos[1]->save();
+
+        // Reserva 3: Código temporal - PENDIENTE
+        $reserva3 = new Reserva([
+            'usuario_id' => $usuarioClienteEliseo->id,
+            'empresa_id' => $usuarioEmpresaAuspont->id,
+            'locker_id' => $lockersLosDominicos[2]->id,
+            'tamano_pedido' => 'M',
+            'ubicacion_destino_id' => $ubicacionLosDominicos->id,
+            'repartidor_id' => $repartidorAdela->id,
+            'fecha_reserva' => $fechaManana,
+            'hora_inicio' => $fechaManana->copy()->addHours(16),
+            'hora_fin' => null,
+            'estado' => 'pendiente',
+            'tipo_acceso' => 'codigo_temporal',
+            'codigo_acceso' => str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT),
+            'logistica_estado' => 'en_camino',
+        ]);
+        $reserva3->created_at = $now->copy()->subHours(1);
+        $reserva3->updated_at = $now->copy()->subHours(1);
+        $reserva3->save();
+
+        // Artículo para reserva 3
+        ArticuloReserva::create([
+            'reserva_id' => $reserva3->id,
+            'nombre' => 'Aiphone 17',
+            'cantidad' => 1,
+            'descripcion' => 'Aiphone 17',
+            'sku' => 'AIPHONE-17-001',
+            'peso' => 0.5,
+        ]);
+
+        // Registrar historial
+        HistorialLockerService::registrarReservaCreada(
+            $lockersLosDominicos[2]->id,
+            $reserva3->id,
+            $usuarioEmpresaAuspont->id,
+            $reserva3->created_at->format('Y-m-d H:i:s')
+        );
+        HistorialEmpresaService::registrarReservaCreada(
+            $usuarioEmpresaAuspont->id,
+            $reserva3->id,
+            $ubicacionLosDominicos->nombre
+        );
+
+        // Actualizar estado del locker
+        $lockersLosDominicos[2]->estado = 'ocupado';
+        $lockersLosDominicos[2]->save();
+
+        // 10. Usar técnico existente (tecnico1) con incidencia de locker
+        // Crear reserva para la incidencia (debe tener una reserva)
+        $reservaIncidencia = new Reserva([
+            'usuario_id' => $usuarioClienteEliseo->id,
+            'empresa_id' => $usuarioEmpresaAuspont->id,
+            'locker_id' => $lockersLosDominicos[3]->id,
+            'tamano_pedido' => 'M',
+            'ubicacion_destino_id' => $ubicacionLosDominicos->id,
+            'repartidor_id' => $repartidorAdela->id,
+            'fecha_reserva' => $now->copy()->subDays(2),
+            'hora_inicio' => $now->copy()->subDays(2)->addHours(10),
+            'hora_fin' => null,
+            'estado' => 'pendiente',
+            'tipo_acceso' => 'qr',
+            'codigo_acceso' => null,
+            'logistica_estado' => 'asignado',
+        ]);
+        $reservaIncidencia->created_at = $now->copy()->subDays(2);
+        $reservaIncidencia->updated_at = $now->copy()->subDays(2);
+        $reservaIncidencia->save();
+
+        // Crear incidencia de locker asociada al técnico
+        $incidenciaLocker = new Incidencia([
+            'tipo' => 'locker',
+            'problema_tipo' => 'no_se_abre',
+            'locker_id' => $lockersLosDominicos[3]->id,
+            'reserva_id' => $reservaIncidencia->id,
+            'usuario_id' => $usuarioClienteEliseo->id,
+            'tecnico_id' => $tecnico1->id,
+            'descripcion' => 'El locker no se abre con el código proporcionado. El usuario intentó varias veces sin éxito.',
+            'estado' => 'pendiente',
+            'datos_pedido' => null,
+        ]);
+        $incidenciaLocker->created_at = $now->copy()->subDays(1);
+        $incidenciaLocker->updated_at = $now->copy()->subDays(1);
+        $incidenciaLocker->save();
+
+        // Registrar en historial
+        $historialIncidencia = HistorialLockerService::registrarIncidenciaReportada(
+            $lockersLosDominicos[3]->id,
+            $incidenciaLocker->id,
+            $incidenciaLocker->descripcion,
+            $usuarioClienteEliseo->id
+        );
+        $historialIncidencia->created_at = $incidenciaLocker->created_at;
+        $historialIncidencia->updated_at = $incidenciaLocker->created_at;
+        $historialIncidencia->save();
+
+        // 11. Crear reserva para incidencia de empresa por pedido
+        $reservaIncidenciaPedido = new Reserva([
+            'usuario_id' => $usuarioClienteEliseo->id,
+            'empresa_id' => $usuarioEmpresaAuspont->id,
+            'locker_id' => $lockersLosDominicos[4]->id,
+            'tamano_pedido' => 'M',
+            'ubicacion_destino_id' => $ubicacionLosDominicos->id,
+            'repartidor_id' => $repartidorAdela->id,
+            'fecha_reserva' => $now->copy()->subDays(3),
+            'hora_inicio' => $now->copy()->subDays(3)->addHours(11),
+            'hora_fin' => null,
+            'estado' => 'pendiente',
+            'tipo_acceso' => 'codigo_temporal',
+            'codigo_acceso' => str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT),
+            'logistica_estado' => 'completado',
+        ]);
+        $reservaIncidenciaPedido->created_at = $now->copy()->subDays(3);
+        $reservaIncidenciaPedido->updated_at = $now->copy()->subDays(3);
+        $reservaIncidenciaPedido->save();
+
+        // Artículo para reserva de incidencia
+        ArticuloReserva::create([
+            'reserva_id' => $reservaIncidenciaPedido->id,
+            'nombre' => 'Aiphone 17',
+            'cantidad' => 1,
+            'descripcion' => 'Aiphone 17',
+            'sku' => 'AIPHONE-17-001',
+            'peso' => 0.5,
+        ]);
+
+        // Cargar datos de la reserva para la incidencia
+        $reservaIncidenciaPedido->load(['empresa', 'repartidor', 'usuario', 'articulos', 'locker.ubicacion']);
+        
+        $datosPedidoIncidencia = [
+            'reserva_id' => $reservaIncidenciaPedido->id,
+            'empresa' => [
+                'id' => $reservaIncidenciaPedido->empresa->id ?? null,
+                'nombre' => $reservaIncidenciaPedido->empresa->nombre ?? null,
+                'email' => $reservaIncidenciaPedido->empresa->email ?? null,
+            ],
+            'repartidor' => $reservaIncidenciaPedido->repartidor ? [
+                'id' => $reservaIncidenciaPedido->repartidor->id,
+                'nombre' => $reservaIncidenciaPedido->repartidor->nombre ?? null,
+                'apellido' => $reservaIncidenciaPedido->repartidor->apellido ?? null,
+                'nombre_completo' => $reservaIncidenciaPedido->repartidor->nombre_completo ?? null,
+                'email' => $reservaIncidenciaPedido->repartidor->email ?? null,
+                'telefono' => $reservaIncidenciaPedido->repartidor->telefono ?? null,
+                'rut' => $reservaIncidenciaPedido->repartidor->rut ?? null,
+            ] : null,
+            'usuario_destino' => [
+                'id' => $reservaIncidenciaPedido->usuario->id ?? null,
+                'nombre' => $reservaIncidenciaPedido->usuario->nombre ?? null,
+                'email' => $reservaIncidenciaPedido->usuario->email ?? null,
+            ],
+            'locker' => [
+                'id' => $reservaIncidenciaPedido->locker->id ?? null,
+                'numero' => $reservaIncidenciaPedido->locker->numero ?? null,
+                'ubicacion' => $reservaIncidenciaPedido->locker->ubicacion->nombre ?? null,
+            ],
+            'articulos' => $reservaIncidenciaPedido->articulos->map(function ($articulo) {
+                return [
+                    'id' => $articulo->id,
+                    'nombre' => $articulo->nombre,
+                    'cantidad' => $articulo->cantidad,
+                    'descripcion' => $articulo->descripcion,
+                    'sku' => $articulo->sku,
+                    'peso' => $articulo->peso,
+                ];
+            })->toArray(),
+            'fecha_reserva' => $reservaIncidenciaPedido->fecha_reserva?->toDateTimeString(),
+            'estado_pedido' => $reservaIncidenciaPedido->estado,
+            'logistica_estado' => $reservaIncidenciaPedido->logistica_estado,
+        ];
+
+        // Crear incidencia de pedido
+        $incidenciaPedido = new Incidencia([
+            'tipo' => 'pedido',
+            'problema_tipo' => 'pedido_incorrecto',
+            'locker_id' => $lockersLosDominicos[4]->id,
+            'reserva_id' => $reservaIncidenciaPedido->id,
+            'usuario_id' => $usuarioClienteEliseo->id,
+            'tecnico_id' => null,
+            'descripcion' => 'El pedido recibido no corresponde al que se solicitó. Se esperaba otro artículo.',
+            'estado' => 'pendiente',
+            'datos_pedido' => $datosPedidoIncidencia,
+        ]);
+        $incidenciaPedido->created_at = $now->copy()->subDays(1);
+        $incidenciaPedido->updated_at = $now->copy()->subDays(1);
+        $incidenciaPedido->save();
+
+        // Registrar en historial
+        $historialIncidenciaPedido = HistorialLockerService::registrarIncidenciaReportada(
+            $lockersLosDominicos[4]->id,
+            $incidenciaPedido->id,
+            $incidenciaPedido->descripcion,
+            $usuarioClienteEliseo->id
+        );
+        $historialIncidenciaPedido->created_at = $incidenciaPedido->created_at;
+        $historialIncidenciaPedido->updated_at = $incidenciaPedido->created_at;
+        $historialIncidenciaPedido->save();
+
+        // Registrar historial de reserva
+        HistorialLockerService::registrarReservaCreada(
+            $lockersLosDominicos[4]->id,
+            $reservaIncidenciaPedido->id,
+            $usuarioEmpresaAuspont->id,
+            $reservaIncidenciaPedido->created_at->format('Y-m-d H:i:s')
+        );
+        HistorialEmpresaService::registrarReservaCreada(
+            $usuarioEmpresaAuspont->id,
+            $reservaIncidenciaPedido->id,
+            $ubicacionLosDominicos->nombre
+        );
+
+        // Actualizar estado del locker
+        $lockersLosDominicos[4]->estado = 'ocupado';
+        $lockersLosDominicos[4]->save();
     }
 }

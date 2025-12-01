@@ -164,10 +164,11 @@ class MantenimientoController extends Controller
             ->where('usuario_id', $user->id)
             ->whereIn('estado', ['pendiente', 'resuelta']); // Solo pendientes y resueltas
 
-        // Filtrar por fecha del día actual
+        // Filtrar por fecha del día actual (incluye todo el día de hoy)
         $hoy = now()->startOfDay();
         $manana = now()->copy()->addDay()->startOfDay();
-        $query->whereBetween('fecha_mantenimiento', [$hoy, $manana]);
+        $query->where('fecha_mantenimiento', '>=', $hoy)
+              ->where('fecha_mantenimiento', '<', $manana);
 
         // Ordenar: urgentes primero, luego por fecha más cercana
         $query->orderByDesc('es_urgente')
